@@ -12,6 +12,9 @@ declare global {
       chooseProjectSavePath?: () => Promise<{ ok: boolean; path?: string; canceled?: boolean; error?: string }>;
       readProjectFile?: (path: string) => Promise<{ ok: boolean; path?: string; content?: string; error?: string }>;
       writeProjectFile?: (path: string, content: string) => Promise<{ ok: boolean; path?: string; error?: string }>;
+      writeProjectAutosave?: (content: string) => Promise<{ ok: boolean; path?: string; backupPath?: string; error?: string }>;
+      readProjectAutosave?: () => Promise<{ ok: boolean; path?: string; content?: string; canceled?: boolean; error?: string }>;
+      clearProjectAutosave?: () => Promise<{ ok: boolean; path?: string; error?: string }>;
       inspectProjectMedia?: (content: string) => Promise<{ ok: boolean; media?: Array<{ id: string; path: string; exists: boolean; missing: boolean }>; error?: string }>;
       collectProjectMedia?: (path: string, content: string) => Promise<{
         ok: boolean;

@@ -6,12 +6,15 @@ import { spawn } from "node:child_process";
 import { EngineSupervisor } from "./EngineSupervisor.js";
 import { normalizeExportOutputPath } from "./ExportDialogs.js";
 import {
+  clearProjectAutosave,
   collectProjectMedia,
   inspectProjectMedia,
   normalizeProjectSavePath,
+  readProjectAutosave,
   readProjectFile,
   relinkProjectMedia,
   validateProjectOpenPath,
+  writeProjectAutosave,
   writeProjectFile
 } from "./ProjectDialogs.js";
 
@@ -87,6 +90,10 @@ function nativeEnginePath() {
 function resourcePath(...parts: string[]) {
   if (app.isPackaged) return join(process.resourcesPath, ...parts);
   return join(process.cwd(), ...parts);
+}
+
+function projectAutosaveDir() {
+  return join(app.getPath("userData"), "project-recovery");
 }
 
 function validateRequiredEngine() {
@@ -210,6 +217,15 @@ function registerProjectIpc() {
     }
     return writeProjectFile(path, content);
   });
+
+  ipcMain.handle("project:write-autosave", async (_event, content: unknown) => {
+    if (typeof content !== "string") return { ok: false, error: "Invalid project content" };
+    return writeProjectAutosave(projectAutosaveDir(), content);
+  });
+
+  ipcMain.handle("project:read-autosave", async () => readProjectAutosave(projectAutosaveDir()));
+
+  ipcMain.handle("project:clear-autosave", async () => clearProjectAutosave(projectAutosaveDir()));
 
   ipcMain.handle("project:inspect-media", async (_event, content: unknown) => {
     if (typeof content !== "string") return { ok: false, error: "Invalid project content" };

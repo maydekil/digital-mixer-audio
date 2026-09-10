@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join, parse } from "node:path";
 
 export const projectFileExtension = ".lam.json";
@@ -22,6 +22,11 @@ export interface ProjectMediaCollectResult extends ProjectPathResult {
   content?: string;
   collected?: Array<{ id: string; from: string; to: string }>;
   missing?: ProjectMediaStatus[];
+}
+
+export interface ProjectAutosaveResult extends ProjectPathResult {
+  content?: string;
+  backupPath?: string;
 }
 
 export function normalizeProjectSavePath(path: string): string {
@@ -75,6 +80,45 @@ export async function writeProjectFile(path: string, content: string): Promise<P
     await writeFile(tempPath, content, "utf8");
     await rename(tempPath, normalized);
     return { ok: true, path: normalized };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+export async function writeProjectAutosave(directory: string, content: string): Promise<ProjectAutosaveResult> {
+  const validation = validateProjectJson(content);
+  if (!validation.ok) return validation;
+  try {
+    await mkdir(directory, { recursive: true });
+    const path = join(directory, "autosave.lam.json");
+    const tempPath = `${path}.tmp`;
+    const backupPath = join(directory, "previous-good.lam.json");
+    if (existsSync(path)) await rename(path, backupPath);
+    await writeFile(tempPath, content, "utf8");
+    await rename(tempPath, path);
+    return { ok: true, path, backupPath };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+export async function readProjectAutosave(directory: string): Promise<ProjectAutosaveResult> {
+  const path = join(directory, "autosave.lam.json");
+  if (!existsSync(path)) return { ok: true, canceled: true, path };
+  try {
+    const content = await readFile(path, "utf8");
+    const validation = validateProjectJson(content);
+    if (!validation.ok) return validation;
+    return { ok: true, path, content };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+export async function clearProjectAutosave(directory: string): Promise<ProjectPathResult> {
+  try {
+    await rm(join(directory, "autosave.lam.json"), { force: true });
+    return { ok: true, path: directory };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }

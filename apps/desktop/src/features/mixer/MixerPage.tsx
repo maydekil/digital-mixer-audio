@@ -35,6 +35,7 @@ export function MixerPage() {
   const [outputUid, setOutputUid] = useState("");
   const [transportState, setTransportState] = useState("stopped");
   const [projectPath, setProjectPath] = useState("");
+  const autosaveReady = useRef(false);
   const fxProgramInFlight = useRef<Record<"fx-a" | "fx-b", boolean>>({ "fx-a": false, "fx-b": false });
   const fxProgramDesired = useRef<Partial<Record<"fx-a" | "fx-b", number>>>({});
 
@@ -57,6 +58,15 @@ export function MixerPage() {
     if (!Array.isArray(result?.programs)) return;
     const programs = parseFxPrograms(result.programs);
     if (programs.length === 99) refresh(() => adapter.setPrograms(programs));
+  }
+
+  async function restoreAutosaveIfAvailable() {
+    if (!window.localMixer?.readProjectAutosave) return;
+    const autosave = await window.localMixer.readProjectAutosave();
+    if (!autosave.ok || autosave.canceled || !autosave.content) return;
+    if (!window.confirm("Restore autosaved project?")) return;
+    refresh(() => adapter.replaceSnapshot(projectSessionToSnapshot(autosave.content ?? "", adapter.getSnapshot())));
+    await window.localMixer.clearProjectAutosave?.();
   }
 
   async function runChannelMonitor(channelId: string, monitor: boolean) {
@@ -330,9 +340,21 @@ export function MixerPage() {
   }
 
   useEffect(() => {
+    void restoreAutosaveIfAvailable();
     void refreshDevices();
     void refreshFxProgramBank();
   }, []);
+
+  useEffect(() => {
+    if (!autosaveReady.current) {
+      autosaveReady.current = true;
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      void window.localMixer?.writeProjectAutosave?.(serializeProjectSession(snapshot));
+    }, 5000);
+    return () => window.clearTimeout(handle);
+  }, [snapshot]);
 
   useEffect(() => {
     void syncMixerGraph(snapshot, outputUid);

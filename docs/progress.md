@@ -2986,3 +2986,30 @@ Validation:
 Known limitations:
 - The native writer still creates only the take container through command/control in this automated path; callback-driven live PCM writing remains pending.
 - Replay insertion is source-channel/session/export routing foundation, not packaged manual listening acceptance.
+
+### Phase19 Hardening Checkpoint — Project Autosave Recovery Foundation
+
+Changed files:
+- `apps/desktop/electron/ProjectDialogs.ts`: added validated project autosave helpers with temp-file write, previous-good backup, read, and clear support.
+- `apps/desktop/electron/main.ts`, `apps/desktop/electron/preload.ts`, `apps/desktop/src/types/localMixer.d.ts`: added `project:write-autosave`, `project:read-autosave`, and `project:clear-autosave` IPC.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: added 5-second debounced autosave after snapshot edits and startup restore prompt for autosaved project content.
+- `tests/electron/project-dialogs.test.ts`: verifies autosave write/read/backup/clear and invalid JSON rejection.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated session/autosave evidence.
+
+Implemented behavior:
+- Autosave writes only validated `.lam.json` project content through Electron main, using native filesystem APIs and atomic temp-to-target rename.
+- The previous autosave is preserved as `previous-good.lam.json` before replacement.
+- Startup can offer to restore autosaved project JSON and then clear the autosave marker after successful restore.
+- Renderer IPC carries project JSON metadata/state only; no PCM or browser audio path is introduced.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 44/44 passed, including autosave helper coverage.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 44/44, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Packaged manual autosave/recovery acceptance remains NOT_RUN.
+- Undo/redo transaction integration and recent-project menus remain pending.

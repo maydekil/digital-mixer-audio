@@ -5,12 +5,15 @@ import { tmpdir } from "node:os";
 import { normalizeExportOutputPath, validateExportOutputPath } from "../../apps/desktop/electron/ExportDialogs";
 import {
   collectProjectMedia,
+  clearProjectAutosave,
   inspectProjectMedia,
   normalizeProjectSavePath,
+  readProjectAutosave,
   readProjectFile,
   relinkProjectMedia,
   validateProjectJson,
   validateProjectOpenPath,
+  writeProjectAutosave,
   writeProjectFile
 } from "../../apps/desktop/electron/ProjectDialogs";
 
@@ -98,6 +101,29 @@ describe("Project dialog path helpers", () => {
       expect(parsed.media.find((item) => item.id === "music")?.path).toBe(copiedPath);
       expect(parsed.channels.find((item) => item.id === "music")?.sourceUid).toBe(copiedPath);
       expect(parsed.media.find((item) => item.id === "missing")?.missing).toBe(true);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("writes, backs up, reads, and clears project autosaves", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "local-mixer-autosave-"));
+    try {
+      const first = "{\"schemaVersion\":1,\"projectId\":\"project-a\",\"media\":[]}";
+      const second = "{\"schemaVersion\":1,\"projectId\":\"project-b\",\"media\":[]}";
+
+      const written = await writeProjectAutosave(directory, first);
+      expect(written).toMatchObject({ ok: true });
+      await expect(readProjectAutosave(directory)).resolves.toMatchObject({ ok: true, content: first });
+
+      const replaced = await writeProjectAutosave(directory, second);
+      expect(replaced).toMatchObject({ ok: true });
+      await expect(readFile(replaced.backupPath ?? "", "utf8")).resolves.toBe(first);
+      await expect(readProjectAutosave(directory)).resolves.toMatchObject({ ok: true, content: second });
+
+      await expect(clearProjectAutosave(directory)).resolves.toMatchObject({ ok: true });
+      await expect(readProjectAutosave(directory)).resolves.toMatchObject({ ok: true, canceled: true });
+      await expect(writeProjectAutosave(directory, "{")).resolves.toMatchObject({ ok: false });
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
