@@ -8,6 +8,7 @@
     "dev:desktop:ui": "node scripts/dev-desktop-ui.mjs",
     "build:desktop:main": "node scripts/build-desktop-main.mjs",
     "build:native:sound-pad": "node scripts/build-native-sound-pad.mjs",
+    "doctor": "node scripts/doctor.mjs",
     "typecheck": "tsc --noEmit",
     "test:ui": "vitest run",
     "build:ui": "tsc --noEmit && vite build && npm run build:desktop:main",

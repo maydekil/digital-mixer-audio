@@ -3,6 +3,7 @@ import type { EqBandDisplay, MeterLevel } from "../components/audio/types";
 export type ChannelKind = "source" | "group" | "master";
 export type ChannelRole = "system" | "vocal" | "instrument" | "music" | "group" | "master";
 export type FxUnitId = "fx-a" | "fx-b";
+export type ProcessorId = "eq" | "comp" | "noise" | "insertFx";
 
 export interface SendState {
   enabled: boolean;
@@ -25,7 +26,9 @@ export interface ChannelState {
   recordArm?: boolean;
   harmonyVisible?: boolean;
   harmonyEnabled?: boolean;
+  processing: Record<ProcessorId, boolean>;
   sends: Record<FxUnitId, SendState>;
+  eqBands: EqBandState[];
   meter: MeterLevel;
 }
 
@@ -76,10 +79,19 @@ export interface MixerSnapshot {
 export interface MixerControlPort {
   getSnapshot(): MixerSnapshot;
   selectChannel(channelId: string): void;
+  setChannelTrim(channelId: string, valueDb: number): void;
+  setChannelPan(channelId: string, value: number): void;
   setChannelFader(channelId: string, valueDb: number): void;
   setChannelSend(channelId: string, unitId: FxUnitId, gainDb: number): void;
+  setChannelMute(channelId: string, muted: boolean): void;
+  setChannelSolo(channelId: string, solo: boolean): void;
+  setChannelMonitor(channelId: string, monitor: boolean): void;
+  setChannelRecordArm(channelId: string, armed: boolean): void;
+  setChannelProcessor(channelId: string, processorId: ProcessorId, enabled: boolean): void;
   setFxProgram(unitId: FxUnitId, programId: number): void;
   setFxEnabled(unitId: FxUnitId, enabled: boolean): void;
+  setFxReturn(unitId: FxUnitId, valueDb: number): void;
+  updateEqBand(bandId: EqBandState["id"], field: "freqHz" | "gainDb" | "qValue" | "type", value: number | string): void;
   resetFxProgram(unitId: FxUnitId): void;
   setHarmonyEnabled(enabled: boolean): void;
   updateHarmony(field: keyof HarmonyState, value: string | number | boolean): void;

@@ -29,4 +29,57 @@ describe("PreviewAdapter", () => {
     expect(snapshot.channels.find((channel) => channel.id === "voice")?.harmonyEnabled).toBe(false);
     expect(snapshot.channels.find((channel) => channel.id === "music")?.harmonyEnabled).toBe(false);
   });
+
+  it("updates channel knobs, faders, and toggle buttons", () => {
+    const adapter = new PreviewAdapter();
+    adapter.setChannelTrim("voice", 4.5);
+    adapter.setChannelPan("voice", -35);
+    adapter.setChannelFader("voice", -11);
+    adapter.setChannelMute("voice", true);
+    adapter.setChannelSolo("voice", true);
+    adapter.setChannelMonitor("voice", false);
+    adapter.setChannelRecordArm("voice", false);
+
+    const voice = adapter.getSnapshot().channels.find((channel) => channel.id === "voice");
+    expect(voice?.trimDb).toBe(4.5);
+    expect(voice?.pan).toBe(-35);
+    expect(voice?.faderDb).toBe(-11);
+    expect(voice?.mute).toBe(true);
+    expect(voice?.solo).toBe(true);
+    expect(voice?.monitor).toBe(false);
+    expect(voice?.recordArm).toBe(false);
+  });
+
+  it("updates FX return and EQ parameter display values", () => {
+    const adapter = new PreviewAdapter();
+    adapter.setFxReturn("fx-a", -18);
+    adapter.updateEqBand("mid1", "freqHz", 1200);
+    adapter.updateEqBand("mid1", "gainDb", 4.5);
+    adapter.updateEqBand("mid1", "qValue", 2);
+
+    const snapshot = adapter.getSnapshot();
+    expect(snapshot.fxUnits.find((unit) => unit.id === "fx-a")?.returnDb).toBe(-18);
+    const mid1 = snapshot.eqBands.find((band) => band.id === "mid1");
+    expect(mid1?.freq).toBe("1.2 kHz");
+    expect(mid1?.gain).toBe("+4.5 dB");
+    expect(mid1?.q).toBe("2.00");
+  });
+
+  it("keeps EQ edits and processor toggles scoped to the selected channel", () => {
+    const adapter = new PreviewAdapter();
+    adapter.setChannelProcessor("voice", "noise", false);
+    adapter.updateEqBand("low", "gainDb", 8);
+    adapter.selectChannel("guitar");
+
+    expect(adapter.getSnapshot().eqBands.find((band) => band.id === "low")?.gain).toBe("+3.0 dB");
+    adapter.setChannelProcessor("guitar", "eq", false);
+
+    const snapshot = adapter.getSnapshot();
+    const voice = snapshot.channels.find((channel) => channel.id === "voice");
+    const guitar = snapshot.channels.find((channel) => channel.id === "guitar");
+    expect(voice?.processing.noise).toBe(false);
+    expect(voice?.eqBands.find((band) => band.id === "low")?.gain).toBe("+8.0 dB");
+    expect(guitar?.processing.eq).toBe(false);
+    expect(guitar?.eqBands.find((band) => band.id === "low")?.gain).toBe("+3.0 dB");
+  });
 });

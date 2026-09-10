@@ -85,7 +85,7 @@ Next exact action:
 - Complete UI-02 layout fidelity.
 
 ## UI-02 — Layout Mixer Fidelity
-Status: IMPLEMENTED_UNVERIFIED
+Status: VERIFIED
 Prerequisites: UI-01 VERIFIED
 
 Changed files:
@@ -121,33 +121,138 @@ Validation:
 
 Known limitations:
 - This is not native audio and does not prove capture, playback, DSP, recording, export, or hardware behavior.
-- Sound Pads are UI preview controls only; no browser audio, Web Audio, sample triggering, or native playback has been implemented.
-- Layout fidelity is close to the reference, but UI-04 final gate still requires completing all specified interactions and a final review.
+- Layout fidelity is close to the reference, but UI-04 final gate still requires final screenshot review before native Phase00.
 
 Next exact action:
 - Complete UI-03 interactions: full control editing, linked SEND A updates from both locations, program search behavior, EQ drag/numeric edits, MON/REC toggles, and edit popover.
 
 ## UI-03 — Interaksi Preview Koheren
-Status: IN_PROGRESS
-Prerequisites: UI-02 IMPLEMENTED_UNVERIFIED
+Status: VERIFIED
+Prerequisites: UI-02 VERIFIED
 
 Changed files:
+- `apps/desktop/src/adapters/MixerControlPort.ts`, `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: expanded preview command contract and state mutation for mixer controls, FX returns, toggles, Harmony level, and EQ bands.
+- `apps/desktop/src/components/audio/RotaryKnob.tsx`, `VerticalFader.tsx`, `EqResponseGraph.tsx`, `NumericParameter.tsx`: reusable controls now accept range/input/drag updates while preserving compact styling.
+- `apps/desktop/src/features/mixer/components/*`, `apps/desktop/src/features/fx/components/*`, `apps/desktop/src/features/processing/components/ChannelProcessingPanel.tsx`, `apps/desktop/src/features/harmony/components/HarmonyQuickPanel.tsx`: UI wires preview interactions to adapter state.
+- `apps/desktop/src/styles/app.css`: pointer-enabled knob/fader styling and compact FX edit popover.
 - `tests/ui/preview-adapter.test.ts`: adapter behavior tests for send linkage, FX program state isolation, and Harmony toggle scope.
+- `tests/ui/visual.visual.ts`: visual screenshots plus UI interaction smoke test.
 
 Implemented behavior:
 - Selecting channel, fader changes, FX program selection, FX ON/OFF, Modified reset, Harmony toggle/config fields, and CLIP reset have preview-state plumbing.
+- Trim, pan, fader, Send A/B knobs, mute, solo, monitor, and record-arm buttons mutate visible preview state.
+- Channel-strip input level is labeled `Gain` to match hardware mixer terminology.
+- Channel processor buttons are stateful per channel: `EQ`, `COMP`, `NOISE`, and `INSERT FX`; the old `GATE` label was replaced with `NOISE`.
+- Active and bypassed channel processor buttons now have distinct visual states: active buttons use cyan border/glow/left accent, bypassed buttons are darker and muted.
+- EQ band settings are scoped to the selected channel in preview state, so editing one channel's EQ does not mutate another channel's EQ.
+- Channel Processing cards dim when the corresponding channel processor is bypassed from the strip.
+- FX A/B return sliders mutate state and mark the edited unit as modified.
+- Program picker is searchable through typed number/name input with Enter/blur commit.
+- EQ graph nodes can be dragged or adjusted with keyboard arrows; Freq/Gain/Q fields commit typed values.
+- Right-side Send A knob and selected channel Send A knob update the same linked state.
+- Harmony Level slider is editable.
+- FX Edit opens a compact popover with return control and current macro values.
 
 Validation:
 - command: `npm run test:ui`
-- exit/result: `0`; 1 file, 3 tests passed.
+- exit/result: `0`; 1 file, 6 tests passed.
+- command: `npm run test:visual`
+- exit/result: `0`; 3 Playwright tests passed, including screenshot capture, `Gain` interaction, active/bypassed processor state assertion, `NOISE` toggle, and preview-control mutation smoke test.
 - command: `npm run verify`
-- exit/result: `0`; plan, file-size, architecture, typecheck, UI unit test, and build passed.
+- exit/result: `0`; plan, file-size, architecture, typecheck, UI unit test, native sound-pad validation, UI build, and Electron main build passed.
 
 Known limitations:
-- UI-03 is not complete: EQ drag, typed numeric commit, full searchable program filtering, MON/REC click handlers, return slider mutation, edit popover behavior, and broader keyboard coverage remain.
+- UI-03 remains preview-only. These controls do not claim native DSP, routing, recording, or hardware behavior.
 
 Next exact action:
-- Finish the remaining UI-03 interaction coverage, rerun visual review, then move UI-04 to `UI_VERIFIED`.
+- Complete UI-04 visual QA/gate with refreshed screenshots and final interaction/layout review, then move to Phase00 native dependency audit.
+
+## UI-04 — Visual QA And Gate Before Engine
+Status: UI_VERIFIED
+Prerequisites: UI-03 VERIFIED
+
+Changed files:
+- `docs/design/Digital Mixer Audio Final.png`: final approved visual reference supplied by the user.
+- `docs/reports/ui/desktop-1680x945.png`, `docs/reports/ui/minimum-1280x800.png`: refreshed visual evidence screenshots.
+- `docs/reports/ui-layout-review.md`: UI-04 visual QA report updated against the final reference.
+- `docs/task-plan.json`: UI-04 moved to `UI_VERIFIED`.
+- `apps/desktop/src/styles/app.css`: left-zone overflow clipped so minimum viewport channel bank does not overlap the right processing panel.
+
+Implemented behavior:
+- Final visual QA uses `docs/design/Digital Mixer Audio Final.png` as the primary reference.
+- UI intentionally reflects the final reference evolution: `Gain` label, `NOISE` processor, Sound Pads panel, active/bypassed processor button states, compact right processing panel, and two-row Harmony tray.
+- Desktop viewport keeps the main mixer bank, right processing panel, Harmony tray, Sound Pads, and footer visible.
+- Minimum viewport remains dense but avoids incoherent overlap; channel bank overflow is contained in the left zone and remains horizontally scrollable.
+
+Validation:
+- command: `file docs/design/Digital Mixer Audio Final.png`
+- exit/result: `0`; PNG image data, `3002 x 1800`, 8-bit RGBA.
+- command: `npm run test:visual`
+- exit/result: `0`; 3 Playwright tests passed and refreshed `desktop-1680x945` plus `minimum-1280x800` screenshots.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, UI tests, native sound-pad validation, UI build, and Electron main build passed before final documentation update.
+
+Known limitations:
+- UI_VERIFIED means layout and preview interactions are accepted; it does not verify native capture, DSP, routing, recording, export, hardware devices, or packaged app behavior.
+- Browser visual tests do not prove audible sound-pad playback; desktop playback remains native helper based.
+
+Next exact action:
+- Start Phase00 native dependency audit: pin JUCE/native toolchain requirements, verify local macOS build prerequisites, and prepare the native engine path without Web Audio/browser fallback.
+
+## Phase00 — Native Dependency Audit
+Status: VERIFIED
+Prerequisites: UI-04 UI_VERIFIED
+
+Changed files:
+- `docs/dependency-manifest.md`: pinned UI/runtime/native dependency manifest, including JUCE tag SHA and macOS deployment target.
+- `docs/adr/0001-native-audio-stack.md`: accepted stack decision for Electron UI plus C++20/JUCE/Core Audio native audio.
+- `docs/reports/doctor-phase00.md`: doctor report from local toolchain audit.
+- `scripts/doctor.mjs`, `package.json`: read-only doctor command for repeatable environment checks.
+- `docs/task-plan.json`: Phase00 moved to `VERIFIED`.
+
+Implemented behavior:
+- Phase00 keeps the UI/Electron shell and native engine boundaries separate.
+- Production audio remains constrained to native C++20/JUCE/Core Audio or approved native workers; no Web Audio/browser fallback was introduced.
+- JUCE is pinned to `8.0.15` at tag SHA `91ad83ae34a81e0833b1a2b0866f54846370ae53`.
+- Initial macOS deployment target is `14.0`; newer Core Audio APIs require runtime availability guards.
+- Doctor script reads environment only and reports tool availability.
+
+Validation:
+- command: `uname -m`
+- exit/result: `0`; `arm64`.
+- command: `sw_vers`
+- exit/result: `0`; macOS `26.6.2`, build `25G83`.
+- command: `xcode-select -p`
+- exit/result: `0`; `/Library/Developer/CommandLineTools`.
+- command: `xcrun --show-sdk-path`
+- exit/result: `0`; `/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk`.
+- command: `xcrun --sdk macosx --show-sdk-version`
+- exit/result: `0`; `26.5`.
+- command: `clang --version`
+- exit/result: `0`; Apple Clang `21.0.0 (clang-2100.1.1.101)`.
+- command: `cmake --version`
+- exit/result: `0`; CMake `4.3.2`.
+- command: `brew install ninja`
+- exit/result: `0`; Ninja installed by Homebrew at version `1.13.2`.
+- command: `ninja --version`
+- exit/result: `0`; `1.13.2`.
+- command: `node --version`
+- exit/result: `0`; `v24.15.0`.
+- command: `npm --version`
+- exit/result: `0`; `11.12.1`.
+- command: `git ls-remote https://github.com/juce-framework/JUCE.git refs/tags/8.0.15 refs/tags/8.0.15^{}`
+- exit/result: `0`; JUCE tag SHA `91ad83ae34a81e0833b1a2b0866f54846370ae53`.
+- command: `npm run doctor`
+- exit/result: `0`; report prints OS/toolchain/package pins and Ninja `1.13.2`.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, UI unit tests, native sound-pad build/asset validation, UI build, and Electron main build passed after Phase00 updates.
+
+Known limitations:
+- No JUCE source has been downloaded or built yet; Phase00 pins the dependency only.
+- No native engine, Core Audio device, DSP, routing, recording, export, or hardware behavior is verified by this phase.
+
+Next exact action:
+- Start Phase01 native executable scaffolding with CMake + Ninja + Apple Clang.
 
 ## Native Sound Pad Spike — Early User-Requested
 Status: IMPLEMENTED_UNVERIFIED_PLAYBACK

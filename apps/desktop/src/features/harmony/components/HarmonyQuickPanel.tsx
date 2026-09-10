@@ -26,7 +26,7 @@ export function HarmonyQuickPanel({ harmony, onToggle, onChange }: HarmonyQuickP
       <div className="harmony-row harmony-secondary-row">
         <label className="harmony-level">
           <span>Harmony Level</span>
-          <input type="range" min="-30" max="6" value={harmony.levelDb} readOnly />
+          <input type="range" min="-30" max="6" value={harmony.levelDb} onChange={(event) => onChange("levelDb", Number(event.target.value))} />
           <strong>{harmony.levelDb.toFixed(1)} dB</strong>
         </label>
         <Button>⚙ Advanced</Button>

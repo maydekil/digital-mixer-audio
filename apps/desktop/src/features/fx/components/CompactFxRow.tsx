@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { FxProgram, FxUnitState } from "../../../adapters/MixerControlPort";
 import { LevelMeter } from "../../../components/audio/LevelMeter";
 import { RotaryKnob } from "../../../components/audio/RotaryKnob";
@@ -11,10 +12,13 @@ interface CompactFxRowProps {
   programs: FxProgram[];
   onProgramChange(programId: number): void;
   onToggle(enabled: boolean): void;
+  onReturn(valueDb: number): void;
   onReset(): void;
 }
 
-export function CompactFxRow({ unit, program, programs, onProgramChange, onToggle, onReset }: CompactFxRowProps) {
+export function CompactFxRow({ unit, program, programs, onProgramChange, onToggle, onReturn, onReset }: CompactFxRowProps) {
+  const [editing, setEditing] = useState(false);
+
   return (
     <section className={`compact-fx-row accent-${unit.accent}`}>
       <div className="fx-power">
@@ -30,11 +34,25 @@ export function CompactFxRow({ unit, program, programs, onProgramChange, onToggl
       <RotaryKnob label={program.macro2.label} value={program.macro2.value} tone={unit.accent} size="sm" />
       <div className="fx-return">
         <span>Return</span>
-        <input type="range" min="-60" max="10" value={unit.returnDb} readOnly aria-label={`${unit.label} return`} />
+        <input type="range" min="-60" max="10" value={unit.returnDb} onChange={(event) => onReturn(Number(event.target.value))} aria-label={`${unit.label} return`} />
         <strong>{unit.returnDb.toFixed(1)} dB</strong>
       </div>
       <LevelMeter level={unit.meter} showChannelLabels />
-      <Button>Edit</Button>
+      <div className="fx-edit-cell">
+        <Button active={editing} onClick={() => setEditing(!editing)}>Edit</Button>
+        {editing ? (
+          <div className="fx-edit-popover" role="dialog" aria-label={`${unit.label} editor`}>
+            <strong>{program.name}</strong>
+            <label>
+              Return
+              <input type="range" min="-60" max="10" value={unit.returnDb} onChange={(event) => onReturn(Number(event.target.value))} />
+              <span>{unit.returnDb.toFixed(1)} dB</span>
+            </label>
+            <p>{program.macro1.label}: {program.macro1.value}</p>
+            <p>{program.macro2.label}: {program.macro2.value}</p>
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }

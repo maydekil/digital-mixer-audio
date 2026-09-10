@@ -1,6 +1,13 @@
 import type { MixerSnapshot } from "../adapters/MixerControlPort";
 import { fxPrograms } from "./fxPrograms";
 
+const baseEqBands = [
+  { id: "low", label: "LOW", color: "#58F28A", freqHz: 100, gainDb: 3, freq: "100 Hz", gain: "+3.0 dB", type: "Shelf" },
+  { id: "mid1", label: "MID 1", color: "#FFB843", freqHz: 350, gainDb: -2.5, qValue: 1.2, freq: "350 Hz", gain: "-2.5 dB", q: "1.20" },
+  { id: "mid2", label: "MID 2", color: "#1FA8FF", freqHz: 2500, gainDb: 2, qValue: 1, freq: "2.5 kHz", gain: "+2.0 dB", q: "1.00" },
+  { id: "high", label: "HIGH", color: "#B862F0", freqHz: 10000, gainDb: 4, freq: "10.0 kHz", gain: "+4.0 dB", type: "Shelf" }
+] as const;
+
 export const approvedMixerSession: MixerSnapshot = {
   modeLabel: "UI PREVIEW · Audio engine not connected",
   projectName: "Local Audio Mixer",
@@ -22,16 +29,13 @@ export const approvedMixerSession: MixerSnapshot = {
     {
       id: "master", name: "MASTER", source: "Output 1-2", kind: "master", role: "master",
       trimDb: 0, pan: 0, faderDb: -1, mute: false, solo: false,
+      processing: { eq: true, comp: false, noise: false, insertFx: false },
       sends: { "fx-a": { enabled: false, gainDb: 0 }, "fx-b": { enabled: false, gainDb: 0 } },
+      eqBands: cloneEqBands(),
       meter: { left: -4, right: -5, clip: true }
     }
   ],
-  eqBands: [
-    { id: "low", label: "LOW", color: "#58F28A", freq: "100 Hz", gain: "+3.0 dB", type: "Shelf" },
-    { id: "mid1", label: "MID 1", color: "#FFB843", freq: "350 Hz", gain: "-2.5 dB", q: "1.20" },
-    { id: "mid2", label: "MID 2", color: "#1FA8FF", freq: "2.5 kHz", gain: "+2.0 dB", q: "1.00" },
-    { id: "high", label: "HIGH", color: "#B862F0", freq: "10.0 kHz", gain: "+4.0 dB", type: "Shelf" }
-  ],
+  eqBands: cloneEqBands(),
   harmony: { enabled: true, key: "C", scale: "Major", voice1: "+3rd", voice2: "+5th", levelDb: 0 }
 };
 
@@ -40,10 +44,16 @@ function channel(id: string, name: string, source: string, role: "system" | "voc
     id, name, source, kind: role === "group" ? "group" as const : "source" as const, role,
     selected: id === "voice", trimDb: 0, pan: 0, faderDb, mute: false, solo: false,
     monitor: mon, recordArm: rec, harmonyVisible: role === "vocal", harmonyEnabled: role === "vocal",
+    processing: { eq: true, comp: role === "vocal", noise: role === "vocal", insertFx: role === "vocal" },
     sends: {
       "fx-a": { enabled: sendA !== 0, gainDb: sendA },
       "fx-b": { enabled: sendB !== 0, gainDb: sendB }
     },
+    eqBands: cloneEqBands(),
     meter: { left: Math.max(-32, faderDb - 2), right: Math.max(-32, faderDb - 4), clip: id === "voice" || id === "guitar" || id === "music" }
   };
+}
+
+function cloneEqBands() {
+  return baseEqBands.map((band) => ({ ...band }));
 }

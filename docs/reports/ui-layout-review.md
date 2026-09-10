@@ -1,8 +1,9 @@
 # UI Layout Review
 
-Status: IMPLEMENTED_UNVERIFIED pending final `verify` run.
+Status: UI_VERIFIED.
 
 Reference:
+- `docs/design/Digital Mixer Audio Final.png`
 - `docs/design/Digital Mixer Audio.png`
 
 Screenshots:
@@ -10,6 +11,7 @@ Screenshots:
 - `docs/reports/ui/minimum-1280x800.png`
 
 Verified visually:
+- Final reference image is available at `docs/design/Digital Mixer Audio Final.png` and includes the intentional evolution from the earlier reference: `Gain`, `NOISE`, Sound Pads, active/bypassed processor buttons, and compact right-side processing.
 - Compact FX A and FX B rows remain above the mixer.
 - Mixer bank sits on the left and Channel Processing remains visible on the right.
 - VOICE strip is highlighted and includes distinct `INSERT FX` and `HARMONY ON` controls.
@@ -30,9 +32,14 @@ Verified visually:
 - Sound Pad panel now surfaces playback/error status directly, and desktop dev startup rebuilds the native helper and Electron bridge before launch.
 - Electron bridge is now loaded via copied CommonJS preload `dist/electron/preload.cjs`, which exposes `window.localMixer.playSoundPad` for the sound pad buttons.
 - Sound Pad assets are local CC0 WAV samples documented in `docs/reports/sound-pad-assets.md`; they are no longer procedural placeholder sounds.
+- Mixer preview controls now mutate state visibly: Gain, pan, fader, Send A/B, mute, solo, MON, REC, FX returns, Harmony level, searchable FX program picker, EQ graph nodes, and numeric EQ inputs.
+- Channel strip processing buttons are per-channel toggles for `EQ`, `COMP`, `NOISE`, and `INSERT FX`; the right processing cards dim when bypassed.
+- EQ settings are scoped to the selected channel in preview state.
+- FX Edit opens a compact preview popover with the return slider and current macro values.
+- Minimum viewport keeps the right processing panel readable; channel bank overflow is clipped to its left zone and remains horizontally scrollable instead of overlapping the right panel.
 
 Known visual limitations:
-- The 1280x800 layout is intentionally dense; lower-priority helper text in the Harmony tray is hidden at that breakpoint.
+- The 1280x800 layout is intentionally dense; the full channel bank may require horizontal scrolling and lower-priority helper text in the Harmony tray is hidden at that breakpoint.
 - Native telemetry, audio meters, engine status, recording, and hardware state are preview fixtures only.
 - Sound Pad audio still requires the Electron desktop app with an available macOS output device; browser UI preview does not play audio.
 

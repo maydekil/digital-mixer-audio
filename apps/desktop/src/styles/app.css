@@ -54,9 +54,15 @@
 .preset-count { color: #a8c8d1; width: 82px; }
 .fx-return { width: 330px; max-width: 100%; justify-self: end; display: grid; grid-template-columns: 52px minmax(120px, 1fr) 62px; align-items: center; gap: 7px; min-width: 0; }
 .fx-return input, .horizontal-slider input, .harmony-level input, .footer-bar input { accent-color: var(--cyan); }
+.fx-edit-cell { position: relative; min-width: 0; }
+.fx-edit-popover { position: absolute; z-index: 8; right: 0; top: 34px; width: 218px; display: grid; gap: 7px; padding: 9px; border: 1px solid #2d6674; border-radius: 6px; background: #0b222b; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.36); color: var(--text); }
+.fx-edit-popover strong { font-size: 11px; font-weight: 520; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fx-edit-popover label { display: grid; grid-template-columns: 44px 1fr 54px; align-items: center; gap: 6px; font-size: 10px; }
+.fx-edit-popover input { accent-color: currentColor; min-width: 0; }
+.fx-edit-popover p { margin: 0; color: #bde7ef; font-size: 10px; line-height: 1.2; }
 
 .workspace { display: grid; grid-template-columns: minmax(650px, 60fr) minmax(390px, 40fr); gap: 8px; padding: 8px 10px; min-height: 0; min-width: 0; }
-.left-zone { min-width: 0; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) 96px; gap: 7px; }
+.left-zone { min-width: 0; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) 96px; gap: 7px; overflow: hidden; }
 .right-zone { min-width: 0; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) 112px; gap: 8px; }
 .channel-bank { display: flex; gap: 8px; min-width: 0; min-height: 0; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; }
 .channel-strip { flex: 0 0 140px; height: 100%; min-height: 0; display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: linear-gradient(180deg, rgba(17, 45, 55, 0.96), rgba(8, 22, 28, 0.96)); box-shadow: var(--shadow); overflow: hidden; }
@@ -65,6 +71,8 @@
 .channel-strip header strong { display: block; color: #f7f7f7; font-size: 12px; font-weight: 520; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .channel-strip header span { display: block; margin-top: 4px; color: #e2f2f6; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .processing-buttons { display: grid; gap: 5px; }
+.processing-buttons .ui-button:not(.is-active) { color: #8faeb7; border-color: #214957; background: #09222b; box-shadow: inset 3px 0 0 rgba(95, 126, 137, 0.28); }
+.processing-buttons .ui-button.is-active { text-shadow: 0 0 7px rgba(24, 214, 231, 0.36); }
 .master-upper { display: grid; grid-template-rows: 24px 1fr; gap: 4px; min-height: 140px; }
 .master-upper-spacer { min-height: 101px; }
 .harmony-shortcut { display: grid; grid-template-columns: 1fr 28px; gap: 4px; min-height: 27px; }
@@ -95,6 +103,8 @@
 .channel-strip.is-master .level-meter.vertical { flex: 1 1 auto; min-height: 0; }
 
 .ui-button { min-height: 24px; color: var(--text); border: 1px solid #2d6674; border-radius: 5px; background: #0c2530; padding: 2px 7px; font-weight: 430; line-height: 1.05; overflow: hidden; text-overflow: ellipsis; }
+.ui-button:hover { border-color: #4e8794; background: #10313c; }
+.ui-button.is-active.tone-neutral { color: #eaffff; border-color: var(--cyan); background: linear-gradient(180deg, #123d49, #0d2b35); box-shadow: inset 3px 0 0 var(--cyan), inset 0 0 14px rgba(24, 214, 231, 0.18); }
 .ui-button.is-active.tone-cyan { border-color: var(--cyan); box-shadow: inset 0 0 15px rgba(24, 214, 231, 0.24); }
 .ui-button.is-active.tone-amber { border-color: var(--amber); box-shadow: inset 0 0 15px rgba(243, 200, 66, 0.25); }
 .ui-button.is-active.tone-violet { border-color: var(--violet); color: #f7d9ff; box-shadow: inset 0 0 15px rgba(184, 98, 240, 0.36); }
@@ -105,7 +115,8 @@
 .rotary-label { color: var(--text); font-size: 10px; margin-bottom: 4px; font-weight: 380; letter-spacing: 0.01em; }
 .rotary-face { position: relative; width: 33px; height: 33px; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle, #0b1519 35%, #132e37 36%, #03080a 70%); border: 2px solid #103942; box-shadow: 0 0 0 1px rgba(24, 214, 231, 0.34); }
 .rotary.sm .rotary-face { width: 31px; height: 31px; }
-.rotary-tick { position: absolute; width: 3px; height: 13px; left: 50%; top: 4px; background: currentColor; transform: rotate(25deg); transform-origin: bottom; }
+.rotary-tick { position: absolute; width: 3px; height: 13px; left: 50%; top: 4px; background: currentColor; transform-origin: 50% 12px; pointer-events: none; }
+.rotary-face input { position: absolute; inset: -8px; opacity: 0; cursor: ns-resize; }
 .rotary-value { margin-top: 4px; font-variant-numeric: tabular-nums; font-size: 11px; line-height: 1.1; font-weight: 400; }
 .rotary.tone-amber { color: var(--amber); }
 .rotary.tone-violet { color: var(--violet); }
@@ -113,7 +124,7 @@
 .vertical-fader { display: grid; grid-template-columns: 34px 28px; column-gap: 4px; justify-content: center; }
 .fader-scale { display: flex; flex-direction: column; justify-content: space-between; height: 80px; color: #d9eef3; font-size: 10px; text-align: right; }
 .fader-track { position: relative; height: 80px; width: 24px; display: block; }
-.fader-track input { position: absolute; opacity: 0; pointer-events: none; }
+.fader-track input { position: absolute; inset: 0; z-index: 2; opacity: 0; cursor: ns-resize; writing-mode: vertical-lr; direction: rtl; }
 .fader-rail { position: absolute; inset: 0 11px; background: #071015; border: 1px solid #22434c; }
 .fader-cap { position: absolute; left: 0; width: 24px; height: 13px; border-radius: 2px; background: linear-gradient(#f6fbff, #9ba9ad 50%, #f6fbff); transform: translateY(50%); }
 .fader-readout { grid-column: 1 / 3; text-align: center; margin-top: 5px; font-variant-numeric: tabular-nums; font-size: 11px; font-weight: 400; }
@@ -146,6 +157,8 @@
 .processing-header p { margin: 2px 0 0; color: #c9e3ea; font-size: 12px; line-height: 1.1; }
 .processing-header .ui-button { margin-left: auto; }
 .processor-card { border: 1px solid #2c4b55; border-radius: 7px; background: rgba(14, 40, 49, 0.7); padding: 7px; min-width: 0; }
+.processor-card.is-bypassed { opacity: 0.48; }
+.processor-card.is-bypassed .processor-title > span { color: #6f8790; }
 .processor-title { display: flex; align-items: center; gap: 9px; margin-bottom: 6px; font-size: 11px; }
 .processor-title strong { font-weight: 470; }
 .processor-title > span { color: var(--cyan); font-size: 16px; }

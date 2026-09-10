@@ -25,15 +25,23 @@ export function MixerPage() {
     <main className="mixer-app">
       <TopBar projectName={snapshot.projectName} time={snapshot.transportTime} rate={snapshot.sampleRateLabel} status={snapshot.engineStatus} mode={snapshot.modeLabel} />
       <div className="fx-stack">
-        <CompactFxRow unit={fxA} program={programA} programs={snapshot.programs} onProgramChange={(id) => refresh(() => adapter.setFxProgram("fx-a", id))} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-a", enabled))} onReset={() => refresh(() => adapter.resetFxProgram("fx-a"))} />
-        <CompactFxRow unit={fxB} program={programB} programs={snapshot.programs} onProgramChange={(id) => refresh(() => adapter.setFxProgram("fx-b", id))} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-b", enabled))} onReset={() => refresh(() => adapter.resetFxProgram("fx-b"))} />
+        <CompactFxRow unit={fxA} program={programA} programs={snapshot.programs} onProgramChange={(id) => refresh(() => adapter.setFxProgram("fx-a", id))} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-a", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-a", value))} onReset={() => refresh(() => adapter.resetFxProgram("fx-a"))} />
+        <CompactFxRow unit={fxB} program={programB} programs={snapshot.programs} onProgramChange={(id) => refresh(() => adapter.setFxProgram("fx-b", id))} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-b", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-b", value))} onReset={() => refresh(() => adapter.resetFxProgram("fx-b"))} />
       </div>
       <section className="workspace">
         <div className="left-zone">
           <ChannelBank
             channels={snapshot.channels}
             onSelect={(id) => refresh(() => adapter.selectChannel(id))}
+            onTrim={(id, value) => refresh(() => adapter.setChannelTrim(id, value))}
+            onPan={(id, value) => refresh(() => adapter.setChannelPan(id, value))}
             onFader={(id, value) => refresh(() => adapter.setChannelFader(id, value))}
+            onSend={(id, unitId, value) => refresh(() => adapter.setChannelSend(id, unitId, value))}
+            onMute={(id, muted) => refresh(() => adapter.setChannelMute(id, muted))}
+            onSolo={(id, solo) => refresh(() => adapter.setChannelSolo(id, solo))}
+            onMonitor={(id, monitor) => refresh(() => adapter.setChannelMonitor(id, monitor))}
+            onRecordArm={(id, armed) => refresh(() => adapter.setChannelRecordArm(id, armed))}
+            onProcessor={(id, processorId, enabled) => refresh(() => adapter.setChannelProcessor(id, processorId, enabled))}
             onClipReset={(id) => refresh(() => adapter.resetClip(id))}
             onHarmonyToggle={() => refresh(() => adapter.setHarmonyEnabled(!snapshot.harmony.enabled))}
           />
@@ -44,7 +52,13 @@ export function MixerPage() {
           />
         </div>
         <div className="right-zone">
-          <ChannelProcessingPanel channel={selected} eqBands={snapshot.eqBands} linkedProgram={programA} />
+          <ChannelProcessingPanel
+            channel={selected}
+            eqBands={selected.eqBands}
+            linkedProgram={programA}
+            onSendA={(value) => refresh(() => adapter.setChannelSend(selected.id, "fx-a", value))}
+            onEqChange={(bandId, field, value) => refresh(() => adapter.updateEqBand(bandId, field, value))}
+          />
           <SoundPadPanel />
         </div>
       </section>
