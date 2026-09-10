@@ -35,6 +35,30 @@ struct SessionFxSendAssignment {
   float gainDb = -90.0f;
 };
 
+struct SessionChannelState {
+  std::string id;
+  std::string name;
+  std::string kind = "source";
+  std::string role = "other";
+  std::string sourceUid;
+  bool enabled = true;
+  bool muted = false;
+  bool solo = false;
+  bool monitor = false;
+  bool recordArm = false;
+  bool eqEnabled = false;
+  bool noiseEnabled = false;
+  bool compEnabled = false;
+  bool insertFxEnabled = false;
+  float gainDb = 0.0f;
+  float faderDb = 0.0f;
+  float pan = 0.0f;
+  float noiseThresholdDb = -50.0f;
+  float noiseRangeDb = -80.0f;
+  float compThresholdDb = -18.0f;
+  float compRatio = 3.0f;
+};
+
 struct SessionChannelHarmonyState {
   std::string channelId;
   std::string contentRole = "other";
@@ -71,6 +95,7 @@ struct SessionDocument {
   std::uint32_t schemaVersion = kCurrentSessionSchemaVersion;
   std::string projectId;
   std::vector<SessionMediaRef> media;
+  std::vector<SessionChannelState> channels;
   std::vector<SessionFxUnitState> fxUnits;
   std::vector<SessionFxSendAssignment> fxSends;
   std::vector<SessionChannelHarmonyState> channelHarmony;

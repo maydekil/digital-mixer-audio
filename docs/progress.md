@@ -2544,3 +2544,23 @@ Validation:
 
 Known limitations:
 - Hardware listening of the configured NOISE gate through the desktop monitor path is NOT_RUN in this environment.
+
+### Phase19 Hardening Checkpoint — Channel State Session Persistence
+
+Changed files:
+- `native/engine/src/engine/SessionDocument.hpp`, `native/engine/src/engine/SessionDocument.cpp`: added `SessionChannelState` with channel identity, kind/role/source UID, enable/mute/solo/monitor/record-arm state, strip gain/fader/pan, processor toggles, and core noise/compressor parameters.
+- `native/engine/tests/SessionDocumentTest.cpp`: verifies channel state save/load roundtrip and backward-compatible legacy sessions without channel state.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated channel/session evidence.
+
+Implemented behavior:
+- Native session documents now have a concrete save field for mixer channel strip state instead of only media/FX/harmony/plugin/take metadata.
+- Save/open contract coverage now includes source UID, channel role, MON/REC state, and processor-related strip settings.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-session-document-tests && ctest --test-dir native/engine/build -R local-mixer-session-document-tests --output-on-failure`
+- exit/result: `0`; focused session document test passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 19/19, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- Desktop Project menu save/open/relink UI remains partial; this checkpoint only strengthens the native session document contract.

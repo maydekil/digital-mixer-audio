@@ -61,6 +61,34 @@ std::string serializeSession(const SessionDocument& document) {
   }
   if (!document.media.empty()) json << "\n  ";
   json << "],\n";
+  json << "  \"channels\": [";
+  for (std::size_t index = 0; index < document.channels.size(); index += 1) {
+    const auto& channel = document.channels[index];
+    json << (index == 0 ? "\n" : ",\n");
+    json << "    {\"id\": \"" << escapeJson(channel.id)
+         << "\", \"name\": \"" << escapeJson(channel.name)
+         << "\", \"kind\": \"" << escapeJson(channel.kind)
+         << "\", \"role\": \"" << escapeJson(channel.role)
+         << "\", \"sourceUid\": \"" << escapeJson(channel.sourceUid)
+         << "\", \"enabled\": " << (channel.enabled ? "true" : "false")
+         << ", \"muted\": " << (channel.muted ? "true" : "false")
+         << ", \"solo\": " << (channel.solo ? "true" : "false")
+         << ", \"monitor\": " << (channel.monitor ? "true" : "false")
+         << ", \"recordArm\": " << (channel.recordArm ? "true" : "false")
+         << ", \"eqEnabled\": " << (channel.eqEnabled ? "true" : "false")
+         << ", \"noiseEnabled\": " << (channel.noiseEnabled ? "true" : "false")
+         << ", \"compEnabled\": " << (channel.compEnabled ? "true" : "false")
+         << ", \"insertFxEnabled\": " << (channel.insertFxEnabled ? "true" : "false")
+         << ", \"gainDb\": " << channel.gainDb
+         << ", \"faderDb\": " << channel.faderDb
+         << ", \"pan\": " << channel.pan
+         << ", \"noiseThresholdDb\": " << channel.noiseThresholdDb
+         << ", \"noiseRangeDb\": " << channel.noiseRangeDb
+         << ", \"compThresholdDb\": " << channel.compThresholdDb
+         << ", \"compRatio\": " << channel.compRatio << "}";
+  }
+  if (!document.channels.empty()) json << "\n  ";
+  json << "],\n";
   json << "  \"fxUnits\": [";
   for (std::size_t index = 0; index < document.fxUnits.size(); index += 1) {
     const auto& unit = document.fxUnits[index];
@@ -148,6 +176,35 @@ SessionLoadResult parseSession(std::string_view json) {
       .id = (*it)[1].str(),
       .path = (*it)[2].str(),
       .missing = (*it)[3].str() == "true",
+    });
+  }
+
+  const std::regex channelPattern("\\{\"id\"\\s*:\\s*\"([^\"]*)\",\\s*\"name\"\\s*:\\s*\"([^\"]*)\",\\s*\"kind\"\\s*:\\s*\"([^\"]*)\",\\s*\"role\"\\s*:\\s*\"([^\"]*)\",\\s*\"sourceUid\"\\s*:\\s*\"([^\"]*)\",\\s*\"enabled\"\\s*:\\s*(true|false),\\s*\"muted\"\\s*:\\s*(true|false),\\s*\"solo\"\\s*:\\s*(true|false),\\s*\"monitor\"\\s*:\\s*(true|false),\\s*\"recordArm\"\\s*:\\s*(true|false),\\s*\"eqEnabled\"\\s*:\\s*(true|false),\\s*\"noiseEnabled\"\\s*:\\s*(true|false),\\s*\"compEnabled\"\\s*:\\s*(true|false),\\s*\"insertFxEnabled\"\\s*:\\s*(true|false),\\s*\"gainDb\"\\s*:\\s*(-?\\d+(?:\\.\\d+)?),\\s*\"faderDb\"\\s*:\\s*(-?\\d+(?:\\.\\d+)?),\\s*\"pan\"\\s*:\\s*(-?\\d+(?:\\.\\d+)?),\\s*\"noiseThresholdDb\"\\s*:\\s*(-?\\d+(?:\\.\\d+)?),\\s*\"noiseRangeDb\"\\s*:\\s*(-?\\d+(?:\\.\\d+)?),\\s*\"compThresholdDb\"\\s*:\\s*(-?\\d+(?:\\.\\d+)?),\\s*\"compRatio\"\\s*:\\s*(-?\\d+(?:\\.\\d+)?)\\}");
+  for (auto it = std::cregex_iterator(json.data(), json.data() + json.size(), channelPattern);
+       it != std::cregex_iterator();
+       ++it) {
+    document.channels.push_back(SessionChannelState{
+      .id = (*it)[1].str(),
+      .name = (*it)[2].str(),
+      .kind = (*it)[3].str(),
+      .role = (*it)[4].str(),
+      .sourceUid = (*it)[5].str(),
+      .enabled = (*it)[6].str() == "true",
+      .muted = (*it)[7].str() == "true",
+      .solo = (*it)[8].str() == "true",
+      .monitor = (*it)[9].str() == "true",
+      .recordArm = (*it)[10].str() == "true",
+      .eqEnabled = (*it)[11].str() == "true",
+      .noiseEnabled = (*it)[12].str() == "true",
+      .compEnabled = (*it)[13].str() == "true",
+      .insertFxEnabled = (*it)[14].str() == "true",
+      .gainDb = std::stof((*it)[15].str()),
+      .faderDb = std::stof((*it)[16].str()),
+      .pan = std::stof((*it)[17].str()),
+      .noiseThresholdDb = std::stof((*it)[18].str()),
+      .noiseRangeDb = std::stof((*it)[19].str()),
+      .compThresholdDb = std::stof((*it)[20].str()),
+      .compRatio = std::stof((*it)[21].str()),
     });
   }
 

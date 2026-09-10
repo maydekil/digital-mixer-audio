@@ -8,6 +8,7 @@ namespace {
 
 using localmixer::engine::SessionDocument;
 using localmixer::engine::SessionError;
+using localmixer::engine::SessionChannelState;
 using localmixer::engine::SessionChannelHarmonyState;
 using localmixer::engine::SessionFxSendAssignment;
 using localmixer::engine::SessionFxUnitState;
@@ -32,6 +33,29 @@ int main() {
   document.projectId = "project-a";
   document.media.push_back(SessionMediaRef{.id = "music", .path = "Media/music.wav"});
   document.media.push_back(SessionMediaRef{.id = "missing", .path = "/missing/file.wav", .missing = true});
+  document.channels.push_back(SessionChannelState{
+    .id = "voice",
+    .name = "VOICE",
+    .kind = "source",
+    .role = "vocal",
+    .sourceUid = "USB Mic",
+    .enabled = true,
+    .muted = false,
+    .solo = true,
+    .monitor = true,
+    .recordArm = true,
+    .eqEnabled = true,
+    .noiseEnabled = true,
+    .compEnabled = true,
+    .insertFxEnabled = true,
+    .gainDb = 1.5f,
+    .faderDb = -6.0f,
+    .pan = 0.25f,
+    .noiseThresholdDb = -48.0f,
+    .noiseRangeDb = -72.0f,
+    .compThresholdDb = -22.0f,
+    .compRatio = 4.0f,
+  });
   document.fxUnits.push_back(SessionFxUnitState{
     .unitId = "fx-a",
     .programId = 12,
@@ -82,6 +106,14 @@ int main() {
   if (loaded.error != SessionError::none || loaded.document.projectId != "project-a" || loaded.document.media.size() != 2 ||
       !loaded.document.media[1].missing || loaded.document.fxUnits.size() != 1 || loaded.document.fxSends.size() != 1 ||
       loaded.document.fxUnits[0].macro1Value != "2.2 s" || loaded.document.fxSends[0].gainDb != -18.0f ||
+      loaded.document.channels.size() != 1 ||
+      loaded.document.channels[0].sourceUid != "USB Mic" ||
+      !loaded.document.channels[0].solo ||
+      !loaded.document.channels[0].monitor ||
+      !loaded.document.channels[0].recordArm ||
+      !loaded.document.channels[0].insertFxEnabled ||
+      loaded.document.channels[0].noiseRangeDb != -72.0f ||
+      loaded.document.channels[0].compRatio != 4.0f ||
       loaded.document.channelHarmony.size() != 1 ||
       loaded.document.channelHarmony[0].primaryHarmonyInstanceId != "harmony:voice:primary" ||
       loaded.document.plugins.size() != 1 || loaded.document.plugins[0].stateBase64 != "AQID" ||
@@ -97,6 +129,7 @@ int main() {
 
   const auto legacy = parseSession("{\"schemaVersion\":1,\"projectId\":\"legacy\",\"media\":[]}");
   if (legacy.error != SessionError::none || !legacy.document.fxUnits.empty() || !legacy.document.fxSends.empty() ||
+      !legacy.document.channels.empty() ||
       !legacy.document.channelHarmony.empty() || !legacy.document.plugins.empty() ||
       !legacy.document.recordedTakes.empty()) {
     std::cerr << "legacy session without FX state should load with empty FX vectors\n";
