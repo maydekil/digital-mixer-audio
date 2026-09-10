@@ -1624,3 +1624,27 @@ Validation:
 Known limitations:
 - MIXFX-00 is contract/registry work only; no dedicated FX A/B wet-only bus processing is implemented in this checkpoint.
 - Program switching crossfade, ACK state, session persistence, automation/MIDI mapping, and return stem export remain pending in MIXFX-01 through MIXFX-05.
+
+## MIXFX-01 — Two FX Buses And Per-Channel Sends
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: MIXFX-00 IMPLEMENTED_UNVERIFIED
+
+### MIXFX-01 Checkpoint — Native Wet-Only Send/Return Bus Foundation
+
+Changed files:
+- `native/engine/src/engine/FxSendReturnBus.hpp`, `native/engine/src/engine/FxSendReturnBus.cpp`: added a native two-bus FX send/return mixer with per-channel send A/B state, independent unit enable/mute/return gain, preallocated send/wet buffers, post-fader send gain, wet-only return summing, and independent input/return meters.
+- `native/engine/tests/FxSendReturnBusTest.cpp`: verifies VOICE send A does not affect B, MUSIC send OFF does not feed return, unit OFF produces wet silence without dry bypass/leak, FX B remains independent from FX A state, and muted channels feed neither main nor sends.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired MIXFX-01 build/test/progress evidence.
+
+Implemented behavior:
+- FX A and FX B are represented as independent native wet-only buses.
+- Unit OFF does not pass dry signal through the return path; dry channel contribution remains owned by the main mix.
+- Channel mute cuts both main and FX send contribution for that channel.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 30/30 including `local-mixer-fx-send-return-bus-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- The bus module is not yet wired into `MixerGraph` realtime processing, Electron IPC, compact FX rows, or the offline exporter.
+- Feedback-edge rejection through the route editor and return stem export remain pending in MIXFX-02 through MIXFX-05.

@@ -25,6 +25,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/EngineRuntime.cpp
   src/engine/Export.cpp
   src/engine/FxProgramRegistry.cpp
+  src/engine/FxSendReturnBus.cpp
   src/engine/Metronome.cpp
   src/engine/MediaFile.cpp
   src/engine/MediaImportJob.cpp
@@ -142,6 +143,15 @@ target_link_libraries(local-mixer-fx-program-registry-tests PRIVATE local_mixer_
 target_compile_features(local-mixer-fx-program-registry-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-fx-program-registry-tests COMMAND local-mixer-fx-program-registry-tests)
+
+add_executable(local-mixer-fx-send-return-bus-tests
+  tests/FxSendReturnBusTest.cpp
+)
+
+target_link_libraries(local-mixer-fx-send-return-bus-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-fx-send-return-bus-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-fx-send-return-bus-tests COMMAND local-mixer-fx-send-return-bus-tests)
 
 add_executable(local-mixer-output-protection-tests
   tests/OutputProtectionTest.cpp
