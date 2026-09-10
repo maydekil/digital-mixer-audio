@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "engine/MixerControlQueue.hpp"
+
 namespace localmixer::engine {
 
 constexpr std::size_t kMaxMixerStrips = 32;
@@ -14,11 +16,6 @@ constexpr std::size_t kMaxMixerStrips = 32;
 enum class SourceAssignment {
   mono,
   stereo,
-};
-
-struct StripId {
-  std::uint32_t value = 0;
-  friend bool operator==(StripId left, StripId right) { return left.value == right.value; }
 };
 
 struct StripConfig {
@@ -54,14 +51,6 @@ struct StereoOutput {
   std::span<float> right;
 };
 
-enum class MixerError {
-  none,
-  graphFull,
-  staleStripId,
-  invalidSource,
-  invalidBuffer,
-};
-
 struct CreateStripResult {
   MixerError error = MixerError::none;
   StripId id;
@@ -69,6 +58,8 @@ struct CreateStripResult {
 
 class MixerGraph {
  public:
+  MixerGraph();
+
   CreateStripResult createStrip(std::string name, std::string color);
   MixerError removeStrip(StripId id);
   MixerError renameStrip(StripId id, std::string name);
@@ -79,19 +70,36 @@ class MixerGraph {
   MixerError setSolo(StripId id, bool solo);
   MixerError setEnabled(StripId id, bool enabled);
   MixerError setInputMonitoring(StripId id, bool enabled);
+  MixerError enqueueControl(MixerCommand command);
+  MixerError applyQueuedControls(std::uint32_t rampFrames);
   MixerError process(std::span<const SourceBuffer> sources, StereoOutput output);
 
   std::optional<StripConfig> strip(StripId id) const;
   std::optional<StripMeters> meters(StripId id) const;
+  std::size_t pendingControlCount() const;
   std::size_t stripCount() const;
 
  private:
+  struct StripRuntime {
+    float currentGain = 1.0f;
+    float targetGain = 1.0f;
+    float gainStep = 0.0f;
+    float currentPan = 0.0f;
+    float targetPan = 0.0f;
+    float panStep = 0.0f;
+    std::uint32_t remainingRampFrames = 0;
+  };
+
+  MixerError setLevelAt(std::size_t index, float trimDb, float faderDb, float pan, std::uint32_t rampFrames);
   std::optional<std::size_t> indexOf(StripId id) const;
   bool anySolo() const;
+  void advanceRuntime(StripRuntime& runtime);
 
   std::uint32_t nextId_ = 1;
+  MixerControlQueue controlQueue_;
   std::vector<StripConfig> strips_;
   std::vector<StripMeters> meters_;
+  std::vector<StripRuntime> runtimes_;
 };
 
 const char* mixerErrorName(MixerError error);

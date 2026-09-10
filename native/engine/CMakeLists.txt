@@ -3,7 +3,9 @@ add_library(local_mixer_dsp STATIC
   src/dsp/OutputProtection.cpp
   src/engine/DeviceService.cpp
   src/engine/EngineRuntime.cpp
+  src/engine/MixerControlQueue.cpp
   src/engine/MixerGraph.cpp
+  src/engine/MixerGraphController.cpp
 )
 
 target_include_directories(local_mixer_dsp PUBLIC src)

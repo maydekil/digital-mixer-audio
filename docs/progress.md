@@ -6,7 +6,7 @@ Specification: `docs/specs/AUDIO-MIXER-AI-IMPLEMENTATION.md` revision 1.7.
 
 - Current gate: Phase05 multi-source engine/channel strip foundation.
 - Reference image: `docs/design/Digital Mixer Audio.png`; visual target is available and inspected.
-- Native audio engine: `PHASE03_FOUNDATION_IMPLEMENTED_UNVERIFIED`; native sound-pad spike remains separate early user-requested work.
+- Native audio engine: `PHASE05_GRAPH_FOUNDATION_IMPLEMENTED_UNVERIFIED`; native sound-pad spike remains separate early user-requested work.
 - Product completion: `NOT_STARTED`; UI work is not DSP, hardware, or package acceptance.
 
 ## UI-00 — Audit Frontend And Design Contract
@@ -443,12 +443,31 @@ Validation:
 - exit/result: `0`; CMake/Ninja build passed, CTest passed 5/5 including `local-mixer-graph-tests`, engine self-test passed, engine version reported `0.1.0-phase05-foundation`, device/protocol smoke passed.
 
 Known limitations:
-- Phase05 is not fully acceptance-verified yet: graph update prepare/publish/reclaim and bounded parameter queue are not implemented.
-- Ramp smoothing is not implemented yet; current fader/trim/pan changes are immediate in the fixture graph.
+- Phase05 is not fully acceptance-verified yet: graph update prepare/publish/reclaim and bounded parameter queue are implemented and unit-tested, but not wired as the persistent realtime callback owner used by desktop MON.
 - The graph is not yet the persistent realtime callback owner used by the desktop MON button; short Phase03 monitor command remains in use for hardware checks.
 
 Next exact action:
-- Continue Phase05 with graph snapshot prepare/publish/reclaim and bounded control queue/ramp parameter changes, then wire the desktop channel state to the native graph.
+- Continue Phase05 by wiring desktop channel state to the native graph and replacing short MON passthrough with graph-owned monitoring.
+
+### Phase05 Checkpoint — Bounded Controls And Graph Publication
+
+Changed files:
+- `native/engine/src/engine/MixerControlQueue.hpp`, `native/engine/src/engine/MixerControlQueue.cpp`: bounded FIFO for channel control commands.
+- `native/engine/src/engine/MixerGraphController.hpp`, `native/engine/src/engine/MixerGraphController.cpp`: prepare/publish/reclaim wrapper for graph updates outside the callback path.
+- `native/engine/src/engine/MixerGraph.hpp`, `native/engine/src/engine/MixerGraph.cpp`: preallocated strip storage, queued control application, fader/pan ramp runtime, and independent input meter behavior.
+- `native/engine/tests/MixerGraphTest.cpp`: coverage for queue overflow/FIFO, stale queued command rejection, ramped level changes, muted input metering, and publish/reclaim behavior.
+- `native/engine/CMakeLists.txt`: added new engine graph control modules to the native library.
+
+Implemented behavior:
+- Parameter changes can be queued through a bounded command queue and applied with a fixed-frame ramp.
+- Input meters remain active from source samples even when a strip is muted, while output meters stay silent.
+- Prepared graph changes do not mutate active graph state until publish; retired graphs are reclaimed explicitly off the callback path.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; CMake/Ninja build passed, CTest passed 5/5 including expanded `local-mixer-graph-tests`, engine self-test passed, device/protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
 
 ## Native Sound Pad Spike — Early User-Requested
 Status: IMPLEMENTED_UNVERIFIED_PLAYBACK

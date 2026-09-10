@@ -25,11 +25,18 @@ void updatePeak(float& peak, float sample) {
 
 }  // namespace
 
+MixerGraph::MixerGraph() : controlQueue_(128) {
+  strips_.reserve(kMaxMixerStrips);
+  meters_.reserve(kMaxMixerStrips);
+  runtimes_.reserve(kMaxMixerStrips);
+}
+
 CreateStripResult MixerGraph::createStrip(std::string name, std::string color) {
   if (strips_.size() >= kMaxMixerStrips) return {.error = MixerError::graphFull};
   const StripId id{nextId_++};
   strips_.push_back(StripConfig{.id = id, .name = std::move(name), .color = std::move(color)});
   meters_.push_back({});
+  runtimes_.push_back({});
   return {.id = id};
 }
 
@@ -38,6 +45,7 @@ MixerError MixerGraph::removeStrip(StripId id) {
   if (!index.has_value()) return MixerError::staleStripId;
   strips_.erase(strips_.begin() + static_cast<std::ptrdiff_t>(*index));
   meters_.erase(meters_.begin() + static_cast<std::ptrdiff_t>(*index));
+  runtimes_.erase(runtimes_.begin() + static_cast<std::ptrdiff_t>(*index));
   return MixerError::none;
 }
 
@@ -67,10 +75,7 @@ MixerError MixerGraph::setAssignment(StripId id, SourceAssignment assignment, st
 MixerError MixerGraph::setLevel(StripId id, float trimDb, float faderDb, float pan) {
   const auto index = indexOf(id);
   if (!index.has_value()) return MixerError::staleStripId;
-  strips_[*index].trimDb = clamp(trimDb, -24.0f, 24.0f);
-  strips_[*index].faderDb = clamp(faderDb, -60.0f, 10.0f);
-  strips_[*index].pan = clamp(pan, -1.0f, 1.0f);
-  return MixerError::none;
+  return setLevelAt(*index, trimDb, faderDb, pan, 0);
 }
 
 MixerError MixerGraph::setMute(StripId id, bool mute) {
@@ -101,6 +106,39 @@ MixerError MixerGraph::setInputMonitoring(StripId id, bool enabled) {
   return MixerError::none;
 }
 
+MixerError MixerGraph::enqueueControl(MixerCommand command) {
+  return controlQueue_.push(command);
+}
+
+MixerError MixerGraph::applyQueuedControls(std::uint32_t rampFrames) {
+  while (const auto command = controlQueue_.pop()) {
+    const auto index = indexOf(command->stripId);
+    if (!index.has_value()) return MixerError::staleStripId;
+
+    switch (command->type) {
+      case MixerCommandType::setLevel:
+        if (const auto error = setLevelAt(*index, command->trimDb, command->faderDb, command->pan, rampFrames);
+            error != MixerError::none) {
+          return error;
+        }
+        break;
+      case MixerCommandType::setMute:
+        strips_[*index].mute = command->boolValue;
+        break;
+      case MixerCommandType::setSolo:
+        strips_[*index].solo = command->boolValue;
+        break;
+      case MixerCommandType::setEnabled:
+        strips_[*index].enabled = command->boolValue;
+        break;
+      case MixerCommandType::setInputMonitoring:
+        strips_[*index].inputMonitoring = command->boolValue;
+        break;
+    }
+  }
+  return MixerError::none;
+}
+
 MixerError MixerGraph::process(std::span<const SourceBuffer> sources, StereoOutput output) {
   if (output.left.size() != output.right.size()) return MixerError::invalidBuffer;
   std::fill(output.left.begin(), output.left.end(), 0.0f);
@@ -115,11 +153,8 @@ MixerError MixerGraph::process(std::span<const SourceBuffer> sources, StereoOutp
 
     const auto& strip = strips_[*index];
     auto& meter = meters_[*index];
-    if (!strip.enabled || strip.mute || (soloActive && !strip.solo)) continue;
-
-    const auto gain = dsp::decibelsToLinear(strip.trimDb + strip.faderDb);
-    const auto leftPan = strip.assignment == SourceAssignment::mono ? std::min(1.0f, 1.0f - strip.pan) : 1.0f;
-    const auto rightPan = strip.assignment == SourceAssignment::mono ? std::min(1.0f, 1.0f + strip.pan) : 1.0f;
+    auto& runtime = runtimes_[*index];
+    const bool active = strip.enabled && !strip.mute && (!soloActive || strip.solo);
 
     for (std::uint32_t frame = 0; frame < output.left.size(); frame += 1) {
       float left = 0.0f;
@@ -134,12 +169,22 @@ MixerError MixerGraph::process(std::span<const SourceBuffer> sources, StereoOutp
 
       updatePeak(meter.inputPeak, left);
       updatePeak(meter.inputPeak, right);
+      if (!active) {
+        advanceRuntime(runtime);
+        continue;
+      }
+
+      const auto gain = runtime.currentGain;
+      const auto pan = runtime.currentPan;
+      const auto leftPan = strip.assignment == SourceAssignment::mono ? std::min(1.0f, 1.0f - pan) : 1.0f;
+      const auto rightPan = strip.assignment == SourceAssignment::mono ? std::min(1.0f, 1.0f + pan) : 1.0f;
       left *= gain * leftPan;
       right *= gain * rightPan;
       output.left[frame] += left;
       output.right[frame] += right;
       updatePeak(meter.outputPeakLeft, left);
       updatePeak(meter.outputPeakRight, right);
+      advanceRuntime(runtime);
     }
   }
 
@@ -158,8 +203,35 @@ std::optional<StripMeters> MixerGraph::meters(StripId id) const {
   return meters_[*index];
 }
 
+std::size_t MixerGraph::pendingControlCount() const {
+  return controlQueue_.size();
+}
+
 std::size_t MixerGraph::stripCount() const {
   return strips_.size();
+}
+
+MixerError MixerGraph::setLevelAt(std::size_t index, float trimDb, float faderDb, float pan, std::uint32_t rampFrames) {
+  strips_[index].trimDb = clamp(trimDb, -24.0f, 24.0f);
+  strips_[index].faderDb = clamp(faderDb, -60.0f, 10.0f);
+  strips_[index].pan = clamp(pan, -1.0f, 1.0f);
+
+  auto& runtime = runtimes_[index];
+  runtime.targetGain = dsp::decibelsToLinear(strips_[index].trimDb + strips_[index].faderDb);
+  runtime.targetPan = strips_[index].pan;
+  if (rampFrames == 0) {
+    runtime.currentGain = runtime.targetGain;
+    runtime.currentPan = runtime.targetPan;
+    runtime.gainStep = 0.0f;
+    runtime.panStep = 0.0f;
+    runtime.remainingRampFrames = 0;
+    return MixerError::none;
+  }
+
+  runtime.gainStep = (runtime.targetGain - runtime.currentGain) / static_cast<float>(rampFrames);
+  runtime.panStep = (runtime.targetPan - runtime.currentPan) / static_cast<float>(rampFrames);
+  runtime.remainingRampFrames = rampFrames;
+  return MixerError::none;
 }
 
 std::optional<std::size_t> MixerGraph::indexOf(StripId id) const {
@@ -176,6 +248,19 @@ bool MixerGraph::anySolo() const {
   });
 }
 
+void MixerGraph::advanceRuntime(StripRuntime& runtime) {
+  if (runtime.remainingRampFrames == 0) return;
+  runtime.currentGain += runtime.gainStep;
+  runtime.currentPan += runtime.panStep;
+  runtime.remainingRampFrames -= 1;
+  if (runtime.remainingRampFrames == 0) {
+    runtime.currentGain = runtime.targetGain;
+    runtime.currentPan = runtime.targetPan;
+    runtime.gainStep = 0.0f;
+    runtime.panStep = 0.0f;
+  }
+}
+
 const char* mixerErrorName(MixerError error) {
   switch (error) {
     case MixerError::none: return "NONE";
@@ -183,6 +268,7 @@ const char* mixerErrorName(MixerError error) {
     case MixerError::staleStripId: return "STALE_STRIP_ID";
     case MixerError::invalidSource: return "INVALID_SOURCE";
     case MixerError::invalidBuffer: return "INVALID_BUFFER";
+    case MixerError::queueFull: return "QUEUE_FULL";
   }
   return "UNKNOWN";
 }
