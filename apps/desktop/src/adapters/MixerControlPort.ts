@@ -140,6 +140,9 @@ export interface MixerSnapshot {
 export interface MixerControlPort {
   getSnapshot(): MixerSnapshot;
   setPrograms(programs: FxProgram[]): void;
+  addSourceChannel(role: Exclude<ChannelRole, "group" | "master">, name: string, source: string): string;
+  renameChannel(channelId: string, name: string): void;
+  removeChannel(channelId: string): void;
   selectChannel(channelId: string): void;
   setChannelEnabled(channelId: string, enabled: boolean): void;
   setChannelSource(channelId: string, source: string): void;

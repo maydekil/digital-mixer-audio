@@ -131,6 +131,29 @@ describe("PreviewAdapter", () => {
     expect(snapshot.channels.find((channel) => channel.id === "music")?.monitor).toBe(false);
   });
 
+  it("adds, renames, and removes source channels while keeping selection valid", () => {
+    const adapter = new PreviewAdapter();
+    const channelId = adapter.addSourceChannel("music", "Break Music", "/tmp/break.wav");
+    adapter.renameChannel(channelId, "BREAK");
+
+    let snapshot = adapter.getSnapshot();
+    expect(snapshot.selectedChannelId).toBe(channelId);
+    expect(snapshot.channels.find((channel) => channel.id === channelId)).toMatchObject({
+      name: "BREAK",
+      role: "music",
+      source: "/tmp/break.wav",
+      kind: "source"
+    });
+    expect(snapshot.channels.findIndex((channel) => channel.id === channelId)).toBeLessThan(
+      snapshot.channels.findIndex((channel) => channel.kind === "master")
+    );
+
+    adapter.removeChannel(channelId);
+    snapshot = adapter.getSnapshot();
+    expect(snapshot.channels.some((channel) => channel.id === channelId)).toBe(false);
+    expect(snapshot.channels.some((channel) => channel.id === snapshot.selectedChannelId)).toBe(true);
+  });
+
   it("updates vocal FX rack selection, bypass, and preset state", () => {
     const adapter = new PreviewAdapter();
     adapter.selectVocalFxSlot("robot");

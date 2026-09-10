@@ -61,4 +61,38 @@ describe("project session serialization", () => {
     expect(loaded.harmony.enabled).toBe(true);
     expect(loaded.channels.find((channel) => channel.id === "voice")?.harmonyEnabled).toBe(true);
   });
+
+  it("restores channels that are not present in the base snapshot", () => {
+    const document = snapshotToProjectSession(approvedMixerSession);
+    document.channels.push({
+      id: "break-music",
+      name: "BREAK MUSIC",
+      kind: "source",
+      role: "music",
+      sourceUid: "/tmp/break.wav",
+      enabled: true,
+      muted: false,
+      solo: false,
+      monitor: false,
+      recordArm: false,
+      eqEnabled: true,
+      noiseEnabled: false,
+      compEnabled: false,
+      insertFxEnabled: false,
+      gainDb: 0,
+      faderDb: -9,
+      pan: 0,
+      noiseThresholdDb: -50,
+      noiseRangeDb: -80,
+      compThresholdDb: -18,
+      compRatio: 3
+    });
+    document.fxSends.push({ channelId: "break-music", unitId: "fx-a", enabled: true, gainDb: -18 });
+
+    const loaded = projectSessionToSnapshot(`${JSON.stringify(document)}\n`, approvedMixerSession);
+    const restored = loaded.channels.find((channel) => channel.id === "break-music");
+
+    expect(restored).toMatchObject({ name: "BREAK MUSIC", source: "/tmp/break.wav", role: "music", faderDb: -9 });
+    expect(restored?.sends["fx-a"]).toMatchObject({ enabled: true, gainDb: -18 });
+  });
 });

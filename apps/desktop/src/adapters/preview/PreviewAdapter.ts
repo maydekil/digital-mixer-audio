@@ -1,4 +1,4 @@
-import type { ChannelDynamicsState, EqBandState, FxProgram, FxUnitId, HarmonyState, MixerControlPort, MixerSnapshot, ProcessorId } from "../MixerControlPort";
+import type { ChannelDynamicsState, ChannelRole, ChannelState, EqBandState, FxProgram, FxUnitId, HarmonyState, MixerControlPort, MixerSnapshot, ProcessorId } from "../MixerControlPort";
 import { approvedMixerSession } from "../../fixtures/approvedMixerSession";
 
 export class PreviewAdapter implements MixerControlPort {
@@ -22,7 +22,36 @@ export class PreviewAdapter implements MixerControlPort {
     ));
   }
 
+  addSourceChannel(role: Exclude<ChannelRole, "group" | "master">, name: string, source: string): string {
+    const id = uniqueChannelId(this.snapshot.channels, slugChannelId(name || role));
+    const channel = newSourceChannel(id, name.trim() || defaultChannelName(role), role, source.trim());
+    const insertAt = this.snapshot.channels.findIndex((item) => item.kind !== "source");
+    const nextChannels = [...this.snapshot.channels];
+    nextChannels.splice(insertAt < 0 ? nextChannels.length : insertAt, 0, channel);
+    this.snapshot.channels = nextChannels;
+    this.selectChannel(id);
+    return id;
+  }
+
+  renameChannel(channelId: string, name: string): void {
+    const nextName = name.trim();
+    if (!nextName) return;
+    this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? { ...channel, name: nextName } : channel);
+  }
+
+  removeChannel(channelId: string): void {
+    const target = this.snapshot.channels.find((channel) => channel.id === channelId);
+    if (!target || target.kind === "master") return;
+    const channels = this.snapshot.channels.filter((channel) => channel.id !== channelId);
+    this.snapshot.channels = channels;
+    if (this.snapshot.selectedChannelId === channelId) {
+      const fallback = channels.find((channel) => channel.kind === "source") ?? channels[0];
+      if (fallback) this.selectChannel(fallback.id);
+    }
+  }
+
   selectChannel(channelId: string): void {
+    if (!this.snapshot.channels.some((channel) => channel.id === channelId)) return;
     this.snapshot.selectedChannelId = channelId;
     this.snapshot.channels = this.snapshot.channels.map((channel) => ({ ...channel, selected: channel.id === channelId }));
     this.syncSelectedEqBands();
@@ -265,6 +294,71 @@ export class PreviewAdapter implements MixerControlPort {
     const selected = this.snapshot.channels.find((channel) => channel.id === this.snapshot.selectedChannelId);
     if (selected) this.snapshot.eqBands = structuredClone(selected.eqBands);
   }
+}
+
+function newSourceChannel(id: string, name: string, role: Exclude<ChannelRole, "group" | "master">, source: string): ChannelState {
+  return {
+    id,
+    name,
+    source,
+    kind: "source",
+    role,
+    selected: false,
+    enabled: true,
+    trimDb: 0,
+    pan: 0,
+    faderDb: -12,
+    mute: false,
+    solo: false,
+    monitor: false,
+    recordArm: false,
+    harmonyVisible: role === "vocal",
+    harmonyEnabled: false,
+    processing: { eq: true, comp: role === "vocal", noise: role === "vocal", insertFx: false },
+    dynamics: defaultDynamics(),
+    sends: { "fx-a": { enabled: false, gainDb: -60 }, "fx-b": { enabled: false, gainDb: -60 } },
+    eqBands: defaultEqBands(),
+    meter: { left: -60, right: -60, clip: false }
+  };
+}
+
+function defaultChannelName(role: Exclude<ChannelRole, "group" | "master">) {
+  if (role === "vocal") return "VOICE";
+  if (role === "instrument") return "INSTRUMENT";
+  if (role === "music") return "MUSIC";
+  return "SYSTEM";
+}
+
+function uniqueChannelId(channels: ChannelState[], baseId: string) {
+  const used = new Set(channels.map((channel) => channel.id));
+  let id = baseId || "channel";
+  let suffix = 2;
+  while (used.has(id)) {
+    id = `${baseId}-${suffix}`;
+    suffix += 1;
+  }
+  return id;
+}
+
+function slugChannelId(name: string) {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "channel";
+}
+
+function defaultEqBands(): EqBandState[] {
+  return [
+    { id: "low", label: "LOW", color: "#58F28A", freqHz: 100, gainDb: 0, freq: "100 Hz", gain: "+0.0 dB", type: "Shelf" },
+    { id: "mid1", label: "MID 1", color: "#FFB843", freqHz: 350, gainDb: 0, qValue: 1, freq: "350 Hz", gain: "+0.0 dB", q: "1.00" },
+    { id: "mid2", label: "MID 2", color: "#1FA8FF", freqHz: 2500, gainDb: 0, qValue: 1, freq: "2.5 kHz", gain: "+0.0 dB", q: "1.00" },
+    { id: "high", label: "HIGH", color: "#B862F0", freqHz: 10000, gainDb: 0, freq: "10.0 kHz", gain: "+0.0 dB", type: "Shelf" }
+  ];
+}
+
+function defaultDynamics(): ChannelDynamicsState {
+  return {
+    noise: { thresholdDb: -50, rangeDb: -80, holdMs: 3, releaseMs: 80 },
+    compressor: { thresholdDb: -18, ratio: 3, attackMs: 10, releaseMs: 120 },
+    deEsser: { frequencyHz: 6000, thresholdDb: -24, maxReductionDb: 6 }
+  };
 }
 
 function presetEnabled(presetId: string, effectType: string, fallback: boolean) {

@@ -2710,3 +2710,35 @@ Validation:
 Known limitations:
 - This is export preflight and UI/dialog foundation. It does not yet render a desktop-initiated WAV file, inspect exported stems, or play the result back.
 - Live-source export remains blocked by design until record/timeline rendering provides offline source material.
+
+### Phase19 Hardening Checkpoint — Channel Management UI And Persistence
+
+Changed files:
+- `apps/desktop/src/adapters/MixerControlPort.ts`, `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: added preview control methods for adding, renaming, and removing source channels with guarded selection behavior.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: added compact top-bar Add Channel, Rename Channel, and Remove Channel actions.
+- `apps/desktop/src/features/project/sessionDocument.ts`: preserves extra saved channels when applying a project session instead of dropping channels absent from the base fixture.
+- `tests/ui/preview-adapter.test.ts`, `tests/ui/project-session.test.ts`: verify channel add/rename/remove behavior and extra-channel save/open restoration.
+- `docs/reports/ui/desktop-1680x945.png`, `docs/reports/ui/minimum-1280x800.png`: refreshed visual evidence after top-bar channel controls were added.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated channel-management evidence.
+
+Implemented behavior:
+- Preview UI can add a source channel, rename the selected channel, and remove the selected non-master channel.
+- Newly added channels are inserted before the master strip and become selected.
+- Removing the selected channel chooses a valid fallback selection.
+- Saved project sessions can restore source channels that do not exist in the default preview fixture.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 33/33 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size guard passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual/interaction suite 6/6 passed and refreshed desktop/minimum screenshots.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 33/33, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Channel add/rename/remove uses simple preview prompts, not a final project management dialog.
+- This checkpoint updates UI/control/session behavior only; hardware source creation, packaged manual UX acceptance, and live routing tests remain NOT_RUN/PARTIAL.

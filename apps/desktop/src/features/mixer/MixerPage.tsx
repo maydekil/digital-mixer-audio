@@ -120,6 +120,27 @@ export function MixerPage() {
     await window.localMixer.engineCommand?.("export-plan", request as unknown as Record<string, unknown>);
   }
 
+  function addChannel() {
+    const role = parseSourceRole(window.prompt("Channel role", "music") ?? "music");
+    const name = window.prompt("Channel name", role.toUpperCase()) ?? "";
+    const source = window.prompt("Source label or path", "") ?? "";
+    refresh(() => adapter.addSourceChannel(role, name, source));
+  }
+
+  function renameSelectedChannel() {
+    const channel = adapter.getSnapshot().channels.find((item) => item.id === adapter.getSnapshot().selectedChannelId);
+    if (!channel || channel.kind === "master") return;
+    const name = window.prompt("Channel name", channel.name) ?? "";
+    refresh(() => adapter.renameChannel(channel.id, name));
+  }
+
+  function removeSelectedChannel() {
+    const channel = adapter.getSnapshot().channels.find((item) => item.id === adapter.getSnapshot().selectedChannelId);
+    if (!channel || channel.kind === "master") return;
+    if (!window.confirm(`Remove channel ${channel.name}?`)) return;
+    refresh(() => adapter.removeChannel(channel.id));
+  }
+
   async function selectFxProgram(unitId: "fx-a" | "fx-b", programId: number) {
     fxProgramDesired.current[unitId] = programId;
     if (!window.localMixer?.engineCommand) {
@@ -294,6 +315,9 @@ export function MixerPage() {
         onSave={() => void saveProject()}
         onCollect={() => void collectProject()}
         onExport={() => void exportProject()}
+        onAddChannel={addChannel}
+        onRenameChannel={renameSelectedChannel}
+        onRemoveChannel={removeSelectedChannel}
       />
       <div className="fx-stack">
         <CompactFxRow unit={fxA} program={programA} programs={snapshot.programs} onProgramChange={(id) => void selectFxProgram("fx-a", id)} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-a", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-a", value))} onMacro={(macro, value) => void setFxMacro("fx-a", macro, value)} onReset={() => void resetFxProgram("fx-a")} />
@@ -471,7 +495,7 @@ function parseFxPrograms(programs: unknown[]): FxProgram[] {
   });
 }
 
-function TopBar({ projectName, time, rate, status, mode, transportState, onVocalFx, onTimeline, onPlay, onStop, onOpen, onSave, onCollect, onExport }: {
+function TopBar({ projectName, time, rate, status, mode, transportState, onVocalFx, onTimeline, onPlay, onStop, onOpen, onSave, onCollect, onExport, onAddChannel, onRenameChannel, onRemoveChannel }: {
   projectName: string;
   time: string;
   rate: string;
@@ -486,6 +510,9 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onVocal
   onSave(): void;
   onCollect(): void;
   onExport(): void;
+  onAddChannel(): void;
+  onRenameChannel(): void;
+  onRemoveChannel(): void;
 }) {
   return (
     <header className="top-bar">
@@ -507,9 +534,18 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onVocal
       <button className="settings" aria-label="Save Project" title="Save Project" onClick={onSave}>▣</button>
       <button className="settings" aria-label="Collect Media" title="Collect Media" onClick={onCollect}>◇</button>
       <button className="settings" aria-label="Export Mix" title="Export Mix" onClick={onExport}>⇩</button>
+      <button className="settings" aria-label="Add Channel" title="Add Channel" onClick={onAddChannel}>＋</button>
+      <button className="settings" aria-label="Rename Channel" title="Rename Channel" onClick={onRenameChannel}>✎</button>
+      <button className="settings" aria-label="Remove Channel" title="Remove Channel" onClick={onRemoveChannel}>−</button>
       <button className="settings">⚙</button>
     </header>
   );
+}
+
+function parseSourceRole(role: string): "system" | "vocal" | "instrument" | "music" {
+  const normalized = role.trim().toLowerCase();
+  if (normalized === "system" || normalized === "vocal" || normalized === "instrument") return normalized;
+  return "music";
 }
 
 function Footer({ outputUid, outputOptions, onOutput, onHardware }: { outputUid: string; outputOptions: Array<{ value: string; label: string }>; onOutput(value: string): void; onHardware(): void }) {

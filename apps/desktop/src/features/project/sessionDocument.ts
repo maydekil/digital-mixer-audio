@@ -1,4 +1,4 @@
-import type { ChannelState, FxUnitState, MixerSnapshot } from "../../adapters/MixerControlPort";
+import type { ChannelKind, ChannelRole, ChannelState, FxUnitState, MixerSnapshot } from "../../adapters/MixerControlPort";
 
 export interface ProjectSessionDocument {
   schemaVersion: 1;
@@ -105,10 +105,23 @@ export function projectSessionToSnapshot(content: string, baseSnapshot: MixerSna
 
   const snapshot = structuredClone(baseSnapshot);
   snapshot.projectName = document.projectId || snapshot.projectName;
+  const savedChannels = document.channels ?? [];
   snapshot.channels = snapshot.channels.map((channel) => {
-    const saved = document.channels?.find((item) => item.id === channel.id);
+    const saved = savedChannels.find((item) => item.id === channel.id);
     return saved ? applyChannelSession(channel, saved) : channel;
   });
+  const addedChannels = savedChannels
+    .filter((saved) => !snapshot.channels.some((channel) => channel.id === saved.id))
+    .map((saved) => channelSessionToSnapshot(saved, baseSnapshot));
+  if (addedChannels.length > 0) {
+    const masterIndex = snapshot.channels.findIndex((channel) => channel.kind === "master");
+    const insertAt = masterIndex < 0 ? snapshot.channels.length : masterIndex;
+    snapshot.channels = [
+      ...snapshot.channels.slice(0, insertAt),
+      ...addedChannels,
+      ...snapshot.channels.slice(insertAt)
+    ];
+  }
   snapshot.fxUnits = snapshot.fxUnits.map((unit) => {
     const saved = document.fxUnits?.find((item) => item.unitId === unit.id);
     return saved ? applyFxUnitSession(unit, saved) : unit;
@@ -209,6 +222,58 @@ function applyChannelSession(channel: ChannelState, saved: ProjectSessionChannel
       }
     }
   };
+}
+
+function channelSessionToSnapshot(saved: ProjectSessionChannel, baseSnapshot: MixerSnapshot): ChannelState {
+  const template = baseSnapshot.channels.find((channel) => channel.role === saved.role) ??
+    baseSnapshot.channels.find((channel) => channel.kind === "source") ??
+    baseSnapshot.channels[0];
+  return applyChannelSession({
+    ...(template ? structuredClone(template) : fallbackChannel()),
+    id: saved.id,
+    name: saved.name || saved.id,
+    kind: parseKind(saved.kind),
+    role: parseRole(saved.role),
+    selected: false,
+    meter: { left: -60, right: -60, clip: false }
+  }, saved);
+}
+
+function fallbackChannel(): ChannelState {
+  return {
+    id: "channel",
+    name: "CHANNEL",
+    source: "",
+    kind: "source",
+    role: "music",
+    selected: false,
+    enabled: true,
+    trimDb: 0,
+    pan: 0,
+    faderDb: -12,
+    mute: false,
+    solo: false,
+    monitor: false,
+    recordArm: false,
+    processing: { eq: true, comp: false, noise: false, insertFx: false },
+    dynamics: {
+      noise: { thresholdDb: -50, rangeDb: -80, holdMs: 3, releaseMs: 80 },
+      compressor: { thresholdDb: -18, ratio: 3, attackMs: 10, releaseMs: 120 },
+      deEsser: { frequencyHz: 6000, thresholdDb: -24, maxReductionDb: 6 }
+    },
+    sends: { "fx-a": { enabled: false, gainDb: -60 }, "fx-b": { enabled: false, gainDb: -60 } },
+    eqBands: [],
+    meter: { left: -60, right: -60, clip: false }
+  };
+}
+
+function parseKind(kind: string): ChannelKind {
+  return kind === "group" || kind === "master" ? kind : "source";
+}
+
+function parseRole(role: string): ChannelRole {
+  if (role === "system" || role === "vocal" || role === "instrument" || role === "music" || role === "group" || role === "master") return role;
+  return "music";
 }
 
 function applyFxUnitSession(unit: FxUnitState, saved: ProjectSessionFxUnit): FxUnitState {

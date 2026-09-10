@@ -15,7 +15,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 | Plan integrity | PASS | `npm run check:plan` covers 49 phases. |
 | File size | PASS | `npm run check:file-size` passes with all first-party code files under the 1,000-line hard limit. |
 | Architecture | PASS | `npm run check:architecture` rejects browser audio/Web Audio production paths. |
-| UI tests | PASS | Vitest 31/31 in `npm run verify`. |
+| UI tests | PASS | Vitest 33/33 in `npm run verify`. |
 | Native tests | PASS | CTest 43/43 in `npm run verify`. |
 | Dev package smoke | PASS_PARTIAL | `docs/reports/int02-package-smoke.md` proves unsigned `.app` resources/binaries, not GUI/TCC acceptance. |
 
@@ -53,6 +53,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 - Per-app Core Audio tap capture is not complete; Phase18 is capability/assignment foundation.
 - Live recording to timeline and replay through desktop workflow are not complete; native take metadata now marks replay insert behavior, partial/overrun state, and session roundtrip.
 - Project collect/relink has automated file-level coverage, but missing-media resolution UX and packaged manual acceptance remain pending.
+- Add/rename/remove source channel has preview and session roundtrip coverage, but packaged manual UX acceptance remains pending.
 - Product-level 30/60-minute soak and 32-track stress are not run; monitor callback counters exist but do not replace acceptance soak evidence.
 - Packaged `.app` TCC permission prompt, clean-location launch, and offline workflow require manual target-Mac testing.
 
