@@ -14,7 +14,14 @@ ChannelProcessorConfig defaultChannelProcessorConfig(double sampleRate) {
     dsp::EqBandConfig{.type = dsp::EqFilterType::highShelf, .enabled = true, .sampleRate = sampleRate, .frequencyHz = 10000.0, .gainDb = 4.0},
   };
   config.noise = dsp::NoiseGateConfig{.enabled = true, .sampleRate = sampleRate};
-  config.compressor = dsp::CompressorConfig{.enabled = true, .sampleRate = sampleRate};
+  config.compressor = dsp::CompressorConfig{
+    .enabled = true,
+    .sampleRate = sampleRate,
+    .thresholdDb = -18.0f,
+    .ratio = 3.0f,
+    .attackMs = 10.0f,
+    .releaseMs = 120.0f,
+  };
   config.deEsser = dsp::DeEsserConfig{.enabled = true, .sampleRate = sampleRate};
   return config;
 }
@@ -61,13 +68,16 @@ void ChannelProcessorChain::reset() {
 void ChannelProcessorChain::processFrame(float& left, float& right) {
   std::array<float, 1> leftSample{left};
   std::array<float, 1> rightSample{right};
+  std::array<float, 2> linked{leftSample[0], rightSample[0]};
+  if (config_.noiseEnabled) noise_.processInterleavedLinked(linked, 2);
+  leftSample[0] = linked[0];
+  rightSample[0] = linked[1];
   if (config_.eqEnabled) {
     for (auto& filter : eqLeft_) filter.process(leftSample);
     for (auto& filter : eqRight_) filter.process(rightSample);
   }
 
-  std::array<float, 2> linked{leftSample[0], rightSample[0]};
-  if (config_.noiseEnabled) noise_.processInterleavedLinked(linked, 2);
+  linked = {leftSample[0], rightSample[0]};
   if (config_.compressorEnabled) compressor_.processInterleavedLinked(linked, 2);
   if (config_.deEsserEnabled) deEsser_.processInterleavedLinked(linked, 2);
   left = linked[0];

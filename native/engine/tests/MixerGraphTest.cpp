@@ -189,6 +189,11 @@ int main() {
   std::array<SourceBuffer, 1> processorSources{SourceBuffer{.stripId = processorStrip.id, .samples = processorSource, .channels = 1}};
   auto processorConfig = localmixer::engine::defaultChannelProcessorConfig();
   processorConfig.noiseEnabled = false;
+  if (!near(processorConfig.compressor.thresholdDb, -18.0f) || !near(processorConfig.compressor.ratio, 3.0f) ||
+      !near(processorConfig.compressor.attackMs, 10.0f) || !near(processorConfig.compressor.releaseMs, 120.0f)) {
+    std::cerr << "default channel compressor should match approved voice panel values\n";
+    return 1;
+  }
   if (!expect(processorGraph.setProcessors(processorStrip.id, processorConfig), MixerError::none, "processor bypass set failed")) return 1;
   if (!expect(processorGraph.process(processorSources, StereoOutput{.left = processorLeft, .right = processorRight}),
               MixerError::none,

@@ -2206,3 +2206,22 @@ Validation:
 
 Known limitations:
 - This is modular hardening only; compressor parameter sync, de-esser UI control, Vocal FX rack insertion, FX A/B returns, Harmony insertion, export parity, live listening, and stress QA remain partial.
+
+### Phase19 Hardening Checkpoint — Channel Processor Order And Compressor Defaults
+
+Changed files:
+- `native/engine/src/engine/ChannelProcessorChain.cpp`: aligned channel-strip processor order with the spec path by running noise/gate before EQ, then compressor, then de-esser; updated default compressor settings to the approved panel values.
+- `native/engine/tests/MixerGraphTest.cpp`: added default compressor assertions alongside native processor graph coverage.
+- `docs/progress.md`: recorded evidence and remaining limitations.
+
+Implemented behavior:
+- Default native channel compressor settings now match the visible channel processing panel: threshold `-18 dB`, ratio `3:1`, attack `10 ms`, release `120 ms`.
+- Native channel processor ordering is closer to the specified strip path: noise/gate -> EQ -> compressor -> de-esser.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-graph-tests && ctest --test-dir native/engine/build -R local-mixer-graph-tests --output-on-failure`
+- exit/result: `0`; focused graph test passed.
+
+Known limitations:
+- Compressor parameters are still fixed starting values from UI/native defaults; editable compressor/noise/de-esser parameter state is not yet persisted or synced from dedicated controls.
+- Vocal FX rack insertion, FX A/B returns, Harmony insertion, export parity, live listening, and stress QA remain partial.
