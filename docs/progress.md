@@ -1228,3 +1228,29 @@ Validation:
 Known limitations:
 - FX processors are not yet wired into FX A/B buses, realtime routing, UI controls, panic mute, or tail policy during transport pause.
 - Reverb is a lightweight native foundation, not final quality/program bank DSP.
+
+## Phase12 — Timeline Editing And Transport
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: Phase11 IMPLEMENTED_UNVERIFIED
+
+### Phase12 Checkpoint — Native Timeline Edit And Metronome Foundation
+
+Changed files:
+- `native/engine/src/engine/TimelineEdit.hpp`, `native/engine/src/engine/TimelineEdit.cpp`: added non-destructive clip edit model with add, move, trim, split, join, undo, redo, and snap helpers.
+- `native/engine/src/engine/Metronome.hpp`, `native/engine/src/engine/Metronome.cpp`: added tempo-based click scheduling and explicit export eligibility.
+- `native/engine/tests/TimelineEditTest.cpp`: verifies split/join sample-position consistency, undo/redo snapshots, overlap retention, snap behavior, stable 120 BPM click frames, and monitor-only metronome default.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired Phase12 build/test/progress evidence.
+
+Implemented behavior:
+- Split and join preserve media reference, source offset, timeline position, and duration semantics without processing the audio.
+- Undo/redo restores edit snapshots.
+- Overlapping clips are retained instead of silently replacing an existing clip.
+- Metronome clicks are scheduled by sample frame; export contribution is disabled unless print-click is explicit.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 16/16 including `local-mixer-timeline-edit-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- Edit commands are not yet wired to desktop UI shortcuts/drag operations or session persistence.
+- Timeline playback still uses earlier scheduler primitives; edit-during-playback concurrency has not been integrated into realtime graph publication.

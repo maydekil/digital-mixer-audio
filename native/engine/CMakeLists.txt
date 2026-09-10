@@ -8,6 +8,7 @@ add_library(local_mixer_dsp STATIC
   src/dsp/OutputProtection.cpp
   src/engine/DeviceService.cpp
   src/engine/EngineRuntime.cpp
+  src/engine/Metronome.cpp
   src/engine/MediaFile.cpp
   src/engine/MediaImportJob.cpp
   src/engine/MediaResampler.cpp
@@ -18,6 +19,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/SystemRouteRecovery.cpp
   src/engine/SystemRouting.cpp
   src/engine/Timeline.cpp
+  src/engine/TimelineEdit.cpp
   src/engine/Transport.cpp
   src/engine/VocalStripPreset.cpp
   src/engine/WaveformPyramid.cpp
@@ -181,3 +183,12 @@ target_link_libraries(local-mixer-timeline-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-timeline-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-timeline-tests COMMAND local-mixer-timeline-tests)
+
+add_executable(local-mixer-timeline-edit-tests
+  tests/TimelineEditTest.cpp
+)
+
+target_link_libraries(local-mixer-timeline-edit-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-timeline-edit-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-timeline-edit-tests COMMAND local-mixer-timeline-edit-tests)
