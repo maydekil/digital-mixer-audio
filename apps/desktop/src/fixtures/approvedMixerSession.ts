@@ -36,7 +36,7 @@ export const approvedMixerSession: MixerSnapshot = {
     }
   ],
   eqBands: cloneEqBands(),
-  harmony: { enabled: true, key: "C", scale: "Major", voice1: "+3rd", voice2: "+5th", levelDb: 0 },
+  harmony: { enabled: false, effectiveEnabled: false, pending: false, error: "", revision: 0, primaryInstanceId: "", key: "C", scale: "Major", mode: "Diatonic", voice1: "+3rd", voice2: "+5th", levelDb: 0 },
   vocalFx: {
     selectedSlotId: "pitch-correct",
     activePresetId: "studio-pop",
@@ -71,7 +71,7 @@ function channel(id: string, name: string, source: string, role: "system" | "voc
   return {
     id, name, source, kind: role === "group" ? "group" as const : "source" as const, role,
     selected: id === "voice", enabled: true, trimDb: 0, pan: 0, faderDb, mute: false, solo: false,
-    monitor: mon, recordArm: rec, harmonyVisible: role === "vocal", harmonyEnabled: role === "vocal",
+    monitor: mon, recordArm: rec, harmonyVisible: role === "vocal", harmonyEnabled: false,
     processing: { eq: true, comp: role === "vocal", noise: role === "vocal", insertFx: role === "vocal" },
     sends: {
       "fx-a": { enabled: sendA !== 0, gainDb: sendA },

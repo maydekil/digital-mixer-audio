@@ -1780,3 +1780,33 @@ Known limitations:
 - HARM-00 is the native binding/state contract; Mixer UI reconciliation with these native ACKs, monitor-profile effective status, and advanced primary-selection UX remain pending HARM-01/HARM-02.
 - The primary harmony controller is not yet wired into realtime channel insert graph transitions.
 - Real microphone audition and latency-alignment evidence remain pending final harmony QA.
+
+## HARM-01 — Strip Button And Quick Panel Binding
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: HARM-00 IMPLEMENTED_UNVERIFIED
+
+### HARM-01 Checkpoint — Mixer Harmony ACK UI
+
+Changed files:
+- `apps/desktop/src/adapters/MixerControlPort.ts`, `apps/desktop/src/adapters/preview/PreviewAdapter.ts`, `apps/desktop/src/fixtures/approvedMixerSession.ts`: added Harmony revision, pending, error, effective state, primary instance ID, and mode fields; preview default now follows spec with Harmony OFF and C Major visible.
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`, `apps/desktop/src/features/mixer/components/ChannelBank.tsx`: wired the Harmony gear to open the quick tray without toggling ON/OFF, preserving keyboard-accessible button behavior.
+- `apps/desktop/src/features/harmony/components/HarmonyQuickPanel.tsx`, `apps/desktop/src/styles/app.css`: added Mode, Close, pending/error/effective status display, disabled pending toggle state, and compact layout updates.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: connected Harmony ON/OFF and quick parameter changes to `channel-harmony-set-enabled` and `channel-harmony-configure` when the native engine is running, with preview fallback when unavailable.
+
+Implemented behavior:
+- User can stay on Mixer, click HARMONY ON/OFF, open the gear tray, adjust key/scale/mode/voices/level, close the tray, and keep state intact.
+- Native ACKs reconcile desired/effective enabled, revision, primary instance ID, key, scale, mode, voice intervals, and level.
+- Toggling Harmony on the vocal strip does not select or change FX A/B programs and does not enable Harmony on non-vocal channels.
+- Gear opens settings only; it does not toggle Harmony.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- preview-adapter`
+- exit/result: `0`; preview adapter unit tests 9/9 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 33/33, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- HARM-01 is UI/ACK binding only; native audio renderer insertion, voice-only ramp, lead alignment, Monitor Fast effective-state messaging, and recording/offline snapshot semantics remain pending HARM-02.
+- Advanced multiple-primary chooser UX is still represented by native rejection rather than a full selection dialog.

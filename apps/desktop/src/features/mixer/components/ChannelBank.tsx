@@ -18,9 +18,10 @@ interface ChannelBankProps {
   onProcessor(channelId: string, processorId: ProcessorId, enabled: boolean): void;
   onClipReset(channelId: string): void;
   onHarmonyToggle(): void;
+  onHarmonySettings(channelId: string): void;
 }
 
-export function ChannelBank({ channels, sourceOptions, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onSend, onMute, onSolo, onMonitor, onRecordArm, onProcessor, onClipReset, onHarmonyToggle }: ChannelBankProps) {
+export function ChannelBank({ channels, sourceOptions, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onSend, onMute, onSolo, onMonitor, onRecordArm, onProcessor, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelBankProps) {
   return (
     <section className="channel-bank">
       {channels.map((channel) => (
@@ -42,6 +43,7 @@ export function ChannelBank({ channels, sourceOptions, onSelect, onEnabled, onSo
           onProcessor={(processorId, enabled) => onProcessor(channel.id, processorId, enabled)}
           onClipReset={() => onClipReset(channel.id)}
           onHarmonyToggle={onHarmonyToggle}
+          onHarmonySettings={() => onHarmonySettings(channel.id)}
         />
       ))}
     </section>

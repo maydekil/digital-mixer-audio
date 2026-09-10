@@ -152,12 +152,36 @@ export class PreviewAdapter implements MixerControlPort {
   }
 
   setHarmonyEnabled(enabled: boolean): void {
-    this.snapshot.harmony = { ...this.snapshot.harmony, enabled };
+    this.snapshot.harmony = {
+      ...this.snapshot.harmony,
+      enabled,
+      effectiveEnabled: enabled,
+      pending: false,
+      error: "",
+      revision: this.snapshot.harmony.revision + 1,
+      primaryInstanceId: enabled && !this.snapshot.harmony.primaryInstanceId ? "harmony:voice:primary" : this.snapshot.harmony.primaryInstanceId
+    };
     this.snapshot.channels = this.snapshot.channels.map((channel) => channel.role === "vocal" ? { ...channel, harmonyEnabled: enabled } : channel);
   }
 
+  setHarmonyPending(pending: boolean): void {
+    this.snapshot.harmony = { ...this.snapshot.harmony, pending, error: "" };
+  }
+
+  ackHarmony(state: Partial<HarmonyState>): void {
+    this.snapshot.harmony = { ...this.snapshot.harmony, ...state, pending: false, error: "" };
+    this.snapshot.channels = this.snapshot.channels.map((channel) => channel.role === "vocal" ? {
+      ...channel,
+      harmonyEnabled: Boolean(state.enabled ?? this.snapshot.harmony.enabled)
+    } : channel);
+  }
+
+  setHarmonyError(error: string): void {
+    this.snapshot.harmony = { ...this.snapshot.harmony, pending: false, error };
+  }
+
   updateHarmony(field: keyof HarmonyState, value: string | number | boolean): void {
-    this.snapshot.harmony = { ...this.snapshot.harmony, [field]: value };
+    this.snapshot.harmony = { ...this.snapshot.harmony, [field]: value, revision: this.snapshot.harmony.revision + 1, error: "" };
   }
 
   selectVocalFxSlot(slotId: string): void {

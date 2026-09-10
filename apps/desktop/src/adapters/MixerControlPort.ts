@@ -59,8 +59,14 @@ export type EqBandState = EqBandDisplay;
 
 export interface HarmonyState {
   enabled: boolean;
+  effectiveEnabled: boolean;
+  pending: boolean;
+  error: string;
+  revision: number;
+  primaryInstanceId: string;
   key: string;
   scale: string;
+  mode: string;
   voice1: string;
   voice2: string;
   levelDb: number;
@@ -135,6 +141,9 @@ export interface MixerControlPort {
   updateEqBand(bandId: EqBandState["id"], field: "freqHz" | "gainDb" | "qValue" | "type", value: number | string): void;
   resetFxProgram(unitId: FxUnitId): void;
   setHarmonyEnabled(enabled: boolean): void;
+  setHarmonyPending(pending: boolean): void;
+  ackHarmony(state: Partial<HarmonyState>): void;
+  setHarmonyError(error: string): void;
   updateHarmony(field: keyof HarmonyState, value: string | number | boolean): void;
   selectVocalFxSlot(slotId: string): void;
   setVocalFxSlotEnabled(slotId: string, enabled: boolean): void;

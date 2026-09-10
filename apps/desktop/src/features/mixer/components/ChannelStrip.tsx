@@ -22,9 +22,10 @@ interface ChannelStripProps {
   onProcessor(processorId: ProcessorId, enabled: boolean): void;
   onClipReset(): void;
   onHarmonyToggle?(): void;
+  onHarmonySettings?(): void;
 }
 
-export function ChannelStrip({ channel, sourceOptions, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onSend, onMute, onSolo, onMonitor, onRecordArm, onProcessor, onClipReset, onHarmonyToggle }: ChannelStripProps) {
+export function ChannelStrip({ channel, sourceOptions, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onSend, onMute, onSolo, onMonitor, onRecordArm, onProcessor, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
   const isMaster = channel.kind === "master";
   const isGroup = channel.kind === "group";
   const meter = channel.enabled ? channel.meter : { left: -60, right: -60, clip: false };
@@ -47,7 +48,7 @@ export function ChannelStrip({ channel, sourceOptions, onSelect, onEnabled, onSo
       {channel.harmonyVisible ? (
         <div className="harmony-shortcut">
           <Button tone="violet" active={channel.harmonyEnabled} onClick={onHarmonyToggle}>HARMONY {channel.harmonyEnabled ? "ON" : "OFF"}</Button>
-          <Button aria-label="Harmony settings">⚙</Button>
+          <Button aria-label="Harmony settings" onClick={onHarmonySettings}>⚙</Button>
         </div>
       ) : !isMaster ? <div className="harmony-shortcut is-placeholder" aria-hidden="true" /> : null}
       <div className="strip-divider" />

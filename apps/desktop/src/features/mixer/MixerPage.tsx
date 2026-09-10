@@ -25,6 +25,7 @@ export function MixerPage() {
   const [hardwareOpen, setHardwareOpen] = useState(false);
   const [mediaImportOpen, setMediaImportOpen] = useState(false);
   const [vocalFxOpen, setVocalFxOpen] = useState(false);
+  const [harmonyOpen, setHarmonyOpen] = useState(true);
   const [devices, setDevices] = useState<HardwareDevice[]>([]);
   const [outputUid, setOutputUid] = useState("");
   const [transportState, setTransportState] = useState("stopped");
@@ -148,6 +149,60 @@ export function MixerPage() {
     refresh(() => adapter.ackFxProgram(unitId, Number(result.programId ?? unit.programId), Number(result.revision ?? unit.revision)));
   }
 
+  async function setHarmonyEnabled(enabled: boolean) {
+    const current = adapter.getSnapshot().harmony;
+    const channel = adapter.getSnapshot().channels.find((item) => item.role === "vocal");
+    if (!window.localMixer?.engineCommand || !channel) {
+      refresh(() => adapter.setHarmonyEnabled(enabled));
+      return;
+    }
+    refresh(() => adapter.setHarmonyPending(true));
+    const result = await window.localMixer.engineCommand("channel-harmony-set-enabled", {
+      channelId: channel.id,
+      enabled,
+      expectedRevision: current.revision
+    });
+    applyHarmonyResult(result);
+  }
+
+  async function configureHarmony(field: keyof MixerSnapshot["harmony"], value: string | number | boolean) {
+    const before = adapter.getSnapshot().harmony;
+    refresh(() => adapter.updateHarmony(field, value));
+    const current = adapter.getSnapshot().harmony;
+    const channel = adapter.getSnapshot().channels.find((item) => item.role === "vocal");
+    if (!window.localMixer?.engineCommand || !channel) return;
+    const result = await window.localMixer.engineCommand("channel-harmony-configure", {
+      channelId: channel.id,
+      key: current.key,
+      scale: current.scale,
+      mode: current.mode,
+      voice1: current.voice1,
+      voice2: current.voice2,
+      levelDb: current.levelDb,
+      expectedRevision: before.revision
+    });
+    applyHarmonyResult(result);
+  }
+
+  function applyHarmonyResult(result: Record<string, unknown> | undefined) {
+    if (!result || result.ok === false || result.accepted === false) {
+      refresh(() => adapter.setHarmonyError(String(result?.error ?? "HARMONY_REJECTED")));
+      return;
+    }
+    refresh(() => adapter.ackHarmony({
+      enabled: Boolean(result.desiredEnabled),
+      effectiveEnabled: Boolean(result.effectiveEnabled),
+      revision: Number(result.revision ?? 0),
+      primaryInstanceId: String(result.primaryHarmonyInstanceId ?? ""),
+      key: String(result.key ?? "C"),
+      scale: String(result.scale ?? "Major"),
+      mode: String(result.mode ?? "Diatonic"),
+      voice1: String(result.voice1 ?? "+3rd"),
+      voice2: String(result.voice2 ?? "+5th"),
+      levelDb: Number(result.levelDb ?? 0)
+    }));
+  }
+
   useEffect(() => {
     void refreshDevices();
     void refreshFxProgramBank();
@@ -227,13 +282,20 @@ export function MixerPage() {
               }
             }}
             onClipReset={(id) => refresh(() => adapter.resetClip(id))}
-            onHarmonyToggle={() => refresh(() => adapter.setHarmonyEnabled(!snapshot.harmony.enabled))}
+            onHarmonyToggle={() => void setHarmonyEnabled(!adapter.getSnapshot().harmony.enabled)}
+            onHarmonySettings={(id) => {
+              refresh(() => adapter.selectChannel(id));
+              setHarmonyOpen(true);
+            }}
           />
-          <HarmonyQuickPanel
-            harmony={snapshot.harmony}
-            onToggle={(enabled) => refresh(() => adapter.setHarmonyEnabled(enabled))}
-            onChange={(field, value) => refresh(() => adapter.updateHarmony(field, value))}
-          />
+          {harmonyOpen ? (
+            <HarmonyQuickPanel
+              harmony={snapshot.harmony}
+              onToggle={(enabled) => void setHarmonyEnabled(enabled)}
+              onChange={(field, value) => void configureHarmony(field, value)}
+              onClose={() => setHarmonyOpen(false)}
+            />
+          ) : null}
         </div>
         <div className="right-zone">
           <ChannelProcessingPanel
