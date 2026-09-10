@@ -11,6 +11,7 @@
     "build:desktop:main": "node scripts/build-desktop-main.mjs",
     "build:native": "node scripts/build-native.mjs",
     "build:native:sound-pad": "node scripts/build-native-sound-pad.mjs",
+    "probe:codecs": "node scripts/probe-codecs.mjs",
     "build": "npm run build:native && npm run build:ui",
     "doctor": "node scripts/doctor.mjs",
     "typecheck": "tsc --noEmit",

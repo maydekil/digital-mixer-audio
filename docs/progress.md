@@ -949,3 +949,25 @@ Known limitations:
 - Import processing is currently poll-driven rather than a separate background thread.
 - Import jobs support WAV through the current native reader; AIFF/FLAC/MP3/M4A remain not implemented.
 - Imported media is not yet placed on a playable timeline track.
+
+### Phase06 Checkpoint — Local Codec Capability Probe
+
+Changed files:
+- `scripts/probe-codecs.mjs`: added a repeatable FFmpeg decoder probe using argv spawning with `shell:false`.
+- `package.json`: added `npm run probe:codecs`.
+- `docs/reports/codec-probe-phase06.md`: recorded current local decoder availability.
+- `docs/task-plan.json`, `docs/progress.md`: added evidence paths and validation record.
+
+Implemented behavior:
+- Local development probe verifies FFmpeg availability and required decoder names for M4A/AAC, FLAC, MP3, WAV PCM, and WAV float.
+- Probe output is explicit about scope: it proves this machine's FFmpeg capability, not packaged end-user bundling.
+
+Validation:
+- command: `npm run probe:codecs`
+- exit/result: `0`; report shows FFmpeg `8.1.1` at `/opt/homebrew/bin/ffmpeg`, with `aac`, `flac`, `mp3`, `pcm_s16le`, and `pcm_f32le` available.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- FFmpeg decoding is not yet integrated into native import jobs.
+- End-user packaged FFmpeg resource path and bundling are still a later packaging requirement.
