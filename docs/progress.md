@@ -1383,3 +1383,30 @@ Validation:
 Known limitations:
 - VFX-00 is catalog/contract work only; it does not complete rack runtime or the remaining Vocal FX DSP.
 - Rubber Band/pitch backend build, license, latency, pitch detector, and audio quality gates remain pending in VFX-04 through VFX-06.
+
+## VFX-01 — Rack Runtime, Dry Alignment, Bypass, And Editor Skeleton
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: VFX-00 IMPLEMENTED_UNVERIFIED
+
+### VFX-01 Checkpoint — Native Effect Rack Runtime Foundation
+
+Changed files:
+- `native/engine/src/dsp/fx/EffectProcessor.hpp`: added the native effect processor runtime interface with prepare/reset/process/realtime-parameter/latency/tail methods.
+- `native/engine/src/dsp/fx/EffectRack.hpp`, `native/engine/src/dsp/fx/EffectRack.cpp`: added bounded rack slots, revision-guarded add/remove/move/bypass/replace, all-or-nothing factory rollback, A/B compare store/recall, serial processing, linear wet/dry mix, slot limit, and mono/stereo compatibility checks.
+- `native/engine/tests/fx/EffectRackTest.cpp`: verifies 50% linear mix, bypass behavior, rapid bypass changes, injected latency reporting, factory failure rollback, move/reorder, A/B recall, stale revision rejection, slot limit, and incompatible format rejection before publish.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired VFX-01 build/test/progress evidence.
+
+Implemented behavior:
+- Rack actions produce explicit `FxError` outcomes and applied revisions.
+- Factory failure preserves the previous active rack.
+- Native slot count is bounded.
+- Test gain/latency processors validate plumbing but are not registered in the production Vocal FX catalog.
+- Mono-only processors cannot be moved after a stereo-widening slot unless a later phase adds tested negotiation support.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 22/22 including `local-mixer-effect-rack-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- Full latency-compensated dry alignment/history, graph publication/retirement from the realtime mixer graph, IPC commands, and UI editor skeleton are not yet connected.
+- Bypass crossfade is represented by state changes only; click-free ramp verification is pending with real processors.
