@@ -1254,3 +1254,28 @@ Validation:
 Known limitations:
 - Edit commands are not yet wired to desktop UI shortcuts/drag operations or session persistence.
 - Timeline playback still uses earlier scheduler primitives; edit-during-playback concurrency has not been integrated into realtime graph publication.
+
+## Phase13 — Master And Multitrack Recording
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: Phase12 IMPLEMENTED_UNVERIFIED
+
+### Phase13 Checkpoint — Native Recording Writer Foundation
+
+Changed files:
+- `native/engine/src/engine/Recording.hpp`, `native/engine/src/engine/Recording.cpp`: added native float32 WAV writer, collision-safe take naming, recording tap enum, and recording session state machine.
+- `native/engine/tests/RecordingTest.cpp`: verifies collision-safe filenames, arm/start/write/stop transitions, WAV metadata round-trip through the native reader, clamped float samples, and overrun status preserving valid recorded data.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired Phase13 build/test/progress evidence.
+
+Implemented behavior:
+- Recording output is written as native WAV float32 with finalized RIFF/data sizes.
+- Take filenames avoid overwriting existing files.
+- Session state distinguishes saved, failed, and overrun outcomes.
+- Overrun stop finalizes valid data and keeps `overrun` status instead of reporting success.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 17/17 including `local-mixer-recording-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- Realtime writer thread, bounded ring buffer, free-space monitoring, RF64/segmentation, and desktop recording controls are not yet implemented.
+- Dry/processed/master tap routing exists as metadata only; callback tap capture is pending.

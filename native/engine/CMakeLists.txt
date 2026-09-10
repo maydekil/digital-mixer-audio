@@ -15,6 +15,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/MixerControlQueue.cpp
   src/engine/MixerGraph.cpp
   src/engine/MixerGraphController.cpp
+  src/engine/Recording.cpp
   src/engine/RoutingGraph.cpp
   src/engine/SystemRouteRecovery.cpp
   src/engine/SystemRouting.cpp
@@ -192,3 +193,12 @@ target_link_libraries(local-mixer-timeline-edit-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-timeline-edit-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-timeline-edit-tests COMMAND local-mixer-timeline-edit-tests)
+
+add_executable(local-mixer-recording-tests
+  tests/RecordingTest.cpp
+)
+
+target_link_libraries(local-mixer-recording-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-recording-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-recording-tests COMMAND local-mixer-recording-tests)
