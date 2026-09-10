@@ -1874,3 +1874,39 @@ Validation:
 Known limitations:
 - This checkpoint is a safe plugin foundation only; actual AU/VST3 instantiation, realtime processing insertion, plugin editor windows, latency compensation, crash recovery, and broad third-party compatibility QA remain pending later integration work.
 - Scanner JSON is intentionally minimal and is not yet a full plugin metadata database.
+
+## Phase18 — Per-app System Capture
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: Phase17 IMPLEMENTED_UNVERIFIED
+
+### Phase18 Checkpoint — Tap Capability And Assignment Audit
+
+Changed files:
+- `native/engine/src/engine/PerAppCapture.hpp`, `native/engine/src/engine/PerAppCapture.cpp`: added native per-app capture capability, process-source identity, assignment validation, permission/support status, system-mix exclusivity, and own-process recapture rejection.
+- `native/engine/tests/PerAppCaptureTest.cpp`: verifies independent two-app assignments, original mute count, system-mix conflict, own-process rejection, permission-required state, and JSON audit output.
+- `native/engine/src/main.cpp`: added `--per-app-capture-capability` and stdio `per-app-capture-capability` command.
+- `apps/desktop/electron/EngineSupervisor.ts`: normalizes closed-stdin/EPIPE writes into a controlled engine-unavailable rejection so desktop shutdown does not surface a raw JavaScript main-process error.
+- `native/engine/CMakeLists.txt`: wires Phase18 source and native CTest target.
+
+Implemented behavior:
+- The engine has a native-only capability contract for Core Audio tap style per-app capture.
+- Per-app assignments are explicitly exclusive with system-mix capture on overlapping sources.
+- Each selected process source must be present, running, capturable, and not the mixer engine/app itself.
+- Permission-required and unsupported states are first-class statuses rather than a checked UI box.
+- Current CLI reports macOS tap capability as a foundation with runtime source enumeration disabled until the real tap backend is completed.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-engine local-mixer-per-app-capture-tests`
+- exit/result: `0`; engine and per-app capture tests built successfully. macOS libsamplerate deployment warning remains non-fatal and pre-existing.
+- command: `native/engine/build/native/engine/local-mixer-per-app-capture-tests`
+- exit/result: `0`; per-app capture audit tests passed.
+- command: `native/engine/build/native/engine/local-mixer-engine --per-app-capture-capability`
+- exit/result: `0`; returned `platformSupported:true`, `backend:"CoreAudioTap"`, `permissionGranted:false`, `sources:[]`, and note that runtime source enumeration is not enabled in this build yet.
+- command: `npm run test:ui -- engine-supervisor`
+- exit/result: `0`; EngineSupervisor 9/9 tests passed, including closed-stdin/EPIPE rejection.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 36/36, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- Real Core Audio process tap enumeration, permission request UI, tap creation/cleanup, adaptive clock bridge, app restart recovery, and actual two-app audio capture are NOT_RUN and not claimed as VERIFIED.
+- `canMuteOriginal` is currently false in the runtime capability command until a tested tap backend can prove original muting/exclusion behavior.

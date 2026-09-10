@@ -8,6 +8,7 @@
 #include "engine/MediaTransportJson.hpp"
 #include "engine/MixerGraph.hpp"
 #include "engine/MixerGraphController.hpp"
+#include "engine/PerAppCapture.hpp"
 #include "engine/SystemRouteRecovery.hpp"
 #include "engine/SystemRouting.hpp"
 #include "engine/SystemRoutingJson.hpp"
@@ -255,6 +256,23 @@ std::string devicesJson(std::span<const localmixer::engine::DeviceDescriptor> de
   }
   json += "]";
   return json;
+}
+
+std::string perAppCaptureCapabilityResultJson() {
+  return localmixer::engine::perAppCaptureCapabilityJson(localmixer::engine::PerAppCaptureCapability{
+#if defined(__APPLE__)
+    .platformSupported = true,
+    .permissionGranted = false,
+    .canMuteOriginal = false,
+    .canExcludeOwnProcess = true,
+    .backend = "CoreAudioTap",
+    .note = "Runtime process-audio tap enumeration is not enabled in this build yet.",
+#else
+    .platformSupported = false,
+    .backend = "Unavailable",
+    .note = "Per-app capture requires macOS Core Audio taps.",
+#endif
+  });
 }
 
 std::string statusJson(const localmixer::engine::RuntimeStatus& status) {
@@ -718,6 +736,8 @@ int runStdioProtocol() {
         systemRouteTransactionJson(routeTransactionManager.transaction()) +
         ",\"recoveryMarkerPresent\":" + std::string(marker.has_value() ? "true" : "false") +
         ",\"recoveryOriginalOutputUid\":\"" + escapeJson(marker.has_value() ? marker->originalOutputUid : "") + "\"");
+    } else if (type == "per-app-capture-capability") {
+      writeRawResponse(id, true, "per-app-capture-capability", perAppCaptureCapabilityResultJson());
     } else if (type == "routing-system-recover") {
       const auto marker = routeRecoveryStore.load();
       if (!marker.has_value()) {
@@ -875,6 +895,11 @@ int main(int argc, char** argv) {
     return 0;
   }
 
+  if (command == "--per-app-capture-capability") {
+    std::cout << "{" << perAppCaptureCapabilityResultJson() << "}" << std::endl;
+    return 0;
+  }
+
   if (command == "--self-test") {
     if (!runSelfTest()) {
       std::cerr << "engine self-test failed\n";
@@ -884,6 +909,6 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  std::cerr << "usage: local-mixer-engine [--version|--self-test|--stdio|--list-devices|--request-mic-permission|--test-tone|--meter-input|--monitor-passthrough]\n";
+  std::cerr << "usage: local-mixer-engine [--version|--self-test|--stdio|--list-devices|--request-mic-permission|--test-tone|--meter-input|--monitor-passthrough|--per-app-capture-capability]\n";
   return 64;
 }

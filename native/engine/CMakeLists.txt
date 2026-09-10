@@ -36,6 +36,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/MixerControlQueue.cpp
   src/engine/MixerGraph.cpp
   src/engine/MixerGraphController.cpp
+  src/engine/PerAppCapture.cpp
   src/engine/PluginRegistry.cpp
   src/engine/Recording.cpp
   src/engine/RoutingGraph.cpp
@@ -318,6 +319,15 @@ target_link_libraries(local-mixer-plugin-registry-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-plugin-registry-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-plugin-registry-tests COMMAND local-mixer-plugin-registry-tests)
+
+add_executable(local-mixer-per-app-capture-tests
+  tests/PerAppCaptureTest.cpp
+)
+
+target_link_libraries(local-mixer-per-app-capture-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-per-app-capture-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-per-app-capture-tests COMMAND local-mixer-per-app-capture-tests)
 
 add_executable(local-mixer-effect-registry-tests
   tests/fx/EffectRegistryTest.cpp

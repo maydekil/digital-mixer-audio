@@ -72,7 +72,7 @@ export class EngineSupervisor extends EventEmitter {
       } catch (error) {
         clearTimeout(timeout);
         this.pending.delete(id);
-        reject(error instanceof Error ? error : new Error(String(error)));
+        reject(this.toSendError(error));
       }
     });
   }
@@ -229,6 +229,14 @@ export class EngineSupervisor extends EventEmitter {
       pending.reject(error);
     }
     this.pending.clear();
+  }
+
+  private toSendError(error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/EPIPE|ERR_STREAM_DESTROYED|write after end|stream/i.test(message)) {
+      return new Error("Engine stdin is closed");
+    }
+    return error instanceof Error ? error : new Error(message);
   }
 
   private setState(state: EngineState) {
