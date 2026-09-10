@@ -638,6 +638,20 @@ Known limitations:
 - Route apply/restore is still blocked with `OS_APPLY_UNAVAILABLE`; no macOS default output is changed by this checkpoint.
 - Durable recovery marker across process restart is not implemented yet.
 
+### Phase04 Maintenance — Protocol Helper Split
+
+Changed files:
+- `native/engine/src/engine/JsonProtocol.hpp`, `native/engine/src/engine/JsonProtocol.cpp`: extracted bounded JSONL field readers and response writers from `main.cpp`.
+- `native/engine/src/engine/SystemRoutingJson.hpp`, `native/engine/src/engine/SystemRoutingJson.cpp`: extracted system route diagnostics/transaction JSON serialization.
+- `native/engine/src/main.cpp`: reduced from 750 lines to 655 lines to keep protocol entry point maintainable before adding more Phase04 commands.
+- `native/engine/CMakeLists.txt`: includes the new helper modules in the native engine executable.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 6/6, engine self-test, and protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
 ## Native Sound Pad Spike — Early User-Requested
 Status: IMPLEMENTED_UNVERIFIED_PLAYBACK
 Prerequisites: user explicitly requested this before UI-04

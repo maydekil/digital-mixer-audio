@@ -1,9 +1,11 @@
 #include "dsp/Gain.hpp"
 #include "dsp/OutputProtection.hpp"
 #include "engine/EngineRuntime.hpp"
+#include "engine/JsonProtocol.hpp"
 #include "engine/MixerGraph.hpp"
 #include "engine/MixerGraphController.hpp"
 #include "engine/SystemRouting.hpp"
+#include "engine/SystemRoutingJson.hpp"
 #if defined(__APPLE__)
 #include "platform/macos/CoreAudioDevices.hpp"
 #include "platform/macos/CoreAudioInputMeter.hpp"
@@ -23,6 +25,15 @@ namespace {
 
 constexpr int kProtocolVersion = 1;
 constexpr std::size_t kMaxMessageBytes = 8192;
+
+using localmixer::engine::protocol::escapeJson;
+using localmixer::engine::protocol::readJsonBoolField;
+using localmixer::engine::protocol::readJsonNumberField;
+using localmixer::engine::protocol::readJsonStringField;
+using localmixer::engine::protocol::systemRouteDiagnosticsJson;
+using localmixer::engine::protocol::systemRouteTransactionJson;
+using localmixer::engine::protocol::writeRawResponse;
+using localmixer::engine::protocol::writeResponse;
 
 struct SyncedMonitorSelection {
   std::string inputUid;
@@ -95,17 +106,6 @@ void printVersion() {
     << "\"audio\":\"not-started\","
     << "\"juce\":\"pinned-8.0.15-not-linked\"}"
     << std::endl;
-}
-
-std::string escapeJson(const std::string& text) {
-  std::string out;
-  out.reserve(text.size());
-  for (const char c : text) {
-    if (c == '"' || c == '\\') out.push_back('\\');
-    if (c >= 0 && c < 0x20) continue;
-    out.push_back(c);
-  }
-  return out;
 }
 
 std::vector<localmixer::engine::DeviceDescriptor> loadNativeDevices() {
@@ -218,49 +218,6 @@ std::string monitorPassthroughResultJson(
 #endif
 }
 
-std::string systemRouteDiagnosticsJson(
-  std::span<const localmixer::engine::DeviceDescriptor> devices,
-  const std::string& blackHoleUid,
-  const std::string& outputUid,
-  double sampleRate,
-  std::uint32_t inputStartChannel,
-  std::uint32_t outputStartChannel
-) {
-  const auto diagnostics = localmixer::engine::validateSystemRoute(
-    devices,
-    localmixer::engine::ProjectAudioConfig{.sampleRate = sampleRate, .blockSize = 256},
-    localmixer::engine::SystemRouteSelection{
-      .blackHoleUid = blackHoleUid,
-      .physicalOutputUid = outputUid,
-      .blackHoleInputStartChannel = inputStartChannel,
-      .physicalOutputStartChannel = outputStartChannel,
-    }
-  );
-  std::string json = "\"routeValid\":" + std::string(diagnostics.routeValid ? "true" : "false");
-  json += ",\"blackHoleAvailable\":" + std::string(diagnostics.blackHoleAvailable ? "true" : "false");
-  json += ",\"error\":\"" + std::string(localmixer::engine::systemRouteErrorName(diagnostics.error)) + "\"";
-  json += ",\"blackHoleUid\":\"" + escapeJson(diagnostics.selection.blackHoleUid) + "\"";
-  json += ",\"physicalOutputUid\":\"" + escapeJson(diagnostics.selection.physicalOutputUid) + "\"";
-  json += ",\"selectedInputStart\":" + std::to_string(diagnostics.selectedInputStart);
-  json += ",\"selectedInputEnd\":" + std::to_string(diagnostics.selectedInputEnd);
-  json += ",\"selectedOutputStart\":" + std::to_string(diagnostics.selectedOutputStart);
-  json += ",\"selectedOutputEnd\":" + std::to_string(diagnostics.selectedOutputEnd);
-  json += ",\"blackHoleSampleRate\":" + std::to_string(diagnostics.blackHoleSampleRate);
-  json += ",\"outputSampleRate\":" + std::to_string(diagnostics.outputSampleRate);
-  return json;
-}
-
-std::string systemRouteTransactionJson(const localmixer::engine::SystemRouteTransaction& transaction) {
-  std::string json = "\"state\":\"";
-  json += localmixer::engine::systemRouteTransactionStateName(transaction.state);
-  json += "\",\"error\":\"" + std::string(localmixer::engine::systemRouteErrorName(transaction.error)) + "\"";
-  json += ",\"ownsSystemRoute\":" + std::string(transaction.ownsSystemRoute ? "true" : "false");
-  json += ",\"originalOutputUid\":\"" + escapeJson(transaction.originalOutputUid) + "\"";
-  json += ",\"blackHoleUid\":\"" + escapeJson(transaction.selection.blackHoleUid) + "\"";
-  json += ",\"physicalOutputUid\":\"" + escapeJson(transaction.selection.physicalOutputUid) + "\"";
-  return json;
-}
-
 std::string devicesJson(std::span<const localmixer::engine::DeviceDescriptor> devices) {
   std::string json = "[";
   for (std::size_t index = 0; index < devices.size(); index += 1) {
@@ -310,46 +267,6 @@ void printDevices() {
       << "}";
   }
   std::cout << "],\"micPermission\":\"" << microphonePermissionState() << "\"}" << std::endl;
-}
-
-std::string readJsonStringField(const std::string& line, const std::string& field) {
-  const std::string key = "\"" + field + "\"";
-  const auto keyPos = line.find(key);
-  if (keyPos == std::string::npos) return "";
-  const auto colon = line.find(':', keyPos + key.size());
-  if (colon == std::string::npos) return "";
-  const auto start = line.find('"', colon + 1);
-  if (start == std::string::npos) return "";
-  const auto end = line.find('"', start + 1);
-  if (end == std::string::npos) return "";
-  return line.substr(start + 1, end - start - 1);
-}
-
-std::optional<double> readJsonNumberField(const std::string& line, const std::string& field) {
-  const std::string key = "\"" + field + "\"";
-  const auto keyPos = line.find(key);
-  if (keyPos == std::string::npos) return std::nullopt;
-  const auto colon = line.find(':', keyPos + key.size());
-  if (colon == std::string::npos) return std::nullopt;
-  const auto start = line.find_first_of("-0123456789", colon + 1);
-  if (start == std::string::npos) return std::nullopt;
-  const auto end = line.find_first_not_of("-0123456789.", start);
-  try {
-    return std::stod(line.substr(start, end - start));
-  } catch (...) {
-    return std::nullopt;
-  }
-}
-
-std::optional<bool> readJsonBoolField(const std::string& line, const std::string& field) {
-  const std::string key = "\"" + field + "\"";
-  const auto keyPos = line.find(key);
-  if (keyPos == std::string::npos) return std::nullopt;
-  const auto colon = line.find(':', keyPos + key.size());
-  if (colon == std::string::npos) return std::nullopt;
-  if (line.find("true", colon + 1) == colon + 1) return true;
-  if (line.find("false", colon + 1) == colon + 1) return false;
-  return std::nullopt;
 }
 
 std::string indexedField(std::uint32_t index, const std::string& suffix) {
@@ -469,18 +386,6 @@ std::string syncMixerGraphResultJson(
   return "\"synced\":true,\"error\":\"\",\"stripCount\":" + std::to_string(stripCount) +
     ",\"activeMonitorCount\":" + std::to_string(monitorCount) +
     ",\"retiredGraphCount\":" + std::to_string(controller.retiredCount());
-}
-
-void writeResponse(const std::string& id, bool ok, const std::string& type, const std::string& error = "") {
-  std::cout << "{\"id\":\"" << id << "\",\"type\":\"" << type << "\",\"ok\":" << (ok ? "true" : "false");
-  if (!error.empty()) std::cout << ",\"error\":\"" << error << "\"";
-  std::cout << "}" << std::endl;
-}
-
-void writeRawResponse(const std::string& id, bool ok, const std::string& type, const std::string& fields) {
-  std::cout << "{\"id\":\"" << id << "\",\"type\":\"" << type << "\",\"ok\":" << (ok ? "true" : "false");
-  if (!fields.empty()) std::cout << "," << fields;
-  std::cout << "}" << std::endl;
 }
 
 int runStdioProtocol() {
