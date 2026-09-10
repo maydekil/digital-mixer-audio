@@ -5,6 +5,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/EngineRuntime.cpp
   src/engine/MediaFile.cpp
   src/engine/MediaImportJob.cpp
+  src/engine/MediaResampler.cpp
   src/engine/MixerControlQueue.cpp
   src/engine/MixerGraph.cpp
   src/engine/MixerGraphController.cpp

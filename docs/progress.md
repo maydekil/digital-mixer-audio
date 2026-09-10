@@ -1061,3 +1061,24 @@ Validation:
 Known limitations:
 - Full loop playback has not yet been connected to the device callback.
 - Fade shape is currently linear; final UX may require equal-power or configurable curves.
+
+### Phase06 Checkpoint — Mixed-Rate Resampler Foundation
+
+Changed files:
+- `native/engine/src/engine/MediaResampler.hpp`, `native/engine/src/engine/MediaResampler.cpp`: added native linear resampling helpers and target frame-count calculation.
+- `native/engine/tests/MediaTransportTest.cpp`: verifies 24 kHz to 48 kHz frame count and source sample positions.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired build and evidence.
+
+Implemented behavior:
+- Native code can convert decoded PCM between source and project sample rates.
+- Duration frame count is calculated from source/target rate instead of accepting mismatched rates silently.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 8/8, engine self-test, device enumeration smoke, and protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Resampler is linear and intended as a correctness foundation; final import quality may require a higher-quality native resampler.
+- Resampler is not yet integrated into import jobs or realtime file playback.

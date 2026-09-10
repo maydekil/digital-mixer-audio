@@ -1,5 +1,6 @@
 #include "engine/MediaFile.hpp"
 #include "engine/MediaImportJob.hpp"
+#include "engine/MediaResampler.hpp"
 #include "engine/Transport.hpp"
 #include "engine/WaveformPyramid.hpp"
 
@@ -13,11 +14,14 @@ namespace {
 using localmixer::engine::MediaFileError;
 using localmixer::engine::MediaImportJobManager;
 using localmixer::engine::MediaImportState;
+using localmixer::engine::ResampleRequest;
 using localmixer::engine::TransportClock;
 using localmixer::engine::TransportLoop;
 using localmixer::engine::TransportState;
 using localmixer::engine::WavStreamReader;
 using localmixer::engine::buildWaveformPyramid;
+using localmixer::engine::resampleLinear;
+using localmixer::engine::resampledFrameCount;
 
 void writeU16(std::ofstream& file, std::uint16_t value) {
   file.put(static_cast<char>(value & 0xFF));
@@ -109,6 +113,18 @@ int main() {
   const auto canceled = imports.cancel(cancelStarted.jobId);
   if (!canceled.has_value() || canceled->state != MediaImportState::canceled) {
     std::cerr << "media import job should cancel without a valid media reference\n";
+    return 1;
+  }
+  const std::vector<float> ramp{0.0f, 1.0f, 0.0f};
+  const auto resampled = resampleLinear(ResampleRequest{
+    .samples = ramp,
+    .channels = 1,
+    .sourceSampleRate = 24000.0,
+    .targetSampleRate = 48000.0,
+  });
+  if (resampledFrameCount(3, 24000.0, 48000.0) != 6 || resampled.size() != 6 ||
+      !near(resampled[0], 0.0f) || !near(resampled[2], 1.0f) || !near(resampled[4], 0.0f)) {
+    std::cerr << "linear resampler should preserve duration and source pitch positions\n";
     return 1;
   }
 
