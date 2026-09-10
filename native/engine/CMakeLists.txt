@@ -15,6 +15,8 @@ add_library(local_mixer_dsp STATIC
   src/dsp/fx/DelayEffect.cpp
   src/dsp/fx/ModulationEffects.cpp
   src/dsp/fx/PitchBackend.cpp
+  src/dsp/fx/PitchCorrectionEffect.cpp
+  src/dsp/fx/PitchDetector.cpp
   src/dsp/fx/ReverbEffect.cpp
   src/engine/Automation.cpp
   src/engine/DeviceService.cpp
@@ -290,3 +292,12 @@ target_link_libraries(local-mixer-pitch-backend-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-pitch-backend-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-pitch-backend-tests COMMAND local-mixer-pitch-backend-tests)
+
+add_executable(local-mixer-pitch-correction-tests
+  tests/fx/PitchCorrectionTest.cpp
+)
+
+target_link_libraries(local-mixer-pitch-correction-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-pitch-correction-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-pitch-correction-tests COMMAND local-mixer-pitch-correction-tests)

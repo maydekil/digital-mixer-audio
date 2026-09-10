@@ -12,15 +12,15 @@ This document records the design contract for native Vocal FX. It is not evidenc
 | --- | --- | --- | --- | --- |
 | `reverb` | `dsp/fx/ReverbEffect` | VFX-02 | `implemented_unverified` | impulse decay, tail limit, wet-only send |
 | `delay` | `dsp/fx/DelayEffect` | VFX-02 | `implemented_unverified` | repeat spacing, feedback bound, tempo sync |
-| `chorus` | `dsp/fx/ModulationEffects` | VFX-02 | `unavailable` | fractional delay modulation sweep |
-| `doubler` | `dsp/fx/DoublerEffect` | VFX-03 | `unavailable` | two independent micro-delay voices, mono fold-down |
-| `pitch_shift` | `dsp/fx/PitchBackend` | VFX-04 | `unavailable` | steady pitch ratio, latency, variable callback sizes |
-| `formant_shift` | `dsp/fx/FormantEffect` | VFX-04 | `unavailable` | envelope shift without intentional F0 move |
-| `pitch_correct` | `dsp/fx/PitchCorrectionEffect` | VFX-05 | `unavailable` | detector, target mapping, detuned-note correction |
+| `chorus` | `dsp/fx/ModulationEffects` | VFX-02 | `implemented_unverified` | fractional delay modulation sweep |
+| `doubler` | `dsp/fx/DoublerEffect` | VFX-03 | `implemented_unverified` | two independent micro-delay voices, mono fold-down |
+| `pitch_shift` | `dsp/fx/PitchBackend` | VFX-04 | `implemented_unverified` | steady pitch ratio, latency, variable callback sizes |
+| `formant_shift` | `dsp/fx/PitchBackend` | VFX-04 | `implemented_unverified` | envelope shift without intentional F0 move |
+| `pitch_correct` | `dsp/fx/PitchCorrectionEffect` | VFX-05 | `implemented_unverified` | detector, target mapping, detuned-note correction |
 | `harmony` | `dsp/fx/HarmonyEffect` | VFX-06 | `unavailable` | fixed/diatonic interval accuracy and dry alignment |
-| `saturation` | `dsp/fx/SaturationEffect` | VFX-03 | `unavailable` | harmonics, output trim, DC suppression |
-| `flanger` | `dsp/fx/ModulationEffects` | VFX-02 | `unavailable` | comb sweep and bounded feedback |
-| `phaser` | `dsp/fx/ModulationEffects` | VFX-02 | `unavailable` | all-pass sweep and silence stability |
+| `saturation` | `dsp/fx/SaturationEffect` | VFX-03 | `implemented_unverified` | harmonics, output trim, DC suppression |
+| `flanger` | `dsp/fx/ModulationEffects` | VFX-02 | `implemented_unverified` | comb sweep and bounded feedback |
+| `phaser` | `dsp/fx/ModulationEffects` | VFX-02 | `implemented_unverified` | all-pass sweep and silence stability |
 | `vocoder` | `dsp/fx/VocoderEffect` | VFX-07 | `unavailable` | filter-bank envelope, carrier note handling, panic |
 
 ## Format Policy

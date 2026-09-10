@@ -1491,3 +1491,30 @@ Known limitations:
 - Pitch/formant processors are not yet wrapped as production `EffectProcessor` instances in the rack.
 - Latency compensation is reported but not yet integrated with rack dry alignment or the realtime mixer graph.
 - Pitch correction, harmony generation, and vocal formant listening QA remain pending in VFX-05 through VFX-09.
+
+## VFX-05 — Monophonic Pitch Correction
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: VFX-04 IMPLEMENTED_UNVERIFIED
+
+### VFX-05 Checkpoint — Detector, Scale Mapper, And Correction Processor
+
+Changed files:
+- `native/engine/src/dsp/fx/PitchDetector.hpp`, `native/engine/src/dsp/fx/PitchDetector.cpp`: added a native monophonic YIN-style pitch detector, voiced confidence output, MIDI/frequency helpers, and chromatic/major/natural-minor scale target mapping.
+- `native/engine/src/dsp/fx/PitchCorrectionEffect.hpp`, `native/engine/src/dsp/fx/PitchCorrectionEffect.cpp`: added a native pitch-correction `EffectProcessor` wrapper using `PitchBackend`, rolling analysis windows, confidence gate, amount/tolerance controls, retune smoothing, and reported analysis/backend latency.
+- `native/engine/tests/fx/PitchCorrectionTest.cpp`: verifies detector pitch/silence behavior, scale mapper correction amount, and a full correction pass for a sharp A4 test tone settling within 10 cents of target.
+- `native/engine/src/dsp/fx/EffectRegistry.cpp`, `docs/specs/vocal-fx.md`, `docs/reports/vocal-fx-catalog-vfx00.md`: updated `pitch_correct` to `implemented_unverified`.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired VFX-05 build/test/progress evidence.
+
+Implemented behavior:
+- Pitch detection, note mapping, and correction run in native C++ only; no browser capture, Web Audio, renderer DSP, ML service, or network dependency is used.
+- Low-confidence or unvoiced input ramps correction back toward unity instead of locking to a random note.
+- Amount `0` is represented as unity correction through the mapper; full amount on a steady detuned note corrects toward the nearest allowed target.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 26/26 including `local-mixer-pitch-correction-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- Correction is implemented as a foundation processor and is not yet connected to production rack IPC/UI controls.
+- Variable callback FIFO adaptation, detector timestamp alignment against delayed audio, vibrato preservation, octave-transition robustness, fricative fixtures, and real vocal audition are still pending for later Vocal FX QA/integration.
+- The current detector favors correctness in tests over optimized realtime complexity; performance profiling remains pending.

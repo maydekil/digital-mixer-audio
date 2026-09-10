@@ -55,8 +55,8 @@ int main() {
   }
 
   const auto pitchCorrect = findEffect("pitch_correct");
-  if (!pitchCorrect.has_value() || pitchCorrect->availability != EffectAvailability::unavailable) {
-    std::cerr << "Pitch correction should remain unavailable until VFX-05 implements DSP\n";
+  if (!pitchCorrect.has_value() || pitchCorrect->availability != EffectAvailability::implementedUnverified) {
+    std::cerr << "Pitch correction should be implemented_unverified after VFX-05\n";
     return 1;
   }
 

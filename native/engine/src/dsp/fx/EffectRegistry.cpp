@@ -121,7 +121,7 @@ constexpr std::array<EffectDescriptor, 12> kCatalog{{
   {"formant_shift", "Formant Shift", EffectCategory::pitch, 1, ChannelFormat::mono, ChannelFormat::mono,
     EffectAvailability::implementedUnverified, "dsp/fx/PitchBackend", "VFX-04", "formant envelope shift without F0 drift"},
   {"pitch_correct", "Pitch Correction", EffectCategory::pitch, 1, ChannelFormat::mono, ChannelFormat::mono,
-    EffectAvailability::unavailable, "dsp/fx/PitchCorrectionEffect", "VFX-05", "detuned notes to target scale"},
+    EffectAvailability::implementedUnverified, "dsp/fx/PitchCorrectionEffect", "VFX-05", "detuned notes to target scale"},
   {"harmony", "Harmony", EffectCategory::pitch, 1, ChannelFormat::monoToStereo, ChannelFormat::stereo,
     EffectAvailability::unavailable, "dsp/fx/HarmonyEffect", "VFX-06", "fixed and diatonic interval accuracy"},
   {"saturation", "Saturation / Drive", EffectCategory::character, 1, ChannelFormat::mono, ChannelFormat::mono,
