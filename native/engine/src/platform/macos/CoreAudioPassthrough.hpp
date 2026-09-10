@@ -2,10 +2,12 @@
 
 #include "engine/ChannelProcessorChain.hpp"
 #include "engine/FxSendReturnBus.hpp"
+#include "dsp/fx/EffectRack.hpp"
 
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace localmixer::platform::macos {
 
@@ -26,6 +28,8 @@ struct PassthroughMonitorRequest {
   localmixer::engine::FxUnitRuntime fxB;
   localmixer::engine::FxSendState sendA;
   localmixer::engine::FxSendState sendB;
+  bool insertFxEnabled = false;
+  std::vector<localmixer::dsp::fx::RackSlotState> vocalFxSlots;
 };
 
 struct PassthroughMonitorResult {

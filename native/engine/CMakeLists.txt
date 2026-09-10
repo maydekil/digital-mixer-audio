@@ -54,6 +54,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/Timeline.cpp
   src/engine/TimelineEdit.cpp
   src/engine/Transport.cpp
+  src/engine/VocalFxRackRuntime.cpp
   src/engine/VocalStripPreset.cpp
   src/engine/WaveformPyramid.cpp
 )
@@ -254,6 +255,15 @@ target_link_libraries(local-mixer-render-runtime-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-render-runtime-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-render-runtime-tests COMMAND local-mixer-render-runtime-tests)
+
+add_executable(local-mixer-vocal-fx-rack-runtime-tests
+  tests/VocalFxRackRuntimeTest.cpp
+)
+
+target_link_libraries(local-mixer-vocal-fx-rack-runtime-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-vocal-fx-rack-runtime-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-vocal-fx-rack-runtime-tests COMMAND local-mixer-vocal-fx-rack-runtime-tests)
 
 add_executable(local-mixer-routing-graph-tests
   tests/RoutingGraphTest.cpp

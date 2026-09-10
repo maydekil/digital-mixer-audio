@@ -2,6 +2,7 @@
 
 #include "dsp/Gain.hpp"
 #include "engine/MixerRenderRuntime.hpp"
+#include "engine/VocalFxRackRuntime.hpp"
 
 #include <CoreAudio/CoreAudio.h>
 #include <CoreFoundation/CoreFoundation.h>
@@ -32,8 +33,10 @@ struct RingBuffer {
 struct PassthroughState {
   RingBuffer ring;
   localmixer::engine::MixerRenderRuntime runtime;
+  localmixer::engine::VocalFxRackRuntime vocalFx;
   localmixer::engine::StripId graphStrip;
   std::vector<float> graphInput;
+  std::vector<float> graphStereoInput;
   std::vector<float> graphLeft;
   std::vector<float> graphRight;
   std::uint32_t inputChannel = 0;
@@ -225,12 +228,20 @@ OSStatus outputCallback(
     return noErr;
   }
 
-  const std::array<localmixer::engine::SourceBuffer, 1> sources{
-    localmixer::engine::SourceBuffer{
-      .stripId = state->graphStrip,
-      .samples = std::span<const float>(state->graphInput.data(), frames),
-      .channels = 1,
+  std::span<const float> graphSource = std::span<const float>(state->graphInput.data(), frames);
+  std::uint32_t graphChannels = 1;
+  if (state->vocalFx.active() && frames * 2 <= state->graphStereoInput.size()) {
+    state->vocalFx.processMonoToStereo(graphSource, std::span<float>(state->graphLeft.data(), frames), std::span<float>(state->graphRight.data(), frames));
+    for (std::size_t frame = 0; frame < frames; frame += 1) {
+      state->graphStereoInput[frame * 2] = state->graphLeft[frame];
+      state->graphStereoInput[frame * 2 + 1] = state->graphRight[frame];
     }
+    graphSource = std::span<const float>(state->graphStereoInput.data(), frames * 2);
+    graphChannels = 2;
+  }
+
+  const std::array<localmixer::engine::SourceBuffer, 1> sources{
+    localmixer::engine::SourceBuffer{.stripId = state->graphStrip, .samples = graphSource, .channels = graphChannels}
   };
   state->runtime.process(sources, {
     .left = std::span<float>(state->graphLeft.data(), frames),
@@ -259,7 +270,12 @@ void prepareMonitorGraph(PassthroughState& state, const PassthroughMonitorReques
   state.graphStrip = created.id;
   const auto scratchFrames = static_cast<std::size_t>(std::max<double>(request.projectSampleRate, 512.0));
   state.runtime.prepare(static_cast<std::uint32_t>(scratchFrames));
-  graph.setAssignment(created.id, localmixer::engine::SourceAssignment::mono, 0, false);
+  state.vocalFx.prepare(request.projectSampleRate, static_cast<std::uint32_t>(scratchFrames));
+  if (request.insertFxEnabled) state.vocalFx.configure(request.vocalFxSlots);
+  graph.setAssignment(created.id, state.vocalFx.active() ? localmixer::engine::SourceAssignment::stereo
+                                                         : localmixer::engine::SourceAssignment::mono,
+    0,
+    state.vocalFx.active());
   graph.setLevel(created.id, 0.0f, request.monitorGainDb, request.monitorPan);
   graph.setInputMonitoring(created.id, true);
   graph.setProcessors(created.id, request.processors);
@@ -268,6 +284,7 @@ void prepareMonitorGraph(PassthroughState& state, const PassthroughMonitorReques
   graph.setFxSend(created.id, localmixer::engine::FxBusId::a, request.sendA);
   graph.setFxSend(created.id, localmixer::engine::FxBusId::b, request.sendB);
   state.graphInput.assign(scratchFrames, 0.0f);
+  state.graphStereoInput.assign(scratchFrames * 2, 0.0f);
   state.graphLeft.assign(scratchFrames, 0.0f);
   state.graphRight.assign(scratchFrames, 0.0f);
 }

@@ -339,8 +339,15 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     fxAReturnDb: fxA?.returnDb ?? -12,
     fxBEnabled: fxB?.enabled ?? false,
     fxBProgramId: fxB?.programId ?? 50,
-    fxBReturnDb: fxB?.returnDb ?? -12
+    fxBReturnDb: fxB?.returnDb ?? -12,
+    vocalFxSlotCount: snapshot.vocalFx.slots.length
   };
+  snapshot.vocalFx.slots.forEach((slot, index) => {
+    const prefix = `vocalFxSlot${index}`;
+    payload[`${prefix}Id`] = slot.id;
+    payload[`${prefix}Type`] = slot.effectType;
+    payload[`${prefix}Enabled`] = slot.enabled;
+  });
   channels.forEach((channel, index) => {
     const prefix = `channel${index}`;
     payload[`${prefix}Id`] = channel.id;
@@ -356,6 +363,7 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}ProcessorEq`] = channel.processing.eq;
     payload[`${prefix}ProcessorComp`] = channel.processing.comp;
     payload[`${prefix}ProcessorNoise`] = channel.processing.noise;
+    payload[`${prefix}ProcessorInsertFx`] = channel.processing.insertFx;
     payload[`${prefix}ProcessorDeEsser`] = channel.role === "vocal";
     payload[`${prefix}CompThresholdDb`] = channel.dynamics.compressor.thresholdDb;
     payload[`${prefix}CompRatio`] = channel.dynamics.compressor.ratio;

@@ -18,6 +18,28 @@ std::string indexedEqField(std::uint32_t channelIndex, std::size_t bandIndex, co
   return indexedField(channelIndex, "Eq" + std::to_string(bandIndex) + suffix);
 }
 
+std::string indexedVocalFxField(std::uint32_t index, const std::string& suffix) {
+  return "vocalFxSlot" + std::to_string(index) + suffix;
+}
+
+std::vector<dsp::fx::RackSlotState> readVocalFxSlots(const std::string& line) {
+  std::vector<dsp::fx::RackSlotState> slots;
+  const auto count = static_cast<std::uint32_t>(readJsonNumberField(line, "vocalFxSlotCount").value_or(0.0));
+  slots.reserve(std::min<std::uint32_t>(count, dsp::fx::kMaxNativeChannelFxSlots));
+  for (std::uint32_t index = 0; index < count && slots.size() < dsp::fx::kMaxNativeChannelFxSlots; index += 1) {
+    const auto id = readJsonStringField(line, indexedVocalFxField(index, "Id"));
+    const auto type = readJsonStringField(line, indexedVocalFxField(index, "Type"));
+    if (id.empty() || type.empty()) continue;
+    slots.push_back(dsp::fx::RackSlotState{
+      .instanceId = id,
+      .effectType = type,
+      .mix = 1.0f,
+      .bypassed = !readJsonBoolField(line, indexedVocalFxField(index, "Enabled")).value_or(false),
+    });
+  }
+  return slots;
+}
+
 dsp::EqFilterType eqTypeFromUiName(const std::string& name, dsp::EqFilterType fallback) {
   if (name == "High Pass" || name == "HPF") return dsp::EqFilterType::highPass;
   if (name == "Low Pass" || name == "LPF") return dsp::EqFilterType::lowPass;
@@ -65,6 +87,8 @@ std::string syncMixerGraphResultJson(
   std::uint32_t fxBProgramId = static_cast<std::uint32_t>(readJsonNumberField(line, "fxBProgramId").value_or(50.0));
   FxSendState monitorSendA;
   FxSendState monitorSendB;
+  const auto vocalFxSlots = readVocalFxSlots(line);
+  bool monitorInsertFxEnabled = false;
   float monitorTrimDb = 0.0f;
   float monitorFaderDb = 0.0f;
   float monitorPan = 0.0f;
@@ -105,6 +129,7 @@ std::string syncMixerGraphResultJson(
     processors.compressorEnabled = readJsonBoolField(line, indexedField(index, "ProcessorComp")).value_or(false);
     processors.noiseEnabled = readJsonBoolField(line, indexedField(index, "ProcessorNoise")).value_or(false);
     processors.deEsserEnabled = readJsonBoolField(line, indexedField(index, "ProcessorDeEsser")).value_or(false);
+    const auto insertFxEnabled = readJsonBoolField(line, indexedField(index, "ProcessorInsertFx")).value_or(false);
     processors.compressor.thresholdDb = static_cast<float>(
       readJsonNumberField(line, indexedField(index, "CompThresholdDb")).value_or(processors.compressor.thresholdDb));
     processors.compressor.ratio = static_cast<float>(
@@ -145,6 +170,7 @@ std::string syncMixerGraphResultJson(
       if (monitorInputUid.empty()) monitorInputUid = sourceUid;
       monitorSendA = sendA;
       monitorSendB = sendB;
+      monitorInsertFxEnabled = insertFxEnabled;
       monitorTrimDb = trimDb;
       monitorFaderDb = faderDb;
       monitorPan = pan;
@@ -170,6 +196,8 @@ std::string syncMixerGraphResultJson(
   monitorSelection.fxB = fxB;
   monitorSelection.sendA = monitorSendA;
   monitorSelection.sendB = monitorSendB;
+  monitorSelection.insertFxEnabled = monitorInsertFxEnabled;
+  monitorSelection.vocalFxSlots = monitorInsertFxEnabled ? vocalFxSlots : std::vector<dsp::fx::RackSlotState>{};
   monitorSelection.monitorGainDb = monitorGainDb;
   monitorSelection.channelTrimDb = monitorTrimDb;
   monitorSelection.channelFaderDb = monitorFaderDb;

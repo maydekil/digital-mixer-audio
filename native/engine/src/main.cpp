@@ -585,6 +585,8 @@ int runStdioProtocol() {
           .fxB = monitorSelection.fxB,
           .sendA = monitorSelection.sendA,
           .sendB = monitorSelection.sendB,
+          .insertFxEnabled = monitorSelection.insertFxEnabled,
+          .vocalFxSlots = monitorSelection.vocalFxSlots,
         });
         writeRawResponse(id, status.running, "start-mixer-monitor", persistentMonitorStatusJson(status));
 #else

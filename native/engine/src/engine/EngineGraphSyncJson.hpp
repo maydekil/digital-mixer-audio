@@ -2,9 +2,11 @@
 
 #include "engine/ChannelProcessorChain.hpp"
 #include "engine/MixerGraphController.hpp"
+#include "dsp/fx/EffectRack.hpp"
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace localmixer::engine::protocol {
 
@@ -18,6 +20,8 @@ struct SyncedMonitorSelection {
   FxUnitRuntime fxB;
   FxSendState sendA;
   FxSendState sendB;
+  bool insertFxEnabled = false;
+  std::vector<dsp::fx::RackSlotState> vocalFxSlots;
   float monitorGainDb = -18.0f;
   float channelTrimDb = 0.0f;
   float channelFaderDb = 0.0f;

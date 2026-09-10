@@ -29,6 +29,13 @@ int main() {
     "\"fxBEnabled\":false,"
     "\"fxBProgramId\":50,"
     "\"fxBReturnDb\":-12,"
+    "\"vocalFxSlotCount\":2,"
+    "\"vocalFxSlot0Id\":\"drive\","
+    "\"vocalFxSlot0Type\":\"saturation\","
+    "\"vocalFxSlot0Enabled\":true,"
+    "\"vocalFxSlot1Id\":\"room\","
+    "\"vocalFxSlot1Type\":\"reverb\","
+    "\"vocalFxSlot1Enabled\":false,"
     "\"channel0Kind\":\"source\","
     "\"channel0Name\":\"VOICE\","
     "\"channel0Color\":\"#18d6e7\","
@@ -41,6 +48,7 @@ int main() {
     "\"channel0ProcessorEq\":true,"
     "\"channel0ProcessorComp\":true,"
     "\"channel0ProcessorNoise\":true,"
+    "\"channel0ProcessorInsertFx\":true,"
     "\"channel0ProcessorDeEsser\":true,"
     "\"channel0CompThresholdDb\":-22,"
     "\"channel0CompRatio\":4,"
@@ -95,6 +103,12 @@ int main() {
       !selection.sendA.enabled || !near(selection.sendA.gainDb, -9.0) || selection.sendB.enabled ||
       !near(selection.sendB.gainDb, -24.0)) {
     std::cerr << "monitor selection should keep FX unit, program, and send state\n";
+    return 1;
+  }
+  if (!selection.insertFxEnabled || selection.vocalFxSlots.size() != 2 || selection.vocalFxSlots[0].effectType != "saturation" ||
+      selection.vocalFxSlots[0].bypassed || selection.vocalFxSlots[1].effectType != "reverb" ||
+      !selection.vocalFxSlots[1].bypassed) {
+    std::cerr << "monitor selection should keep Vocal FX rack slot state\n";
     return 1;
   }
   if (!near(selection.channelTrimDb, 1.0) || !near(selection.channelFaderDb, -6.0) || !near(selection.channelPan, 0.25)) {

@@ -2297,6 +2297,8 @@ Validation:
 - exit/result: `0`; Vitest 19/19 passed.
 - command: `npm run check:file-size`
 - exit/result: `0`; file-size gate passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 19/19, native CTest 42/42, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
 
 Known limitations:
 - The graph accepts wet processors, but compact FX A/B program IDs are not yet mapped to the 99 program-specific native DSP recipes in the realtime graph.
@@ -2410,3 +2412,31 @@ Validation:
 Known limitations:
 - The wrappers use the existing Rubber Band backend and inherit its latency; this does not satisfy low-latency live-singing Harmony acceptance by itself.
 - The Vocal FX rack still needs live channel insertion, UI slot state sync into native graph, and real vocal listening QA.
+
+### Phase19 Hardening Checkpoint — Vocal FX Monitor Insertion
+
+Changed files:
+- `native/engine/src/engine/VocalFxRackRuntime.hpp`, `native/engine/src/engine/VocalFxRackRuntime.cpp`: added a native runtime wrapper that prepares an `EffectRack`, configures production rack slots, and processes mono input to stereo.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: sends `INSERT FX` state plus Vocal FX rack slot IDs/types/enabled flags through `sync-mixer-graph`.
+- `native/engine/src/engine/EngineGraphSyncJson.hpp`, `native/engine/src/engine/EngineGraphSyncJson.cpp`: parses Vocal FX rack state into the monitored channel selection.
+- `native/engine/src/platform/macos/CoreAudioPassthrough.hpp`, `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: prepares Vocal FX rack state before the callback and feeds processed stereo source audio into the monitor mixer graph.
+- `native/engine/src/main.cpp`: passes synced Vocal FX monitor state into persistent monitor start.
+- `native/engine/tests/VocalFxRackRuntimeTest.cpp`, `native/engine/tests/EngineGraphSyncJsonTest.cpp`: verify production rack processing and parser preservation of Vocal FX slot state.
+
+Implemented behavior:
+- When a monitored source channel has `INSERT FX` enabled, the desktop monitor path can now render its configured Vocal FX rack natively before channel mix, sends, and FX A/B return processing.
+- Rack preparation and slot construction occur before the Core Audio callback starts; the callback reuses preallocated buffers.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-engine local-mixer-engine-graph-sync-json-tests local-mixer-vocal-fx-rack-runtime-tests`
+- exit/result: `0`; native engine, parser test, and Vocal FX runtime test targets built.
+- command: `ctest --test-dir native/engine/build -R 'local-mixer-(engine-graph-sync-json|vocal-fx-rack-runtime)-tests' --output-on-failure`
+- exit/result: `0`; focused parser and Vocal FX runtime tests passed.
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size gate passed.
+
+Known limitations:
+- Hardware listening of Vocal FX through the desktop monitor path is NOT_RUN in this environment.
+- Export/record parity and low-latency Harmony acceptance remain partial.
