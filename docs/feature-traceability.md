@@ -26,7 +26,7 @@ Status values:
 | automation/MIDI | MIDI/settings pending | automation module contract | `Automation` | automation lanes/mapping | `AutomationTest` | native IDs tested; device MIDI learn not run | `PARTIAL` |
 | AU/VST3 plugins | Plugins/settings pending | scanner executable; registry contract | `PluginRegistry`, `local-mixer-plugin-scanner` | plugin instance/state | `PluginRegistryTest`, scanner self-test | scanner/registry verified; runtime hosting/editor pending | `PARTIAL` |
 | per-app capture capability | Preferences/diagnostics pending | `per-app-capture-capability` | `PerAppCapture` | per-app source assignments pending | `PerAppCaptureTest` | command reports capability honestly; real taps NOT_RUN | `PARTIAL` |
-| status/error/recovery | engine status, route recovery docs | route/status/recover commands | `EngineSupervisor`, `SystemRouteRecovery` | recovery marker | `engine-supervisor.test.ts`, `SystemRoutingTest` | EPIPE normalized; recovery smoke tested | `CONNECTED` |
+| status/error/recovery | engine status, route recovery docs | route/status/recover commands, monitor status | `EngineSupervisor`, `SystemRouteRecovery`, `RealtimeMetrics` | recovery marker | `engine-supervisor.test.ts`, `SystemRoutingTest`, `RealtimeMetricsTest` | EPIPE normalized; recovery smoke tested; monitor status exposes callback/deadline counters | `CONNECTED` |
 | packaging/offline use | package scripts pending | dev package scripts pending | Electron main/resource paths | N/A | build checks | `.app` smoke from clean install location pending INT-02 | `PARTIAL` |
 
 ## INT-00 Audit Notes

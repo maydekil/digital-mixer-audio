@@ -41,7 +41,9 @@ struct PassthroughState {
   std::vector<float> graphRight;
   std::uint32_t inputChannel = 0;
   std::uint32_t outputChannel = 0;
+  double outputSampleRate = 48000.0;
   bool mirrorToAllOutputChannels = true;
+  localmixer::engine::RealtimeMetrics metrics;
 };
 
 struct DeviceContext {
@@ -202,6 +204,7 @@ OSStatus outputCallback(
   void* clientData
 ) {
   if (outputData == nullptr) return noErr;
+  const auto callbackStart = std::chrono::steady_clock::now();
   auto* state = static_cast<PassthroughState*>(clientData);
   const auto frames = frameCountFor(outputData);
   const auto capacity = state->ring.samples.size();
@@ -258,6 +261,11 @@ OSStatus outputCallback(
       writeChannel(outputData, state->outputChannel, frame, (left + right) * 0.5f);
     }
   }
+  const auto callbackEnd = std::chrono::steady_clock::now();
+  const auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(callbackEnd - callbackStart).count();
+  const auto deadline = static_cast<std::uint64_t>(
+    (static_cast<double>(frames) / std::max(1.0, state->outputSampleRate)) * 1'000'000'000.0);
+  state->metrics.recordCallback(static_cast<std::uint64_t>(std::max<std::int64_t>(0, elapsed)), deadline);
   return noErr;
 }
 
@@ -354,6 +362,18 @@ PersistentMonitorStatus statusFromContext(
   };
 }
 
+PersistentMonitorStatus statusFromContext(
+  const DeviceContext& context,
+  bool running,
+  const std::string& error,
+  const RingBuffer& ring,
+  const localmixer::engine::RealtimeMetrics& metrics
+) {
+  auto status = statusFromContext(context, running, error, ring);
+  status.metrics = metrics.snapshot();
+  return status;
+}
+
 }  // namespace
 
 struct PersistentPassthroughMonitor::Impl {
@@ -366,38 +386,40 @@ struct PersistentPassthroughMonitor::Impl {
 
     state.inputChannel = request.inputChannel;
     state.outputChannel = request.outputChannel;
+    state.outputSampleRate = context.outputRate;
     state.mirrorToAllOutputChannels = request.mirrorToAllOutputChannels;
     state.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate), 0.0f);
     state.ring.writeFrame.store(0, std::memory_order_relaxed);
     state.ring.readFrame.store(0, std::memory_order_relaxed);
     state.ring.peakScaled.store(0, std::memory_order_relaxed);
+    state.metrics.reset();
     prepareMonitorGraph(state, request);
 
     auto audioStatus = AudioDeviceCreateIOProcID(context.input, inputCallback, &state, &inputProc);
     if (audioStatus != noErr || inputProc == nullptr) {
-      return statusFromContext(context, false, "INPUT_CALLBACK_CREATE_FAILED", state.ring);
+      return statusFromContext(context, false, "INPUT_CALLBACK_CREATE_FAILED", state.ring, state.metrics);
     }
     audioStatus = AudioDeviceCreateIOProcID(context.output, outputCallback, &state, &outputProc);
     if (audioStatus != noErr || outputProc == nullptr) {
       AudioDeviceDestroyIOProcID(context.input, inputProc);
       inputProc = nullptr;
-      return statusFromContext(context, false, "OUTPUT_CALLBACK_CREATE_FAILED", state.ring);
+      return statusFromContext(context, false, "OUTPUT_CALLBACK_CREATE_FAILED", state.ring, state.metrics);
     }
 
     audioStatus = AudioDeviceStart(context.input, inputProc);
     if (audioStatus != noErr) {
       destroyCallbacks();
-      return statusFromContext(context, false, "INPUT_START_FAILED", state.ring);
+      return statusFromContext(context, false, "INPUT_START_FAILED", state.ring, state.metrics);
     }
     audioStatus = AudioDeviceStart(context.output, outputProc);
     if (audioStatus != noErr) {
       AudioDeviceStop(context.input, inputProc);
       destroyCallbacks();
-      return statusFromContext(context, false, "OUTPUT_START_FAILED", state.ring);
+      return statusFromContext(context, false, "OUTPUT_START_FAILED", state.ring, state.metrics);
     }
 
     running = true;
-    return statusFromContext(context, true, "", state.ring);
+    return statusFromContext(context, true, "", state.ring, state.metrics);
   }
 
   PersistentMonitorStatus stop() {
@@ -407,11 +429,11 @@ struct PersistentPassthroughMonitor::Impl {
     }
     destroyCallbacks();
     running = false;
-    return statusFromContext(context, false, "", state.ring);
+    return statusFromContext(context, false, "", state.ring, state.metrics);
   }
 
   PersistentMonitorStatus currentStatus() const {
-    return statusFromContext(context, running, "", state.ring);
+    return statusFromContext(context, running, "", state.ring, state.metrics);
   }
 
   void destroyCallbacks() {

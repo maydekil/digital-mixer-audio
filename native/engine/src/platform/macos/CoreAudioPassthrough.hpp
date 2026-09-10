@@ -2,6 +2,7 @@
 
 #include "engine/ChannelProcessorChain.hpp"
 #include "engine/FxSendReturnBus.hpp"
+#include "engine/RealtimeMetrics.hpp"
 #include "dsp/fx/EffectRack.hpp"
 
 #include <cstdint>
@@ -50,6 +51,7 @@ struct PersistentMonitorStatus {
   double inputSampleRate = 0.0;
   double outputSampleRate = 0.0;
   float inputPeak = 0.0f;
+  localmixer::engine::RealtimeMetricsSnapshot metrics;
 };
 
 class PersistentPassthroughMonitor {

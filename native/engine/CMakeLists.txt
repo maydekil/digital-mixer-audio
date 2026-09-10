@@ -47,6 +47,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/PerAppCapture.cpp
   src/engine/PluginRegistry.cpp
   src/engine/Recording.cpp
+  src/engine/RealtimeMetrics.cpp
   src/engine/RoutingGraph.cpp
   src/engine/SessionDocument.cpp
   src/engine/SystemRouteRecovery.cpp
@@ -228,6 +229,15 @@ target_link_libraries(local-mixer-engine-runtime-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-engine-runtime-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-engine-runtime-tests COMMAND local-mixer-engine-runtime-tests)
+
+add_executable(local-mixer-realtime-metrics-tests
+  tests/RealtimeMetricsTest.cpp
+)
+
+target_link_libraries(local-mixer-realtime-metrics-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-realtime-metrics-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-realtime-metrics-tests COMMAND local-mixer-realtime-metrics-tests)
 
 add_executable(local-mixer-engine-graph-sync-json-tests
   tests/EngineGraphSyncJsonTest.cpp

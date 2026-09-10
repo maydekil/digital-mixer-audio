@@ -20,7 +20,10 @@ std::string persistentMonitorStatusJson(
   std::uint32_t outputChannels,
   double inputSampleRate,
   double outputSampleRate,
-  float inputPeak
+  float inputPeak,
+  std::uint64_t callbackCount = 0,
+  std::uint64_t deadlineMissCount = 0,
+  std::uint64_t maxCallbackNanos = 0
 );
 std::string fxProgramSnapshotJson(const FxProgramUnitSnapshot& snapshot);
 std::string fxProgramAckJson(const FxProgramAck& ack);

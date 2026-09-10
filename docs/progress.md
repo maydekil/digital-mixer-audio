@@ -2440,3 +2440,24 @@ Validation:
 Known limitations:
 - Hardware listening of Vocal FX through the desktop monitor path is NOT_RUN in this environment.
 - Export/record parity and low-latency Harmony acceptance remain partial.
+
+### Phase19 Hardening Checkpoint — Realtime Monitor Metrics
+
+Changed files:
+- `native/engine/src/engine/RealtimeMetrics.hpp`, `native/engine/src/engine/RealtimeMetrics.cpp`: added lock-free callback counters for callback count, deadline misses, and max callback duration.
+- `native/engine/src/platform/macos/CoreAudioPassthrough.hpp`, `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: records output callback elapsed time against the block deadline and includes metric snapshots in persistent monitor status.
+- `native/engine/src/engine/EngineResponseJson.hpp`, `native/engine/src/engine/EngineResponseJson.cpp`, `native/engine/src/main.cpp`: exposes `callbackCount`, `deadlineMissCount`, and `maxCallbackNanos` in monitor JSON responses.
+- `native/engine/tests/RealtimeMetricsTest.cpp`, `native/engine/CMakeLists.txt`, `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: wired automated evidence and updated remaining-gap wording.
+
+Implemented behavior:
+- The native monitor path now records lightweight callback timing counters without serializing or logging from the callback.
+- `start-mixer-monitor`, `stop-mixer-monitor`, and `mixer-monitor-status` can report callback/deadline counters for later soak and stress QA.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-engine local-mixer-realtime-metrics-tests && ctest --test-dir native/engine/build -R local-mixer-realtime-metrics-tests --output-on-failure`
+- exit/result: `0`; native engine and realtime metrics test built, and focused metrics test passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 19/19, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- This is instrumentation foundation only; 30/60-minute soak, 32-track stress, CPU measurements, and audible glitch checks remain NOT_RUN.

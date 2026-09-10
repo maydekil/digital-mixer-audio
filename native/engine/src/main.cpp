@@ -275,7 +275,10 @@ std::string persistentMonitorStatusJson(const localmixer::platform::macos::Persi
     status.outputChannels,
     status.inputSampleRate,
     status.outputSampleRate,
-    status.inputPeak
+    status.inputPeak,
+    status.metrics.callbackCount,
+    status.metrics.deadlineMissCount,
+    status.metrics.maxCallbackNanos
   );
 }
 #endif
