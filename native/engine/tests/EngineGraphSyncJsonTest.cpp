@@ -23,6 +23,10 @@ int main() {
     "{\"channelCount\":1,"
     "\"outputUid\":\"headphones\","
     "\"monitorGainDb\":-18,"
+    "\"fxAEnabled\":true,"
+    "\"fxAReturnDb\":-6,"
+    "\"fxBEnabled\":false,"
+    "\"fxBReturnDb\":-12,"
     "\"channel0Kind\":\"source\","
     "\"channel0Name\":\"VOICE\","
     "\"channel0Color\":\"#18d6e7\","
@@ -43,6 +47,10 @@ int main() {
     "\"channel0DeEsserFrequencyHz\":7200,"
     "\"channel0DeEsserThresholdDb\":-30,"
     "\"channel0DeEsserMaxReductionDb\":8,"
+    "\"channel0SendAEnabled\":true,"
+    "\"channel0SendAGainDb\":-9,"
+    "\"channel0SendBEnabled\":false,"
+    "\"channel0SendBGainDb\":-24,"
     "\"channel0Eq0FreqHz\":120,"
     "\"channel0Eq0GainDb\":5,"
     "\"channel0Eq0Q\":0.8,"
@@ -82,6 +90,12 @@ int main() {
   }
   if (!near(selection.channelTrimDb, 1.0) || !near(selection.channelFaderDb, -6.0) || !near(selection.channelPan, 0.25)) {
     std::cerr << "monitor selection should keep gain and pan\n";
+    return 1;
+  }
+  const auto published = controller.active().strip(localmixer::engine::StripId{1});
+  if (!published.has_value() || !published->sendA.enabled || !near(published->sendA.gainDb, -9.0) ||
+      published->sendB.enabled || !near(published->sendB.gainDb, -24.0)) {
+    std::cerr << "published graph should keep FX send states\n";
     return 1;
   }
 

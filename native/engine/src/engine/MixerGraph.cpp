@@ -23,6 +23,10 @@ void updatePeak(float& peak, float sample) {
   peak = std::max(peak, std::fabs(sample));
 }
 
+float sendGain(const FxSendState& send) {
+  return send.enabled ? dsp::decibelsToLinear(clamp(send.gainDb, -90.0f, 10.0f)) : 0.0f;
+}
+
 }  // namespace
 
 MixerGraph::MixerGraph() : controlQueue_(128) {
@@ -30,6 +34,7 @@ MixerGraph::MixerGraph() : controlQueue_(128) {
   meters_.reserve(kMaxMixerStrips);
   runtimes_.reserve(kMaxMixerStrips);
   processors_.reserve(kMaxMixerStrips);
+  prepare(kDefaultMixerMaxBlockFrames);
 }
 
 CreateStripResult MixerGraph::createStrip(std::string name, std::string color) {
@@ -124,6 +129,33 @@ MixerError MixerGraph::setProcessors(StripId id, ChannelProcessorConfig config) 
   return MixerError::none;
 }
 
+MixerError MixerGraph::setFxSend(StripId id, FxBusId bus, FxSendState send) {
+  const auto index = indexOf(id);
+  if (!index.has_value()) return MixerError::staleStripId;
+  if (bus == FxBusId::a) {
+    strips_[*index].sendA = send;
+  } else {
+    strips_[*index].sendB = send;
+  }
+  return MixerError::none;
+}
+
+void MixerGraph::prepare(std::uint32_t maximumFrames) {
+  maximumFrames_ = std::max<std::uint32_t>(1, maximumFrames);
+  sendA_.assign(maximumFrames_, 0.0f);
+  sendB_.assign(maximumFrames_, 0.0f);
+  wetLeft_.assign(maximumFrames_, 0.0f);
+  wetRight_.assign(maximumFrames_, 0.0f);
+}
+
+void MixerGraph::setFxUnit(FxBusId bus, FxUnitRuntime unit) noexcept {
+  if (bus == FxBusId::a) {
+    unitA_ = unit;
+  } else {
+    unitB_ = unit;
+  }
+}
+
 MixerError MixerGraph::enqueueControl(MixerCommand command) {
   return controlQueue_.push(command);
 }
@@ -158,10 +190,25 @@ MixerError MixerGraph::applyQueuedControls(std::uint32_t rampFrames) {
 }
 
 MixerError MixerGraph::process(std::span<const SourceBuffer> sources, StereoOutput output) {
+  return processWithFx(sources, output, {}, {});
+}
+
+MixerError MixerGraph::processWithFx(
+  std::span<const SourceBuffer> sources,
+  StereoOutput output,
+  const FxWetProcessor& processorA,
+  const FxWetProcessor& processorB
+) {
   if (output.left.size() != output.right.size()) return MixerError::invalidBuffer;
+  if (output.left.size() > maximumFrames_) return MixerError::invalidBuffer;
+  const auto frames = output.left.size();
   std::fill(output.left.begin(), output.left.end(), 0.0f);
   std::fill(output.right.begin(), output.right.end(), 0.0f);
+  std::fill(sendA_.begin(), sendA_.begin() + static_cast<std::ptrdiff_t>(frames), 0.0f);
+  std::fill(sendB_.begin(), sendB_.begin() + static_cast<std::ptrdiff_t>(frames), 0.0f);
   std::fill(meters_.begin(), meters_.end(), StripMeters{});
+  fxMetersA_ = {};
+  fxMetersB_ = {};
 
   const bool soloActive = anySolo();
   for (const auto& source : sources) {
@@ -175,7 +222,7 @@ MixerError MixerGraph::process(std::span<const SourceBuffer> sources, StereoOutp
     auto& processor = processors_[*index];
     const bool active = strip.enabled && !strip.mute && (!soloActive || strip.solo);
 
-    for (std::uint32_t frame = 0; frame < output.left.size(); frame += 1) {
+    for (std::uint32_t frame = 0; frame < frames; frame += 1) {
       float left = 0.0f;
       float right = 0.0f;
       if (strip.assignment == SourceAssignment::stereo && source.channels > strip.inputChannel + 1) {
@@ -194,6 +241,19 @@ MixerError MixerGraph::process(std::span<const SourceBuffer> sources, StereoOutp
       }
 
       processor.processFrame(left, right);
+      const auto sendMono = (left + right) * 0.5f;
+      const auto fxAGain = sendGain(strip.sendA);
+      const auto fxBGain = sendGain(strip.sendB);
+      if (fxAGain > 0.0f) {
+        const auto sample = sendMono * fxAGain;
+        sendA_[frame] += sample;
+        updatePeak(fxMetersA_.inputPeak, sample);
+      }
+      if (fxBGain > 0.0f) {
+        const auto sample = sendMono * fxBGain;
+        sendB_[frame] += sample;
+        updatePeak(fxMetersB_.inputPeak, sample);
+      }
       const auto gain = runtime.currentGain;
       const auto pan = runtime.currentPan;
       const auto leftPan = strip.assignment == SourceAssignment::mono ? std::min(1.0f, 1.0f - pan) : 1.0f;
@@ -208,6 +268,8 @@ MixerError MixerGraph::process(std::span<const SourceBuffer> sources, StereoOutp
     }
   }
 
+  renderFxReturn(FxBusId::a, processorA, output.left.first(frames), output.right.first(frames));
+  renderFxReturn(FxBusId::b, processorB, output.left.first(frames), output.right.first(frames));
   return MixerError::none;
 }
 
@@ -223,8 +285,39 @@ std::optional<StripMeters> MixerGraph::meters(StripId id) const {
   return meters_[*index];
 }
 
+FxBusMeters MixerGraph::fxMeters(FxBusId bus) const noexcept {
+  return bus == FxBusId::a ? fxMetersA_ : fxMetersB_;
+}
+
 std::size_t MixerGraph::pendingControlCount() const {
   return controlQueue_.size();
+}
+
+void MixerGraph::renderFxReturn(
+  FxBusId bus,
+  const FxWetProcessor& processor,
+  std::span<float> mainLeft,
+  std::span<float> mainRight
+) noexcept {
+  const auto frames = mainLeft.size();
+  auto& meter = bus == FxBusId::a ? fxMetersA_ : fxMetersB_;
+  const auto& unit = bus == FxBusId::a ? unitA_ : unitB_;
+  std::fill(wetLeft_.begin(), wetLeft_.begin() + static_cast<std::ptrdiff_t>(frames), 0.0f);
+  std::fill(wetRight_.begin(), wetRight_.begin() + static_cast<std::ptrdiff_t>(frames), 0.0f);
+  if (!unit.enabled || unit.mute || !processor) return;
+
+  const auto input = bus == FxBusId::a ? std::span<const float>(sendA_.data(), frames)
+                                      : std::span<const float>(sendB_.data(), frames);
+  processor(input, std::span<float>(wetLeft_.data(), frames), std::span<float>(wetRight_.data(), frames));
+  const auto returnGain = dsp::decibelsToLinear(clamp(unit.returnDb, -90.0f, 10.0f));
+  for (std::size_t index = 0; index < frames; index += 1) {
+    const auto left = wetLeft_[index] * returnGain;
+    const auto right = wetRight_[index] * returnGain;
+    mainLeft[index] += left;
+    mainRight[index] += right;
+    updatePeak(meter.returnPeakLeft, left);
+    updatePeak(meter.returnPeakRight, right);
+  }
 }
 
 std::size_t MixerGraph::stripCount() const {

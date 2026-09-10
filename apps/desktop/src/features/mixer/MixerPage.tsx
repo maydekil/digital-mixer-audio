@@ -328,10 +328,16 @@ export function MixerPage() {
 async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
   if (!window.localMixer?.engineCommand) return;
   const channels = snapshot.channels.slice(0, 32);
+  const fxA = snapshot.fxUnits.find((unit) => unit.id === "fx-a");
+  const fxB = snapshot.fxUnits.find((unit) => unit.id === "fx-b");
   const payload: Record<string, string | number | boolean> = {
     channelCount: channels.length,
     outputUid,
-    monitorGainDb: -18
+    monitorGainDb: -18,
+    fxAEnabled: fxA?.enabled ?? false,
+    fxAReturnDb: fxA?.returnDb ?? -12,
+    fxBEnabled: fxB?.enabled ?? false,
+    fxBReturnDb: fxB?.returnDb ?? -12
   };
   channels.forEach((channel, index) => {
     const prefix = `channel${index}`;
@@ -356,6 +362,10 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}DeEsserFrequencyHz`] = channel.dynamics.deEsser.frequencyHz;
     payload[`${prefix}DeEsserThresholdDb`] = channel.dynamics.deEsser.thresholdDb;
     payload[`${prefix}DeEsserMaxReductionDb`] = channel.dynamics.deEsser.maxReductionDb;
+    payload[`${prefix}SendAEnabled`] = channel.sends["fx-a"].enabled;
+    payload[`${prefix}SendAGainDb`] = channel.sends["fx-a"].gainDb;
+    payload[`${prefix}SendBEnabled`] = channel.sends["fx-b"].enabled;
+    payload[`${prefix}SendBGainDb`] = channel.sends["fx-b"].gainDb;
     channel.eqBands.forEach((band, bandIndex) => {
       payload[`${prefix}Eq${bandIndex}FreqHz`] = band.freqHz;
       payload[`${prefix}Eq${bandIndex}GainDb`] = band.gainDb;

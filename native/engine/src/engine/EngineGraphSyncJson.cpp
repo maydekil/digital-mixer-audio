@@ -67,6 +67,14 @@ std::string syncMixerGraphResultJson(
   auto monitorProcessors = defaultChannelProcessorConfig();
   const auto outputUid = readJsonStringField(line, "outputUid");
   const auto monitorGainDb = static_cast<float>(readJsonNumberField(line, "monitorGainDb").value_or(-18.0));
+  prepared.setFxUnit(FxBusId::a, FxUnitRuntime{
+    .enabled = readJsonBoolField(line, "fxAEnabled").value_or(false),
+    .returnDb = static_cast<float>(readJsonNumberField(line, "fxAReturnDb").value_or(-12.0)),
+  });
+  prepared.setFxUnit(FxBusId::b, FxUnitRuntime{
+    .enabled = readJsonBoolField(line, "fxBEnabled").value_or(false),
+    .returnDb = static_cast<float>(readJsonNumberField(line, "fxBReturnDb").value_or(-12.0)),
+  });
   for (std::uint32_t index = 0; index < channelCount; index += 1) {
     const auto kind = readJsonStringField(line, indexedField(index, "Kind"));
     const auto name = readJsonStringField(line, indexedField(index, "Name"));
@@ -115,6 +123,14 @@ std::string syncMixerGraphResultJson(
     prepared.setSolo(created.id, solo);
     prepared.setInputMonitoring(created.id, monitor);
     prepared.setProcessors(created.id, processors);
+    prepared.setFxSend(created.id, FxBusId::a, FxSendState{
+      .enabled = readJsonBoolField(line, indexedField(index, "SendAEnabled")).value_or(false),
+      .gainDb = static_cast<float>(readJsonNumberField(line, indexedField(index, "SendAGainDb")).value_or(-90.0)),
+    });
+    prepared.setFxSend(created.id, FxBusId::b, FxSendState{
+      .enabled = readJsonBoolField(line, indexedField(index, "SendBEnabled")).value_or(false),
+      .gainDb = static_cast<float>(readJsonNumberField(line, indexedField(index, "SendBGainDb")).value_or(-90.0)),
+    });
     stripCount += 1;
     if (monitor && enabled && !sourceUid.empty() && kind == "source") {
       monitorCount += 1;

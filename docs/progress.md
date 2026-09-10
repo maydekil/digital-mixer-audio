@@ -2272,3 +2272,30 @@ Validation:
 Known limitations:
 - Noise gate threshold/timing is still native-default only; a dedicated UI parameter surface is pending.
 - Vocal FX rack insertion, FX A/B returns, Harmony insertion, export parity, live listening, callback timing metrics, and stress QA remain partial.
+
+### Phase19 Hardening Checkpoint — FX A/B Send-return In MixerGraph
+
+Changed files:
+- `native/engine/src/engine/MixerGraph.hpp`, `native/engine/src/engine/MixerGraph.cpp`: added per-strip FX A/B send state, FX unit enable/return state, preallocated send/wet buffers, FX meters, and `processWithFx` wet-return rendering.
+- `native/engine/tests/MixerGraphTest.cpp`: added graph-level evidence that enabled FX A returns add wet-only signal, disabled units preserve dry-only output, and FX meters reflect input/return peaks.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: sends FX A/B unit enable/return values plus per-channel send enable/gain values through `sync-mixer-graph`.
+- `native/engine/src/engine/EngineGraphSyncJson.cpp`, `native/engine/tests/EngineGraphSyncJsonTest.cpp`: parses and verifies FX send state in the published native graph.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated integration evidence and remaining-gap wording.
+
+Implemented behavior:
+- FX A/B send and return state now reaches the native `MixerGraph` and can render wet-only returns into the main stereo output using native wet processors.
+- The default `process` path remains backward compatible and renders no FX return unless `processWithFx` is used with active units and processors.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-engine-graph-sync-json-tests local-mixer-graph-tests && ctest --test-dir native/engine/build -R 'local-mixer-(engine-graph-sync-json|graph)-tests' --output-on-failure`
+- exit/result: `0`; graph-sync and mixer graph focused tests passed.
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 19/19 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size gate passed.
+
+Known limitations:
+- The graph accepts wet processors, but compact FX A/B program IDs are not yet mapped to the 99 program-specific native DSP recipes in the realtime graph.
+- Vocal FX rack insertion, Harmony insertion, export parity, live listening, callback timing metrics, and stress QA remain partial.

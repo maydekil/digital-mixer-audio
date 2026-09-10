@@ -12,6 +12,9 @@ using localmixer::engine::MixerError;
 using localmixer::engine::MixerCommand;
 using localmixer::engine::MixerCommandType;
 using localmixer::engine::MixerControlQueue;
+using localmixer::engine::FxBusId;
+using localmixer::engine::FxSendState;
+using localmixer::engine::FxUnitRuntime;
 using localmixer::engine::MixerGraph;
 using localmixer::engine::MixerGraphController;
 using localmixer::engine::SourceAssignment;
@@ -27,6 +30,13 @@ bool expect(MixerError actual, MixerError expected, const char* message) {
   if (actual == expected) return true;
   std::cerr << message << "\n";
   return false;
+}
+
+void identityWet(std::span<const float> input, std::span<float> left, std::span<float> right) {
+  for (std::size_t index = 0; index < input.size(); index += 1) {
+    left[index] = input[index];
+    right[index] = input[index];
+  }
 }
 
 }  // namespace
@@ -250,6 +260,39 @@ int main() {
   }
   if (!(eqLeft.back() > 0.5f && eqRight.back() > 0.5f)) {
     std::cerr << "active native EQ band should alter the channel graph output\n";
+    return 1;
+  }
+
+  MixerGraph fxGraph;
+  fxGraph.prepare(8);
+  const auto fxStrip = fxGraph.createStrip("FX Source", "#18d6e7");
+  if (fxStrip.error != MixerError::none) return 1;
+  fxGraph.setLevel(fxStrip.id, 0.0f, 0.0f, 0.0f);
+  fxGraph.setFxSend(fxStrip.id, FxBusId::a, FxSendState{.enabled = true, .gainDb = 0.0f});
+  fxGraph.setFxUnit(FxBusId::a, FxUnitRuntime{.enabled = true, .returnDb = 0.0f});
+  std::array<float, 4> fxSource{0.25f, 0.25f, 0.25f, 0.25f};
+  std::array<float, 4> fxLeft{};
+  std::array<float, 4> fxRight{};
+  std::array<SourceBuffer, 1> fxSources{SourceBuffer{.stripId = fxStrip.id, .samples = fxSource, .channels = 1}};
+  if (!expect(fxGraph.processWithFx(fxSources, StereoOutput{.left = fxLeft, .right = fxRight}, identityWet, {}),
+              MixerError::none,
+              "fx return graph process failed")) {
+    return 1;
+  }
+  if (!near(fxLeft[0], 0.5f) || !near(fxRight[0], 0.5f) ||
+      !near(fxGraph.fxMeters(FxBusId::a).inputPeak, 0.25f) ||
+      !near(fxGraph.fxMeters(FxBusId::a).returnPeakLeft, 0.25f)) {
+    std::cerr << "FX A return should add wet-only return and report meters\n";
+    return 1;
+  }
+  fxGraph.setFxUnit(FxBusId::a, FxUnitRuntime{.enabled = false, .returnDb = 0.0f});
+  if (!expect(fxGraph.processWithFx(fxSources, StereoOutput{.left = fxLeft, .right = fxRight}, identityWet, {}),
+              MixerError::none,
+              "disabled fx return graph process failed")) {
+    return 1;
+  }
+  if (!near(fxLeft[0], 0.25f) || !near(fxGraph.fxMeters(FxBusId::a).returnPeakLeft, 0.0f)) {
+    std::cerr << "disabled FX A unit should keep dry signal and mute wet return\n";
     return 1;
   }
 

@@ -8,11 +8,13 @@
 #include <vector>
 
 #include "engine/ChannelProcessorChain.hpp"
+#include "engine/FxSendReturnBus.hpp"
 #include "engine/MixerControlQueue.hpp"
 
 namespace localmixer::engine {
 
 constexpr std::size_t kMaxMixerStrips = 32;
+constexpr std::uint32_t kDefaultMixerMaxBlockFrames = 4096;
 
 enum class SourceAssignment {
   mono,
@@ -35,6 +37,8 @@ struct StripConfig {
   float faderDb = 0.0f;
   float pan = 0.0f;
   ChannelProcessorConfig processors{};
+  FxSendState sendA;
+  FxSendState sendB;
 };
 
 struct StripMeters {
@@ -75,12 +79,22 @@ class MixerGraph {
   MixerError setEnabled(StripId id, bool enabled);
   MixerError setInputMonitoring(StripId id, bool enabled);
   MixerError setProcessors(StripId id, ChannelProcessorConfig config);
+  MixerError setFxSend(StripId id, FxBusId bus, FxSendState send);
+  void prepare(std::uint32_t maximumFrames);
+  void setFxUnit(FxBusId bus, FxUnitRuntime unit) noexcept;
   MixerError enqueueControl(MixerCommand command);
   MixerError applyQueuedControls(std::uint32_t rampFrames);
   MixerError process(std::span<const SourceBuffer> sources, StereoOutput output);
+  MixerError processWithFx(
+    std::span<const SourceBuffer> sources,
+    StereoOutput output,
+    const FxWetProcessor& processorA,
+    const FxWetProcessor& processorB
+  );
 
   std::optional<StripConfig> strip(StripId id) const;
   std::optional<StripMeters> meters(StripId id) const;
+  FxBusMeters fxMeters(FxBusId bus) const noexcept;
   std::size_t pendingControlCount() const;
   std::size_t stripCount() const;
 
@@ -99,6 +113,7 @@ class MixerGraph {
   std::optional<std::size_t> indexOf(StripId id) const;
   bool anySolo() const;
   void advanceRuntime(StripRuntime& runtime);
+  void renderFxReturn(FxBusId bus, const FxWetProcessor& processor, std::span<float> mainLeft, std::span<float> mainRight) noexcept;
 
   std::uint32_t nextId_ = 1;
   MixerControlQueue controlQueue_;
@@ -106,6 +121,15 @@ class MixerGraph {
   std::vector<StripMeters> meters_;
   std::vector<StripRuntime> runtimes_;
   std::vector<ChannelProcessorChain> processors_;
+  std::vector<float> sendA_;
+  std::vector<float> sendB_;
+  std::vector<float> wetLeft_;
+  std::vector<float> wetRight_;
+  FxUnitRuntime unitA_;
+  FxUnitRuntime unitB_;
+  FxBusMeters fxMetersA_;
+  FxBusMeters fxMetersB_;
+  std::uint32_t maximumFrames_ = 0;
 };
 
 const char* mixerErrorName(MixerError error);
