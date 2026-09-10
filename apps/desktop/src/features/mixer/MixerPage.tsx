@@ -38,14 +38,16 @@ export function MixerPage() {
   }
 
   async function runChannelMonitor(channelId: string, monitor: boolean) {
-    if (!monitor || !window.localMixer?.engineCommand) return;
+    if (!window.localMixer?.engineCommand) return;
     const channel = adapter.getSnapshot().channels.find((item) => item.id === channelId);
-    if (!channel || channel.kind !== "source" || !channel.enabled || !channel.source) return;
-    await window.localMixer.engineCommand("monitor-passthrough", {
-      inputUid: channel.source,
-      outputUid,
+    if (!channel || channel.kind !== "source") return;
+    await syncMixerGraph(adapter.getSnapshot(), outputUid);
+    if (!monitor || !channel.enabled || !channel.source) {
+      await window.localMixer.engineCommand("stop-mixer-monitor");
+      return;
+    }
+    await window.localMixer.engineCommand("start-mixer-monitor", {
       sampleRate: 48000,
-      durationMs: 3000,
       monitorGainDb: -18
     });
   }
@@ -55,7 +57,7 @@ export function MixerPage() {
   }, []);
 
   useEffect(() => {
-    void syncMixerGraph(snapshot);
+    void syncMixerGraph(snapshot, outputUid);
   }, [snapshot, outputUid]);
 
   const selected = snapshot.channels.find((channel) => channel.id === snapshot.selectedChannelId) ?? snapshot.channels[0];
@@ -90,7 +92,10 @@ export function MixerPage() {
             channels={snapshot.channels}
             sourceOptions={sourceOptions}
             onSelect={(id) => refresh(() => adapter.selectChannel(id))}
-            onEnabled={(id, enabled) => refresh(() => adapter.setChannelEnabled(id, enabled))}
+            onEnabled={(id, enabled) => {
+              refresh(() => adapter.setChannelEnabled(id, enabled));
+              if (!enabled) void window.localMixer?.engineCommand?.("stop-mixer-monitor");
+            }}
             onSource={(id, source) => refresh(() => adapter.setChannelSource(id, source))}
             onTrim={(id, value) => refresh(() => adapter.setChannelTrim(id, value))}
             onPan={(id, value) => refresh(() => adapter.setChannelPan(id, value))}
@@ -130,10 +135,14 @@ export function MixerPage() {
   );
 }
 
-async function syncMixerGraph(snapshot: MixerSnapshot) {
+async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
   if (!window.localMixer?.engineCommand) return;
   const channels = snapshot.channels.slice(0, 32);
-  const payload: Record<string, string | number | boolean> = { channelCount: channels.length };
+  const payload: Record<string, string | number | boolean> = {
+    channelCount: channels.length,
+    outputUid,
+    monitorGainDb: -18
+  };
   channels.forEach((channel, index) => {
     const prefix = `channel${index}`;
     payload[`${prefix}Id`] = channel.id;

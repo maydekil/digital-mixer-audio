@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <string>
 
 namespace localmixer::platform::macos {
@@ -24,6 +25,33 @@ struct PassthroughMonitorResult {
   double inputSampleRate = 0.0;
   double outputSampleRate = 0.0;
   float inputPeak = 0.0f;
+};
+
+struct PersistentMonitorStatus {
+  bool running = false;
+  std::string error;
+  std::uint32_t inputChannels = 0;
+  std::uint32_t outputChannels = 0;
+  double inputSampleRate = 0.0;
+  double outputSampleRate = 0.0;
+  float inputPeak = 0.0f;
+};
+
+class PersistentPassthroughMonitor {
+ public:
+  PersistentPassthroughMonitor();
+  ~PersistentPassthroughMonitor();
+
+  PersistentPassthroughMonitor(const PersistentPassthroughMonitor&) = delete;
+  PersistentPassthroughMonitor& operator=(const PersistentPassthroughMonitor&) = delete;
+
+  PersistentMonitorStatus start(const PassthroughMonitorRequest& request);
+  PersistentMonitorStatus stop();
+  PersistentMonitorStatus status() const;
+
+ private:
+  struct Impl;
+  std::unique_ptr<Impl> impl_;
 };
 
 PassthroughMonitorResult monitorPassthrough(const PassthroughMonitorRequest& request);

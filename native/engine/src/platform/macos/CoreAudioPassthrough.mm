@@ -34,6 +34,16 @@ struct PassthroughState {
   float gain = 1.0f;
 };
 
+struct DeviceContext {
+  AudioObjectID input = kAudioObjectUnknown;
+  AudioObjectID output = kAudioObjectUnknown;
+  std::uint32_t inputChannels = 0;
+  std::uint32_t outputChannels = 0;
+  double inputRate = 0.0;
+  double outputRate = 0.0;
+  std::string error;
+};
+
 AudioObjectPropertyAddress property(AudioObjectPropertySelector selector, AudioObjectPropertyScope scope) {
   return {selector, scope, kAudioObjectPropertyElementMain};
 }
@@ -217,32 +227,175 @@ OSStatus outputCallback(
   return noErr;
 }
 
+DeviceContext prepareDeviceContext(const PassthroughMonitorRequest& request) {
+  DeviceContext context;
+  context.input = deviceByUid(request.inputUid, kAudioHardwarePropertyDefaultInputDevice);
+  if (context.input == kAudioObjectUnknown) {
+    context.error = "NO_INPUT_DEVICE";
+    return context;
+  }
+  context.output = deviceByUid(request.outputUid, kAudioHardwarePropertyDefaultOutputDevice);
+  if (context.output == kAudioObjectUnknown) {
+    context.error = "NO_OUTPUT_DEVICE";
+    return context;
+  }
+
+  if (!sampleRate(context.input, context.inputRate)) {
+    context.error = "INPUT_RATE_UNAVAILABLE";
+    return context;
+  }
+  if (!sampleRate(context.output, context.outputRate)) {
+    context.error = "OUTPUT_RATE_UNAVAILABLE";
+    return context;
+  }
+  if (std::fabs(context.inputRate - request.projectSampleRate) > kRateTolerance ||
+      std::fabs(context.outputRate - request.projectSampleRate) > kRateTolerance) {
+    context.error = "SAMPLE_RATE_MISMATCH";
+    return context;
+  }
+
+  context.inputChannels = countChannels(context.input, kAudioDevicePropertyScopeInput);
+  context.outputChannels = countChannels(context.output, kAudioDevicePropertyScopeOutput);
+  if (context.inputChannels == 0) {
+    context.error = "NO_INPUT_CHANNELS";
+    return context;
+  }
+  if (context.outputChannels == 0) {
+    context.error = "NO_OUTPUT_CHANNELS";
+    return context;
+  }
+  if (request.inputChannel >= context.inputChannels) {
+    context.error = "INPUT_CHANNEL_OUT_OF_RANGE";
+    return context;
+  }
+  if (request.outputChannel >= context.outputChannels) {
+    context.error = "OUTPUT_CHANNEL_OUT_OF_RANGE";
+    return context;
+  }
+  return context;
+}
+
+PersistentMonitorStatus statusFromContext(
+  const DeviceContext& context,
+  bool running,
+  const std::string& error,
+  const RingBuffer& ring
+) {
+  return {
+    .running = running,
+    .error = error,
+    .inputChannels = context.inputChannels,
+    .outputChannels = context.outputChannels,
+    .inputSampleRate = context.inputRate,
+    .outputSampleRate = context.outputRate,
+    .inputPeak = static_cast<float>(ring.peakScaled.load(std::memory_order_relaxed)) / 1'000'000.0f,
+  };
+}
+
 }  // namespace
 
+struct PersistentPassthroughMonitor::Impl {
+  ~Impl() { stop(); }
+
+  PersistentMonitorStatus start(const PassthroughMonitorRequest& request) {
+    stop();
+    context = prepareDeviceContext(request);
+    if (!context.error.empty()) return statusFromContext(context, false, context.error, state.ring);
+
+    state.inputChannel = request.inputChannel;
+    state.outputChannel = request.outputChannel;
+    state.mirrorToAllOutputChannels = request.mirrorToAllOutputChannels;
+    state.gain = localmixer::dsp::decibelsToLinear(request.monitorGainDb);
+    state.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate), 0.0f);
+    state.ring.writeFrame.store(0, std::memory_order_relaxed);
+    state.ring.readFrame.store(0, std::memory_order_relaxed);
+    state.ring.peakScaled.store(0, std::memory_order_relaxed);
+
+    auto audioStatus = AudioDeviceCreateIOProcID(context.input, inputCallback, &state, &inputProc);
+    if (audioStatus != noErr || inputProc == nullptr) {
+      return statusFromContext(context, false, "INPUT_CALLBACK_CREATE_FAILED", state.ring);
+    }
+    audioStatus = AudioDeviceCreateIOProcID(context.output, outputCallback, &state, &outputProc);
+    if (audioStatus != noErr || outputProc == nullptr) {
+      AudioDeviceDestroyIOProcID(context.input, inputProc);
+      inputProc = nullptr;
+      return statusFromContext(context, false, "OUTPUT_CALLBACK_CREATE_FAILED", state.ring);
+    }
+
+    audioStatus = AudioDeviceStart(context.input, inputProc);
+    if (audioStatus != noErr) {
+      destroyCallbacks();
+      return statusFromContext(context, false, "INPUT_START_FAILED", state.ring);
+    }
+    audioStatus = AudioDeviceStart(context.output, outputProc);
+    if (audioStatus != noErr) {
+      AudioDeviceStop(context.input, inputProc);
+      destroyCallbacks();
+      return statusFromContext(context, false, "OUTPUT_START_FAILED", state.ring);
+    }
+
+    running = true;
+    return statusFromContext(context, true, "", state.ring);
+  }
+
+  PersistentMonitorStatus stop() {
+    if (running) {
+      AudioDeviceStop(context.output, outputProc);
+      AudioDeviceStop(context.input, inputProc);
+    }
+    destroyCallbacks();
+    running = false;
+    return statusFromContext(context, false, "", state.ring);
+  }
+
+  PersistentMonitorStatus currentStatus() const {
+    return statusFromContext(context, running, "", state.ring);
+  }
+
+  void destroyCallbacks() {
+    if (outputProc != nullptr && context.output != kAudioObjectUnknown) {
+      AudioDeviceDestroyIOProcID(context.output, outputProc);
+      outputProc = nullptr;
+    }
+    if (inputProc != nullptr && context.input != kAudioObjectUnknown) {
+      AudioDeviceDestroyIOProcID(context.input, inputProc);
+      inputProc = nullptr;
+    }
+  }
+
+  DeviceContext context;
+  PassthroughState state;
+  AudioDeviceIOProcID inputProc = nullptr;
+  AudioDeviceIOProcID outputProc = nullptr;
+  bool running = false;
+};
+
+PersistentPassthroughMonitor::PersistentPassthroughMonitor() : impl_(std::make_unique<Impl>()) {}
+
+PersistentPassthroughMonitor::~PersistentPassthroughMonitor() = default;
+
+PersistentMonitorStatus PersistentPassthroughMonitor::start(const PassthroughMonitorRequest& request) {
+  return impl_->start(request);
+}
+
+PersistentMonitorStatus PersistentPassthroughMonitor::stop() {
+  return impl_->stop();
+}
+
+PersistentMonitorStatus PersistentPassthroughMonitor::status() const {
+  return impl_->currentStatus();
+}
+
 PassthroughMonitorResult monitorPassthrough(const PassthroughMonitorRequest& request) {
-  const auto input = deviceByUid(request.inputUid, kAudioHardwarePropertyDefaultInputDevice);
-  if (input == kAudioObjectUnknown) return {.error = "NO_INPUT_DEVICE"};
-  const auto output = deviceByUid(request.outputUid, kAudioHardwarePropertyDefaultOutputDevice);
-  if (output == kAudioObjectUnknown) return {.error = "NO_OUTPUT_DEVICE"};
-
-  double inputRate = 0.0;
-  double outputRate = 0.0;
-  if (!sampleRate(input, inputRate)) return {.error = "INPUT_RATE_UNAVAILABLE"};
-  if (!sampleRate(output, outputRate)) return {.error = "OUTPUT_RATE_UNAVAILABLE", .inputSampleRate = inputRate};
-  if (std::fabs(inputRate - request.projectSampleRate) > kRateTolerance ||
-      std::fabs(outputRate - request.projectSampleRate) > kRateTolerance) {
-    return {.error = "SAMPLE_RATE_MISMATCH", .inputSampleRate = inputRate, .outputSampleRate = outputRate};
-  }
-
-  const auto inputChannels = countChannels(input, kAudioDevicePropertyScopeInput);
-  const auto outputChannels = countChannels(output, kAudioDevicePropertyScopeOutput);
-  if (inputChannels == 0) return {.error = "NO_INPUT_CHANNELS", .inputSampleRate = inputRate, .outputSampleRate = outputRate};
-  if (outputChannels == 0) return {.error = "NO_OUTPUT_CHANNELS", .inputSampleRate = inputRate, .outputSampleRate = outputRate};
-  if (request.inputChannel >= inputChannels) {
-    return {.error = "INPUT_CHANNEL_OUT_OF_RANGE", .inputChannels = inputChannels, .outputChannels = outputChannels};
-  }
-  if (request.outputChannel >= outputChannels) {
-    return {.error = "OUTPUT_CHANNEL_OUT_OF_RANGE", .inputChannels = inputChannels, .outputChannels = outputChannels};
+  const auto context = prepareDeviceContext(request);
+  if (!context.error.empty()) {
+    return {
+      .error = context.error,
+      .inputChannels = context.inputChannels,
+      .outputChannels = context.outputChannels,
+      .inputSampleRate = context.inputRate,
+      .outputSampleRate = context.outputRate,
+    };
   }
 
   PassthroughState state;
@@ -254,40 +407,40 @@ PassthroughMonitorResult monitorPassthrough(const PassthroughMonitorRequest& req
 
   AudioDeviceIOProcID inputProc = nullptr;
   AudioDeviceIOProcID outputProc = nullptr;
-  auto status = AudioDeviceCreateIOProcID(input, inputCallback, &state, &inputProc);
+  auto status = AudioDeviceCreateIOProcID(context.input, inputCallback, &state, &inputProc);
   if (status != noErr || inputProc == nullptr) return {.error = "INPUT_CALLBACK_CREATE_FAILED"};
-  status = AudioDeviceCreateIOProcID(output, outputCallback, &state, &outputProc);
+  status = AudioDeviceCreateIOProcID(context.output, outputCallback, &state, &outputProc);
   if (status != noErr || outputProc == nullptr) {
-    AudioDeviceDestroyIOProcID(input, inputProc);
+    AudioDeviceDestroyIOProcID(context.input, inputProc);
     return {.error = "OUTPUT_CALLBACK_CREATE_FAILED"};
   }
 
-  status = AudioDeviceStart(input, inputProc);
+  status = AudioDeviceStart(context.input, inputProc);
   if (status != noErr) {
-    AudioDeviceDestroyIOProcID(output, outputProc);
-    AudioDeviceDestroyIOProcID(input, inputProc);
+    AudioDeviceDestroyIOProcID(context.output, outputProc);
+    AudioDeviceDestroyIOProcID(context.input, inputProc);
     return {.error = "INPUT_START_FAILED"};
   }
-  status = AudioDeviceStart(output, outputProc);
+  status = AudioDeviceStart(context.output, outputProc);
   if (status != noErr) {
-    AudioDeviceStop(input, inputProc);
-    AudioDeviceDestroyIOProcID(output, outputProc);
-    AudioDeviceDestroyIOProcID(input, inputProc);
+    AudioDeviceStop(context.input, inputProc);
+    AudioDeviceDestroyIOProcID(context.output, outputProc);
+    AudioDeviceDestroyIOProcID(context.input, inputProc);
     return {.error = "OUTPUT_START_FAILED"};
   }
 
   std::this_thread::sleep_for(std::chrono::milliseconds(request.durationMs));
 
-  AudioDeviceStop(output, outputProc);
-  AudioDeviceStop(input, inputProc);
-  AudioDeviceDestroyIOProcID(output, outputProc);
-  AudioDeviceDestroyIOProcID(input, inputProc);
+  AudioDeviceStop(context.output, outputProc);
+  AudioDeviceStop(context.input, inputProc);
+  AudioDeviceDestroyIOProcID(context.output, outputProc);
+  AudioDeviceDestroyIOProcID(context.input, inputProc);
   return {
     .ok = true,
-    .inputChannels = inputChannels,
-    .outputChannels = outputChannels,
-    .inputSampleRate = inputRate,
-    .outputSampleRate = outputRate,
+    .inputChannels = context.inputChannels,
+    .outputChannels = context.outputChannels,
+    .inputSampleRate = context.inputRate,
+    .outputSampleRate = context.outputRate,
     .inputPeak = static_cast<float>(state.ring.peakScaled.load(std::memory_order_relaxed)) / 1'000'000.0f,
   };
 }

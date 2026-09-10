@@ -20,7 +20,10 @@ const supportedEngineCommands = new Set([
   "play-test-tone",
   "monitor-passthrough",
   "prepare-passthrough",
-  "sync-mixer-graph"
+  "sync-mixer-graph",
+  "start-mixer-monitor",
+  "stop-mixer-monitor",
+  "mixer-monitor-status"
 ]);
 const soundPadMaxMs = 6000;
 let activeSoundPad: { child: ReturnType<typeof spawn>; timeout: ReturnType<typeof setTimeout> } | null = null;

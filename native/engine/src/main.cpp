@@ -23,6 +23,13 @@ namespace {
 constexpr int kProtocolVersion = 1;
 constexpr std::size_t kMaxMessageBytes = 8192;
 
+struct SyncedMonitorSelection {
+  std::string inputUid;
+  std::string outputUid;
+  std::uint32_t activeMonitorCount = 0;
+  float monitorGainDb = -18.0f;
+};
+
 std::string argumentValue(int argc, char** argv, const std::string& name, const std::string& fallback = "") {
   for (int index = 2; index + 1 < argc; index += 1) {
     if (argv[index] == name) return argv[index + 1];
@@ -302,7 +309,44 @@ std::string indexedField(std::uint32_t index, const std::string& suffix) {
   return "channel" + std::to_string(index) + suffix;
 }
 
-std::string syncMixerGraphResultJson(const std::string& line, localmixer::engine::MixerGraphController& controller) {
+std::string persistentMonitorStatusJson(
+  bool running,
+  const std::string& error,
+  std::uint32_t inputChannels,
+  std::uint32_t outputChannels,
+  double inputSampleRate,
+  double outputSampleRate,
+  float inputPeak
+) {
+  std::string json = "\"monitoring\":" + std::string(running ? "true" : "false");
+  json += ",\"error\":\"" + escapeJson(error) + "\"";
+  json += ",\"inputChannels\":" + std::to_string(inputChannels);
+  json += ",\"outputChannels\":" + std::to_string(outputChannels);
+  json += ",\"inputSampleRate\":" + std::to_string(inputSampleRate);
+  json += ",\"outputSampleRate\":" + std::to_string(outputSampleRate);
+  json += ",\"inputPeak\":" + std::to_string(inputPeak);
+  return json;
+}
+
+#if defined(__APPLE__)
+std::string persistentMonitorStatusJson(const localmixer::platform::macos::PersistentMonitorStatus& status) {
+  return persistentMonitorStatusJson(
+    status.running,
+    status.error,
+    status.inputChannels,
+    status.outputChannels,
+    status.inputSampleRate,
+    status.outputSampleRate,
+    status.inputPeak
+  );
+}
+#endif
+
+std::string syncMixerGraphResultJson(
+  const std::string& line,
+  localmixer::engine::MixerGraphController& controller,
+  SyncedMonitorSelection& monitorSelection
+) {
   const auto channelCount = static_cast<std::uint32_t>(readJsonNumberField(line, "channelCount").value_or(0.0));
   if (channelCount > localmixer::engine::kMaxMixerStrips) {
     return "\"synced\":false,\"error\":\"GRAPH_FULL\",\"stripCount\":0,\"activeMonitorCount\":0,\"retiredGraphCount\":" +
@@ -312,6 +356,9 @@ std::string syncMixerGraphResultJson(const std::string& line, localmixer::engine
   auto prepared = localmixer::engine::MixerGraph{};
   std::uint32_t stripCount = 0;
   std::uint32_t monitorCount = 0;
+  std::string monitorInputUid;
+  const auto outputUid = readJsonStringField(line, "outputUid");
+  const auto monitorGainDb = static_cast<float>(readJsonNumberField(line, "monitorGainDb").value_or(-18.0));
   for (std::uint32_t index = 0; index < channelCount; index += 1) {
     const auto kind = readJsonStringField(line, indexedField(index, "Kind"));
     const auto name = readJsonStringField(line, indexedField(index, "Name"));
@@ -344,11 +391,25 @@ std::string syncMixerGraphResultJson(const std::string& line, localmixer::engine
     prepared.setSolo(created.id, solo);
     prepared.setInputMonitoring(created.id, monitor);
     stripCount += 1;
-    if (monitor && enabled && !sourceUid.empty() && kind == "source") monitorCount += 1;
+    if (monitor && enabled && !sourceUid.empty() && kind == "source") {
+      monitorCount += 1;
+      if (monitorInputUid.empty()) monitorInputUid = sourceUid;
+    }
+  }
+
+  if (monitorCount > 1) {
+    return "\"synced\":false,\"error\":\"MULTIPLE_MONITOR_SOURCES_UNSUPPORTED\",\"stripCount\":" +
+      std::to_string(stripCount) +
+      ",\"activeMonitorCount\":" + std::to_string(monitorCount) +
+      ",\"retiredGraphCount\":" + std::to_string(controller.retiredCount());
   }
 
   controller.publish(std::move(prepared));
   controller.reclaimRetired();
+  monitorSelection.inputUid = monitorInputUid;
+  monitorSelection.outputUid = outputUid;
+  monitorSelection.activeMonitorCount = monitorCount;
+  monitorSelection.monitorGainDb = monitorGainDb;
   return "\"synced\":true,\"error\":\"\",\"stripCount\":" + std::to_string(stripCount) +
     ",\"activeMonitorCount\":" + std::to_string(monitorCount) +
     ",\"retiredGraphCount\":" + std::to_string(controller.retiredCount());
@@ -369,6 +430,10 @@ void writeRawResponse(const std::string& id, bool ok, const std::string& type, c
 int runStdioProtocol() {
   localmixer::engine::EngineRuntime runtime;
   localmixer::engine::MixerGraphController graphController;
+  SyncedMonitorSelection monitorSelection;
+#if defined(__APPLE__)
+  localmixer::platform::macos::PersistentPassthroughMonitor persistentMonitor;
+#endif
   runtime.refreshDevices(loadNativeDevices());
 
   std::cout
@@ -430,8 +495,46 @@ int runStdioProtocol() {
         "\"error\":\"" + std::string(localmixer::engine::prepareErrorName(result.error)) +
         "\",\"status\":" + statusJson(runtime.status()));
     } else if (type == "sync-mixer-graph") {
-      const auto fields = syncMixerGraphResultJson(line, graphController);
+      const auto fields = syncMixerGraphResultJson(line, graphController, monitorSelection);
       writeRawResponse(id, fields.find("\"synced\":true") != std::string::npos, "sync-mixer-graph", fields);
+    } else if (type == "start-mixer-monitor") {
+      if (monitorSelection.activeMonitorCount == 0 || monitorSelection.inputUid.empty()) {
+        writeRawResponse(id, false, "start-mixer-monitor",
+          persistentMonitorStatusJson(false, "NO_MONITOR_SOURCE", 0, 0, 0.0, 0.0, 0.0f));
+      } else {
+#if defined(__APPLE__)
+        const auto status = persistentMonitor.start({
+          .inputUid = monitorSelection.inputUid,
+          .outputUid = monitorSelection.outputUid,
+          .projectSampleRate = readJsonNumberField(line, "sampleRate").value_or(48000.0),
+          .inputChannel = static_cast<std::uint32_t>(readJsonNumberField(line, "inputChannel").value_or(0.0)),
+          .outputChannel = static_cast<std::uint32_t>(readJsonNumberField(line, "outputChannel").value_or(0.0)),
+          .mirrorToAllOutputChannels = readJsonBoolField(line, "mirrorToAllOutputChannels").value_or(true),
+          .durationMs = 0,
+          .monitorGainDb = monitorSelection.monitorGainDb,
+        });
+        writeRawResponse(id, status.running, "start-mixer-monitor", persistentMonitorStatusJson(status));
+#else
+        writeRawResponse(id, false, "start-mixer-monitor",
+          persistentMonitorStatusJson(false, "UNSUPPORTED_PLATFORM", 0, 0, 0.0, 0.0, 0.0f));
+#endif
+      }
+    } else if (type == "stop-mixer-monitor") {
+#if defined(__APPLE__)
+      const auto status = persistentMonitor.stop();
+      writeRawResponse(id, true, "stop-mixer-monitor", persistentMonitorStatusJson(status));
+#else
+      writeRawResponse(id, true, "stop-mixer-monitor",
+        persistentMonitorStatusJson(false, "UNSUPPORTED_PLATFORM", 0, 0, 0.0, 0.0, 0.0f));
+#endif
+    } else if (type == "mixer-monitor-status") {
+#if defined(__APPLE__)
+      const auto status = persistentMonitor.status();
+      writeRawResponse(id, true, "mixer-monitor-status", persistentMonitorStatusJson(status));
+#else
+      writeRawResponse(id, true, "mixer-monitor-status",
+        persistentMonitorStatusJson(false, "UNSUPPORTED_PLATFORM", 0, 0, 0.0, 0.0, 0.0f));
+#endif
     } else if (type == "play-test-tone") {
       const auto sampleRate = readJsonNumberField(line, "sampleRate").value_or(48000.0);
       const auto durationMs = static_cast<std::uint32_t>(readJsonNumberField(line, "durationMs").value_or(0.0));

@@ -494,6 +494,31 @@ Known limitations:
 - The desktop MON button still uses the short Phase03 `monitor-passthrough` command for audible monitoring.
 - Persistent graph-owned realtime monitoring, live graph meters, and graph-owned output routing remain the next Phase05 work.
 
+### Phase05 Checkpoint — Persistent Native Monitor Lifecycle
+
+Changed files:
+- `native/engine/src/platform/macos/CoreAudioPassthrough.hpp`, `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: added a persistent native monitor class with start/stop/status lifecycle while retaining the existing short passthrough diagnostic command.
+- `native/engine/src/main.cpp`: added `start-mixer-monitor`, `stop-mixer-monitor`, and `mixer-monitor-status` stdio commands using the last synced native graph monitor selection.
+- `apps/desktop/electron/main.ts`: whitelisted persistent monitor lifecycle commands.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: channel MON now syncs the native graph, starts/stops persistent native monitoring, and stops monitoring when a channel is disabled.
+- `scripts/test-native.mjs`: protocol smoke now verifies monitor start/status/stop responses.
+
+Implemented behavior:
+- Desktop MON no longer calls the short fixed-duration `monitor-passthrough` path.
+- A native monitor can stay running until explicitly stopped by the desktop app or engine shutdown.
+- Native start uses the source/output selected through the graph sync payload; no browser audio APIs or PCM renderer IPC were introduced.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; CMake/Ninja build passed, CTest passed 5/5, engine self-test passed, and protocol smoke covered graph sync plus monitor start/status/stop.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Persistent monitor currently supports one active monitored source; multiple MON source strips are rejected with `MULTIPLE_MONITOR_SOURCES_UNSUPPORTED`.
+- The persistent monitor still uses the CoreAudio passthrough ring rather than rendering a full multi-source `MixerGraph` through the output callback.
+- Manual audible desktop verification for persistent MON has not been run in this turn.
+
 ## Native Sound Pad Spike — Early User-Requested
 Status: IMPLEMENTED_UNVERIFIED_PLAYBACK
 Prerequisites: user explicitly requested this before UI-04

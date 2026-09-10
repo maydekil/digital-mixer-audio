@@ -107,6 +107,31 @@ async function testEngineProtocol() {
       message.activeMonitorCount === 1
     )
   );
+  child.stdin.write(`${JSON.stringify({ id: "native-monitor-start", type: "start-mixer-monitor", sampleRate: 48000 })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-monitor-start" &&
+      message.type === "start-mixer-monitor" &&
+      typeof message.monitoring === "boolean" &&
+      typeof message.error === "string"
+    )
+  );
+  child.stdin.write(`${JSON.stringify({ id: "native-monitor-status", type: "mixer-monitor-status" })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-monitor-status" &&
+      message.type === "mixer-monitor-status" &&
+      typeof message.monitoring === "boolean"
+    )
+  );
+  child.stdin.write(`${JSON.stringify({ id: "native-monitor-stop", type: "stop-mixer-monitor" })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-monitor-stop" &&
+      message.type === "stop-mixer-monitor" &&
+      message.monitoring === false
+    )
+  );
   child.stdin.write(`${JSON.stringify({ id: "native-tone", type: "play-test-tone", durationMs: 0 })}\n`);
   await waitFor(() =>
     messages.some((message) =>
