@@ -49,7 +49,7 @@
     {"order":45,"id":"VFX-09","dependsOn":["INT-02"],"status":"IMPLEMENTED_UNVERIFIED","domain":"vocal-fx-qa","evidencePaths":["docs/reports/vocal-fx-quality.md","docs/reports/vocal-fx-latency.md","docs/progress.md"]},
     {"order":46,"id":"MIXFX-05","dependsOn":["VFX-09"],"status":"IMPLEMENTED_UNVERIFIED","domain":"mixer-fx-qa","evidencePaths":["docs/reports/mixer-dsp99.md","docs/progress.md"]},
     {"order":47,"id":"HARM-03","dependsOn":["MIXFX-05"],"status":"IMPLEMENTED_UNVERIFIED","domain":"harmony-qa","evidencePaths":["docs/reports/harmony-button.md","docs/progress.md"]},
-    {"order":48,"id":"INT-03","dependsOn":["HARM-03"],"status":"NOT_STARTED","domain":"acceptance","evidencePaths":[]},
+    {"order":48,"id":"INT-03","dependsOn":["HARM-03"],"status":"IMPLEMENTED_UNVERIFIED","domain":"acceptance","evidencePaths":["docs/reports/product-acceptance.md","docs/feature-traceability.md","docs/progress.md"]},
     {"order":49,"id":"Phase19","dependsOn":["INT-03"],"status":"NOT_STARTED","domain":"handoff","evidencePaths":[]}
   ]
 }

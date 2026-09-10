@@ -2060,3 +2060,25 @@ Validation:
 
 Known limitations:
 - HARM-03 is not final `VERIFIED`; real vocal recording, known-key auditory QA, packaged screenshot, audio-system+music+Harmony together, UI tab switching in packaged app, undo/redo, record/export, Monitor Fast, and backend-failure behavior remain PARTIAL or NOT_RUN.
+
+## INT-03 — Product Acceptance Audit
+Status: IMPLEMENTED_UNVERIFIED_AUDIT
+Prerequisites: HARM-03 IMPLEMENTED_UNVERIFIED
+
+### INT-03 Checkpoint — Acceptance Report
+
+Changed files:
+- `docs/reports/product-acceptance.md`: added overall acceptance verdict, automated gate summary, 8E.11 E2E matrix, conditional feature statuses, critical unresolved work, and Phase19 inputs.
+- `docs/task-plan.json`, `docs/progress.md`: updated INT-03 status and evidence paths.
+
+Implemented behavior:
+- The project now has the required INT-03 acceptance report.
+- The report explicitly sets `NOT_PRODUCT_VERIFIED` because mandatory hardware/listening/plugin/runtime/record/performance/package checks remain incomplete.
+- Conditional items are separated from mandatory gaps, following 8E.12.
+
+Validation:
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 36/36, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- INT-03 is an honest audit, not product completion. Critical gaps remain before Phase19 can produce a final handoff with `PRODUCT_VERIFIED`.
