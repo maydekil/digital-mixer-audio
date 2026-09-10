@@ -1648,3 +1648,36 @@ Validation:
 Known limitations:
 - The bus module is not yet wired into `MixerGraph` realtime processing, Electron IPC, compact FX rows, or the offline exporter.
 - Feedback-edge rejection through the route editor and return stem export remain pending in MIXFX-02 through MIXFX-05.
+
+## MIXFX-02 — Compact Mixer FX UI Native Binding
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: MIXFX-01 IMPLEMENTED_UNVERIFIED
+
+### MIXFX-02 Checkpoint — FX Program Bank And Insert Editor Binding
+
+Changed files:
+- `native/engine/src/engine/FxProgramRegistryJson.hpp`, `native/engine/src/engine/FxProgramRegistryJson.cpp`: added native JSON serialization for the factory FX bank, including 99 program IDs, names, families, processor types, and macro display values.
+- `native/engine/src/main.cpp`, `apps/desktop/electron/main.ts`, `apps/desktop/electron/EngineProtocol.ts`: exposed the `fx-program-bank` stdio IPC command and raised bounded protocol payload size to 64 KB for metadata responses only.
+- `apps/desktop/src/features/fx/components/CompactFxRow.tsx`, `apps/desktop/src/features/mixer/MixerPage.tsx`, `apps/desktop/src/adapters/MixerControlPort.ts`, `apps/desktop/src/adapters/preview/PreviewAdapter.ts`, `apps/desktop/src/styles/app.css`: wired compact FX rows to load the native bank when the engine is running, edit program macros, keep returns/sends in shared mixer state, and open Pitch Correction from channel INSERT FX.
+- `native/engine/tests/FxProgramRegistryJsonTest.cpp`, `tests/ui/preview-adapter.test.ts`, `native/engine/CMakeLists.txt`: added test coverage for native bank JSON and adapter bank/macro state.
+
+Implemented behavior:
+- From the compact Mixer FX rows, the app can request the native 99-program bank and keep the existing FX A/B selections when IDs remain valid.
+- Program 12 Vocal Plate and program 50 Stereo 320 remain selectable through the existing search/numeric program field.
+- FX macro edits mark the selected FX unit modified, return faders remain live, and channel SEND A/B state stays owned by the same adapter snapshot as the right processing panel.
+- Clicking a channel INSERT FX button enables that processor, selects the channel, and opens the Vocal FX modal on Pitch Correction instead of creating a separate duplicate editor state.
+
+Validation:
+- command: `npm run test:ui -- preview-adapter`
+- exit/result: `0`; Vitest preview adapter 9/9 passed including native bank load and macro modified state.
+- command: `cmake --build native/engine/build --target local-mixer-fx-program-registry-json-tests`
+- exit/result: `0`; native serializer test target built successfully.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 31/31, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+- command: `node -e "... fx-program-bank ..."`
+- exit/result: `0`; stdio command returned `{type:"fx-program-bank", ok:true, count:99, first:"Tiny Booth", p12:"Vocal Plate", last:"Infinite Mood"}`.
+
+Known limitations:
+- MIXFX-02 binds compact UI metadata and shared state only; native ACK/crossfade transitions are intentionally deferred to MIXFX-03.
+- The send/return bus is still not integrated into `MixerGraph` realtime processing or export stems.
+- Keyboard and 1280x800 acceptance remain covered by existing UI gate/visual tests; no new full desktop screenshot was recorded in this checkpoint.

@@ -15,4 +15,4 @@ export interface PendingCommand {
 }
 
 export const engineProtocolVersion = 1;
-export const maxEngineMessageBytes = 8192;
+export const maxEngineMessageBytes = 65536;

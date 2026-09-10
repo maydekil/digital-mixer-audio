@@ -8,7 +8,7 @@ import { ChannelProcessingPanel } from "../processing/components/ChannelProcessi
 import { SoundPadPanel } from "../sound-pads/components/SoundPadPanel";
 import { VocalFxPanel } from "../vocal-fx/components/VocalFxPanel";
 import { ChannelBank } from "./components/ChannelBank";
-import type { ChannelState, MixerSnapshot } from "../../adapters/MixerControlPort";
+import type { ChannelState, FxProgram, MixerSnapshot } from "../../adapters/MixerControlPort";
 
 interface HardwareDevice {
   uid: string;
@@ -42,6 +42,14 @@ export function MixerPage() {
     setOutputUid((current) => current || defaultOutput?.uid || "");
   }
 
+  async function refreshFxProgramBank() {
+    if (!window.localMixer?.engineCommand) return;
+    const result = await window.localMixer.engineCommand("fx-program-bank");
+    if (!Array.isArray(result?.programs)) return;
+    const programs = parseFxPrograms(result.programs);
+    if (programs.length === 99) refresh(() => adapter.setPrograms(programs));
+  }
+
   async function runChannelMonitor(channelId: string, monitor: boolean) {
     if (!window.localMixer?.engineCommand) return;
     const channel = adapter.getSnapshot().channels.find((item) => item.id === channelId);
@@ -65,6 +73,7 @@ export function MixerPage() {
 
   useEffect(() => {
     void refreshDevices();
+    void refreshFxProgramBank();
   }, []);
 
   useEffect(() => {
@@ -105,8 +114,8 @@ export function MixerPage() {
         onStop={() => void sendTransport("transport-stop")}
       />
       <div className="fx-stack">
-        <CompactFxRow unit={fxA} program={programA} programs={snapshot.programs} onProgramChange={(id) => refresh(() => adapter.setFxProgram("fx-a", id))} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-a", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-a", value))} onReset={() => refresh(() => adapter.resetFxProgram("fx-a"))} />
-        <CompactFxRow unit={fxB} program={programB} programs={snapshot.programs} onProgramChange={(id) => refresh(() => adapter.setFxProgram("fx-b", id))} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-b", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-b", value))} onReset={() => refresh(() => adapter.resetFxProgram("fx-b"))} />
+        <CompactFxRow unit={fxA} program={programA} programs={snapshot.programs} onProgramChange={(id) => refresh(() => adapter.setFxProgram("fx-a", id))} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-a", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-a", value))} onMacro={(macro, value) => refresh(() => adapter.setFxProgramMacro("fx-a", macro, value))} onReset={() => refresh(() => adapter.resetFxProgram("fx-a"))} />
+        <CompactFxRow unit={fxB} program={programB} programs={snapshot.programs} onProgramChange={(id) => refresh(() => adapter.setFxProgram("fx-b", id))} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-b", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-b", value))} onMacro={(macro, value) => refresh(() => adapter.setFxProgramMacro("fx-b", macro, value))} onReset={() => refresh(() => adapter.resetFxProgram("fx-b"))} />
       </div>
       <section className="workspace">
         <div className="left-zone">
@@ -130,7 +139,16 @@ export function MixerPage() {
               void runChannelMonitor(id, monitor);
             }}
             onRecordArm={(id, armed) => refresh(() => adapter.setChannelRecordArm(id, armed))}
-            onProcessor={(id, processorId, enabled) => refresh(() => adapter.setChannelProcessor(id, processorId, enabled))}
+            onProcessor={(id, processorId, enabled) => {
+              refresh(() => adapter.setChannelProcessor(id, processorId, enabled));
+              if (processorId === "insertFx" && enabled) {
+                refresh(() => {
+                  adapter.selectChannel(id);
+                  adapter.selectVocalFxSlot("pitch-correct");
+                });
+                setVocalFxOpen(true);
+              }
+            }}
             onClipReset={(id) => refresh(() => adapter.resetClip(id))}
             onHarmonyToggle={() => refresh(() => adapter.setHarmonyEnabled(!snapshot.harmony.enabled))}
           />
@@ -199,6 +217,25 @@ function channelColor(channel: ChannelState) {
   if (channel.role === "group") return "#b568f0";
   if (channel.role === "master") return "#20f0a0";
   return "#6ed6e8";
+}
+
+function parseFxPrograms(programs: unknown[]): FxProgram[] {
+  return programs.flatMap((program) => {
+    if (!program || typeof program !== "object") return [];
+    const item = program as Record<string, unknown>;
+    const macro1 = item.macro1 as Record<string, unknown> | undefined;
+    const macro2 = item.macro2 as Record<string, unknown> | undefined;
+    if (typeof item.id !== "number" || typeof item.name !== "string" || typeof item.family !== "string") return [];
+    if (!macro1 || !macro2 || typeof macro1.label !== "string" || typeof macro1.value !== "string") return [];
+    if (typeof macro2.label !== "string" || typeof macro2.value !== "string") return [];
+    return [{
+      id: item.id,
+      name: item.name,
+      family: item.family,
+      macro1: { label: macro1.label, value: macro1.value },
+      macro2: { label: macro2.label, value: macro2.value }
+    }];
+  });
 }
 
 function TopBar({ projectName, time, rate, status, mode, transportState, onVocalFx, onTimeline, onPlay, onStop }: {

@@ -15,6 +15,7 @@ const requireEngine = process.env.LOCAL_MIXER_REQUIRE_ENGINE === "1";
 const supportedSoundPads = new Set(["applause", "laugh", "cheer", "drumroll", "ding", "whoosh"]);
 const supportedEngineCommands = new Set([
   "engine-status",
+  "fx-program-bank",
   "list-devices",
   "meter-input",
   "play-test-tone",

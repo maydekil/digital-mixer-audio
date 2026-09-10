@@ -13,10 +13,11 @@ interface CompactFxRowProps {
   onProgramChange(programId: number): void;
   onToggle(enabled: boolean): void;
   onReturn(valueDb: number): void;
+  onMacro(macro: "macro1" | "macro2", value: string): void;
   onReset(): void;
 }
 
-export function CompactFxRow({ unit, program, programs, onProgramChange, onToggle, onReturn, onReset }: CompactFxRowProps) {
+export function CompactFxRow({ unit, program, programs, onProgramChange, onToggle, onReturn, onMacro, onReset }: CompactFxRowProps) {
   const [editing, setEditing] = useState(false);
 
   return (
@@ -30,8 +31,8 @@ export function CompactFxRow({ unit, program, programs, onProgramChange, onToggl
       </Button>
       <ProgramPicker programs={programs} selectedId={unit.programId} onChange={onProgramChange} />
       {unit.modified ? <button className="modified-badge" onClick={onReset}>Modified</button> : <span className="preset-count">99 presets</span>}
-      <RotaryKnob label={program.macro1.label} value={program.macro1.value} tone={unit.accent} size="sm" />
-      <RotaryKnob label={program.macro2.label} value={program.macro2.value} tone={unit.accent} size="sm" />
+      <EditableMacro label={program.macro1.label} value={program.macro1.value} tone={unit.accent} onCommit={(value) => onMacro("macro1", value)} />
+      <EditableMacro label={program.macro2.label} value={program.macro2.value} tone={unit.accent} onCommit={(value) => onMacro("macro2", value)} />
       <div className="fx-return">
         <span>Return</span>
         <input type="range" min="-60" max="10" value={unit.returnDb} onChange={(event) => onReturn(Number(event.target.value))} aria-label={`${unit.label} return`} />
@@ -48,11 +49,57 @@ export function CompactFxRow({ unit, program, programs, onProgramChange, onToggl
               <input type="range" min="-60" max="10" value={unit.returnDb} onChange={(event) => onReturn(Number(event.target.value))} />
               <span>{unit.returnDb.toFixed(1)} dB</span>
             </label>
-            <p>{program.macro1.label}: {program.macro1.value}</p>
-            <p>{program.macro2.label}: {program.macro2.value}</p>
+            <label>
+              {program.macro1.label}
+              <input value={program.macro1.value} onChange={(event) => onMacro("macro1", event.target.value)} />
+            </label>
+            <label>
+              {program.macro2.label}
+              <input value={program.macro2.value} onChange={(event) => onMacro("macro2", event.target.value)} />
+            </label>
           </div>
         ) : null}
       </div>
     </section>
+  );
+}
+
+function EditableMacro({ label, value, tone, onCommit }: { label: string; value: string; tone: "amber" | "cyan"; onCommit(value: string): void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  function commit(nextValue = draft) {
+    setEditing(false);
+    onCommit(nextValue);
+  }
+
+  if (editing) {
+    return (
+      <label className="fx-macro-edit">
+        <span>{label}</span>
+        <input
+          value={draft}
+          autoFocus
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={(event) => commit(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur();
+            if (event.key === "Escape") {
+              setDraft(value);
+              setEditing(false);
+            }
+          }}
+        />
+      </label>
+    );
+  }
+
+  return (
+    <button className="fx-macro-button" type="button" onClick={() => {
+      setDraft(value);
+      setEditing(true);
+    }}>
+      <RotaryKnob label={label} value={value} tone={tone} size="sm" />
+    </button>
   );
 }

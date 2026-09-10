@@ -1,6 +1,7 @@
 #include "dsp/Gain.hpp"
 #include "dsp/OutputProtection.hpp"
 #include "engine/EngineRuntime.hpp"
+#include "engine/FxProgramRegistryJson.hpp"
 #include "engine/JsonProtocol.hpp"
 #include "engine/MediaTransportJson.hpp"
 #include "engine/MixerGraph.hpp"
@@ -30,7 +31,7 @@
 namespace {
 
 constexpr int kProtocolVersion = 1;
-constexpr std::size_t kMaxMessageBytes = 8192;
+constexpr std::size_t kMaxMessageBytes = 65536;
 
 using localmixer::engine::protocol::escapeJson;
 using localmixer::engine::protocol::mediaInfoJson;
@@ -458,6 +459,8 @@ int runStdioProtocol() {
       writeRawResponse(id, true, "devices", "\"devices\":" + devicesJson(runtime.devices()) +
         ",\"status\":" + statusJson(runtime.status()) +
         ",\"micPermission\":\"" + microphonePermissionState() + "\"");
+    } else if (type == "fx-program-bank") {
+      writeRawResponse(id, true, "fx-program-bank", localmixer::engine::protocol::fxProgramBankJsonFields());
     } else if (type == "prepare-passthrough") {
       const auto sampleRate = readJsonNumberField(line, "sampleRate").value_or(48000.0);
       const auto blockSize = static_cast<std::uint32_t>(readJsonNumberField(line, "blockSize").value_or(256.0));

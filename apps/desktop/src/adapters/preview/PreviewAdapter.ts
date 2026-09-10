@@ -1,4 +1,4 @@
-import type { EqBandState, FxUnitId, HarmonyState, MixerControlPort, MixerSnapshot, ProcessorId } from "../MixerControlPort";
+import type { EqBandState, FxProgram, FxUnitId, HarmonyState, MixerControlPort, MixerSnapshot, ProcessorId } from "../MixerControlPort";
 import { approvedMixerSession } from "../../fixtures/approvedMixerSession";
 
 export class PreviewAdapter implements MixerControlPort {
@@ -6,6 +6,15 @@ export class PreviewAdapter implements MixerControlPort {
 
   getSnapshot(): MixerSnapshot {
     return this.snapshot;
+  }
+
+  setPrograms(programs: FxProgram[]): void {
+    if (programs.length === 0) return;
+    const programIds = new Set(programs.map((program) => program.id));
+    this.snapshot.programs = structuredClone(programs);
+    this.snapshot.fxUnits = this.snapshot.fxUnits.map((unit) => (
+      programIds.has(unit.programId) ? unit : { ...unit, programId: programs[0].id, modified: false }
+    ));
   }
 
   selectChannel(channelId: string): void {
@@ -82,6 +91,16 @@ export class PreviewAdapter implements MixerControlPort {
 
   setFxReturn(unitId: FxUnitId, valueDb: number): void {
     this.snapshot.fxUnits = this.snapshot.fxUnits.map((unit) => unit.id === unitId ? { ...unit, returnDb: clamp(valueDb, -60, 10), modified: true } : unit);
+  }
+
+  setFxProgramMacro(unitId: FxUnitId, macro: "macro1" | "macro2", value: string): void {
+    const unit = this.snapshot.fxUnits.find((item) => item.id === unitId);
+    if (!unit) return;
+    this.snapshot.programs = this.snapshot.programs.map((program) => program.id === unit.programId ? {
+      ...program,
+      [macro]: { ...program[macro], value: value.trim() || program[macro].value }
+    } : program);
+    this.snapshot.fxUnits = this.snapshot.fxUnits.map((item) => item.id === unitId ? { ...item, modified: true } : item);
   }
 
   updateEqBand(bandId: EqBandState["id"], field: "freqHz" | "gainDb" | "qValue" | "type", value: number | string): void {

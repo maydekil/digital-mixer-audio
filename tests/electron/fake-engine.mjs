@@ -17,7 +17,7 @@ if (mode === "malformed") {
 } else if (mode === "silent") {
   setTimeout(() => process.exit(0), 50);
 } else if (mode === "oversized") {
-  console.log("x".repeat(9000));
+  console.log("x".repeat(70000));
   setTimeout(() => process.exit(0), 50);
 } else {
   console.log(JSON.stringify({ type: "hello", protocol: 1, state: "RUNNING", audio: "not-started" }));

@@ -109,6 +109,7 @@ export interface MixerSnapshot {
 
 export interface MixerControlPort {
   getSnapshot(): MixerSnapshot;
+  setPrograms(programs: FxProgram[]): void;
   selectChannel(channelId: string): void;
   setChannelEnabled(channelId: string, enabled: boolean): void;
   setChannelSource(channelId: string, source: string): void;
@@ -124,6 +125,7 @@ export interface MixerControlPort {
   setFxProgram(unitId: FxUnitId, programId: number): void;
   setFxEnabled(unitId: FxUnitId, enabled: boolean): void;
   setFxReturn(unitId: FxUnitId, valueDb: number): void;
+  setFxProgramMacro(unitId: FxUnitId, macro: "macro1" | "macro2", value: string): void;
   updateEqBand(bandId: EqBandState["id"], field: "freqHz" | "gainDb" | "qValue" | "type", value: number | string): void;
   resetFxProgram(unitId: FxUnitId): void;
   setHarmonyEnabled(enabled: boolean): void;

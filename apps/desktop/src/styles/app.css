@@ -46,6 +46,11 @@
 .compact-fx-row .rotary-face { width: 30px; height: 30px; }
 .compact-fx-row .rotary-value { margin: 0; white-space: nowrap; }
 .compact-fx-row .rotary.sm .rotary-face { width: 30px; height: 30px; }
+.fx-macro-button { border: 0; padding: 0; margin: 0; min-width: 0; color: inherit; background: transparent; text-align: left; cursor: pointer; }
+.fx-macro-button:hover .rotary-face { box-shadow: 0 0 0 1px currentColor, 0 0 14px rgba(24, 214, 231, 0.24); }
+.fx-macro-edit { min-width: 0; display: grid; grid-template-columns: 58px minmax(58px, 1fr); align-items: center; gap: 7px; font-size: 10px; }
+.fx-macro-edit span { text-align: right; white-space: nowrap; }
+.fx-macro-edit input { width: 100%; min-height: 24px; color: var(--text); background: #102b34; border: 1px solid #30606c; border-radius: 5px; padding: 0 6px; font-size: 11px; }
 .fx-power { display: flex; align-items: center; gap: 8px; width: 84px; font-size: 14px; font-weight: 500; }
 .accent-amber .fx-power, .tone-amber, .accent-amber .power-icon { color: var(--amber); }
 .accent-cyan .fx-power, .tone-cyan, .accent-cyan .power-icon { color: var(--cyan); }
@@ -57,7 +62,7 @@
 .fx-edit-cell { position: relative; min-width: 0; }
 .fx-edit-popover { position: absolute; z-index: 8; right: 0; top: 34px; width: 218px; display: grid; gap: 7px; padding: 9px; border: 1px solid #2d6674; border-radius: 6px; background: #0b222b; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.36); color: var(--text); }
 .fx-edit-popover strong { font-size: 11px; font-weight: 520; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fx-edit-popover label { display: grid; grid-template-columns: 44px 1fr 54px; align-items: center; gap: 6px; font-size: 10px; }
+.fx-edit-popover label { display: grid; grid-template-columns: 58px 1fr; align-items: center; gap: 6px; font-size: 10px; }
 .fx-edit-popover input { accent-color: currentColor; min-width: 0; }
 .fx-edit-popover p { margin: 0; color: #bde7ef; font-size: 10px; line-height: 1.2; }
 
