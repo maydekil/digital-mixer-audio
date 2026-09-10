@@ -21,7 +21,8 @@ int main() {
   TimelineScheduler timeline;
   if (!timeline.addMedia("impulse-a", TimelineMedia{.samples = {0.0f, 1.0f, 0.0f}, .channels = 1}) ||
       !timeline.addMedia("impulse-b", TimelineMedia{.samples = {0.0f, 0.5f, 0.0f}, .channels = 1}) ||
-      !timeline.addMedia("offset", TimelineMedia{.samples = {0.0f, 0.0f, 0.75f, 0.0f}, .channels = 1})) {
+      !timeline.addMedia("offset", TimelineMedia{.samples = {0.0f, 0.0f, 0.75f, 0.0f}, .channels = 1}) ||
+      !timeline.addMedia("fade", TimelineMedia{.samples = {1.0f, 1.0f, 1.0f, 1.0f}, .channels = 1})) {
     std::cerr << "timeline media should validate\n";
     return 1;
   }
@@ -30,10 +31,11 @@ int main() {
     TimelineClip{.mediaId = "impulse-a", .timelineStartFrame = 4, .durationFrames = 3},
     TimelineClip{.mediaId = "impulse-b", .timelineStartFrame = 4, .durationFrames = 3},
     TimelineClip{.mediaId = "offset", .timelineStartFrame = 8, .sourceOffsetFrame = 2, .durationFrames = 1},
+    TimelineClip{.mediaId = "fade", .timelineStartFrame = 9, .durationFrames = 4, .fadeInFrames = 2, .fadeOutFrames = 2},
   });
 
-  std::array<float, 12> left{};
-  std::array<float, 12> right{};
+  std::array<float, 13> left{};
+  std::array<float, 13> right{};
   if (!timeline.render(0, TimelineRenderBuffer{.left = left, .right = right})) {
     std::cerr << "timeline render should succeed\n";
     return 1;
@@ -48,6 +50,10 @@ int main() {
   }
   if (!near(left[4], 0.0f) || !near(left[6], 0.0f)) {
     std::cerr << "timeline should not leak stale samples around impulses\n";
+    return 1;
+  }
+  if (!near(left[9], 0.5f) || !near(left[10], 1.0f) || !near(left[11], 1.0f) || !near(left[12], 0.5f)) {
+    std::cerr << "clip fades should ramp boundary samples\n";
     return 1;
   }
 

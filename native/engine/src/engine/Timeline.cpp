@@ -3,6 +3,21 @@
 #include <algorithm>
 
 namespace localmixer::engine {
+namespace {
+
+float fadeGain(const TimelineClip& clip, std::uint64_t clipFrame) {
+  float gain = clip.gain;
+  if (clip.fadeInFrames > 0 && clipFrame < clip.fadeInFrames) {
+    gain *= static_cast<float>(clipFrame + 1) / static_cast<float>(clip.fadeInFrames);
+  }
+  if (clip.fadeOutFrames > 0 && clipFrame + clip.fadeOutFrames >= clip.durationFrames) {
+    const auto remaining = clip.durationFrames - clipFrame;
+    gain *= static_cast<float>(remaining) / static_cast<float>(clip.fadeOutFrames);
+  }
+  return gain;
+}
+
+}  // namespace
 
 bool TimelineScheduler::addMedia(std::string mediaId, TimelineMedia media) {
   if (mediaId.empty() || media.channels == 0 || media.samples.empty()) return false;
@@ -37,12 +52,14 @@ bool TimelineScheduler::render(std::uint64_t startFrame, TimelineRenderBuffer ou
     const auto sourceFrames = source.samples.size() / source.channels;
 
     for (auto frame = renderStart; frame < renderEnd; frame += 1) {
-      const auto sourceFrame = clip.sourceOffsetFrame + (frame - clip.timelineStartFrame);
+      const auto clipFrame = frame - clip.timelineStartFrame;
+      const auto sourceFrame = clip.sourceOffsetFrame + clipFrame;
       if (sourceFrame >= sourceFrames) continue;
       const auto outputIndex = static_cast<std::size_t>(frame - startFrame);
       const auto sourceIndex = static_cast<std::size_t>(sourceFrame * source.channels);
-      const auto left = source.samples[sourceIndex] * clip.gain;
-      const auto right = source.channels > 1 ? source.samples[sourceIndex + 1] * clip.gain : left;
+      const auto frameGain = fadeGain(clip, clipFrame);
+      const auto left = source.samples[sourceIndex] * frameGain;
+      const auto right = source.channels > 1 ? source.samples[sourceIndex + 1] * frameGain : left;
       output.left[outputIndex] += left;
       output.right[outputIndex] += right;
     }

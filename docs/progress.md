@@ -1040,3 +1040,24 @@ Validation:
 
 Known limitations:
 - Actual queued file playback buffers are not implemented yet, so invalidation is exposed before a device-callback file player consumes it.
+
+### Phase06 Checkpoint — Timeline Clip Boundary Fades
+
+Changed files:
+- `native/engine/src/engine/Timeline.hpp`, `native/engine/src/engine/Timeline.cpp`: added per-clip fade-in and fade-out frame fields and render-time fade gain.
+- `native/engine/tests/TimelineTest.cpp`: verifies boundary fade ramp samples.
+- `docs/progress.md`: recorded validation evidence.
+
+Implemented behavior:
+- Timeline clips can apply deterministic sample-frame fade ramps at their edges.
+- This provides the native primitive needed for click-reduced clip and loop-boundary transitions.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 8/8, engine self-test, device enumeration smoke, and protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Full loop playback has not yet been connected to the device callback.
+- Fade shape is currently linear; final UX may require equal-power or configurable curves.

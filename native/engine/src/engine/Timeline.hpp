@@ -13,6 +13,8 @@ struct TimelineClip {
   std::uint64_t timelineStartFrame = 0;
   std::uint64_t sourceOffsetFrame = 0;
   std::uint64_t durationFrames = 0;
+  std::uint32_t fadeInFrames = 0;
+  std::uint32_t fadeOutFrames = 0;
   float gain = 1.0f;
 };
 
