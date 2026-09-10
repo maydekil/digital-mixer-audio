@@ -62,10 +62,12 @@ int main() {
 
   const auto pitchShift = findEffect("pitch_shift");
   const auto formantShift = findEffect("formant_shift");
-  if (!pitchShift.has_value() || !formantShift.has_value() ||
+  const auto harmony = findEffect("harmony");
+  if (!pitchShift.has_value() || !formantShift.has_value() || !harmony.has_value() ||
       pitchShift->availability != EffectAvailability::implementedUnverified ||
-      formantShift->availability != EffectAvailability::implementedUnverified) {
-    std::cerr << "Pitch/formant backend should be marked implemented_unverified after VFX-04\n";
+      formantShift->availability != EffectAvailability::implementedUnverified ||
+      harmony->availability != EffectAvailability::implementedUnverified) {
+    std::cerr << "Pitch/formant/harmony effects should be marked implemented_unverified after VFX-06\n";
     return 1;
   }
 

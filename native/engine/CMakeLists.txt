@@ -13,6 +13,7 @@ add_library(local_mixer_dsp STATIC
   src/dsp/fx/EffectRegistry.cpp
   src/dsp/fx/CharacterEffects.cpp
   src/dsp/fx/DelayEffect.cpp
+  src/dsp/fx/HarmonyEffect.cpp
   src/dsp/fx/ModulationEffects.cpp
   src/dsp/fx/PitchBackend.cpp
   src/dsp/fx/PitchCorrectionEffect.cpp
@@ -301,3 +302,12 @@ target_link_libraries(local-mixer-pitch-correction-tests PRIVATE local_mixer_dsp
 target_compile_features(local-mixer-pitch-correction-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-pitch-correction-tests COMMAND local-mixer-pitch-correction-tests)
+
+add_executable(local-mixer-harmony-effect-tests
+  tests/fx/HarmonyEffectTest.cpp
+)
+
+target_link_libraries(local-mixer-harmony-effect-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-harmony-effect-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-harmony-effect-tests COMMAND local-mixer-harmony-effect-tests)

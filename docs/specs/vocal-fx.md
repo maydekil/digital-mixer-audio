@@ -17,7 +17,7 @@ This document records the design contract for native Vocal FX. It is not evidenc
 | `pitch_shift` | `dsp/fx/PitchBackend` | VFX-04 | `implemented_unverified` | steady pitch ratio, latency, variable callback sizes |
 | `formant_shift` | `dsp/fx/PitchBackend` | VFX-04 | `implemented_unverified` | envelope shift without intentional F0 move |
 | `pitch_correct` | `dsp/fx/PitchCorrectionEffect` | VFX-05 | `implemented_unverified` | detector, target mapping, detuned-note correction |
-| `harmony` | `dsp/fx/HarmonyEffect` | VFX-06 | `unavailable` | fixed/diatonic interval accuracy and dry alignment |
+| `harmony` | `dsp/fx/HarmonyEffect` | VFX-06 | `implemented_unverified` | fixed/diatonic interval accuracy and dry alignment |
 | `saturation` | `dsp/fx/SaturationEffect` | VFX-03 | `implemented_unverified` | harmonics, output trim, DC suppression |
 | `flanger` | `dsp/fx/ModulationEffects` | VFX-02 | `implemented_unverified` | comb sweep and bounded feedback |
 | `phaser` | `dsp/fx/ModulationEffects` | VFX-02 | `implemented_unverified` | all-pass sweep and silence stability |

@@ -1518,3 +1518,29 @@ Known limitations:
 - Correction is implemented as a foundation processor and is not yet connected to production rack IPC/UI controls.
 - Variable callback FIFO adaptation, detector timestamp alignment against delayed audio, vibrato preservation, octave-transition robustness, fricative fixtures, and real vocal audition are still pending for later Vocal FX QA/integration.
 - The current detector favors correctness in tests over optimized realtime complexity; performance profiling remains pending.
+
+## VFX-06 — Harmony Two Voices
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: VFX-05 IMPLEMENTED_UNVERIFIED
+
+### VFX-06 Checkpoint — Native Harmony Voice Foundation
+
+Changed files:
+- `native/engine/src/dsp/fx/HarmonyEffect.hpp`, `native/engine/src/dsp/fx/HarmonyEffect.cpp`: added a two-voice native harmony processor using the common pitch detector, Rubber Band pitch backends, fixed/diatonic interval mapping, independent voice level/pan, formant preserve config, and low-confidence voicing gate.
+- `native/engine/tests/fx/HarmonyEffectTest.cpp`: verifies C-major/natural-minor diatonic interval mapping, pan helpers, silence gating, and panned stereo output from a generated sustained vocal-like fixture.
+- `native/engine/src/dsp/fx/EffectRegistry.cpp`, `docs/specs/vocal-fx.md`, `docs/reports/vocal-fx-catalog-vfx00.md`: updated `harmony` to `implemented_unverified`.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired VFX-06 build/test/progress evidence.
+
+Implemented behavior:
+- Harmony uses one detector pass and two independent native pitch-shifter voices; voice 2 is not cascaded from voice 1.
+- Diatonic intervals follow scale degree semantics: in C major, C +2 maps to E and +4 maps to G.
+- Low-confidence/silent input does not create a false harmony target, and the dry input is preserved rather than muted.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 27/27 including `local-mixer-harmony-effect-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- Harmony is not yet connected to production rack IPC/UI controls, preset rows, or monitor profile policy.
+- Dry/voice latency alignment is reported at processor level but not yet reconciled in the realtime mixer graph.
+- Real vocal audition, consonant behavior, CPU/xrun profiling with two voices, and final HARM QA remain pending.

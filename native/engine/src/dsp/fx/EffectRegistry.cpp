@@ -123,7 +123,7 @@ constexpr std::array<EffectDescriptor, 12> kCatalog{{
   {"pitch_correct", "Pitch Correction", EffectCategory::pitch, 1, ChannelFormat::mono, ChannelFormat::mono,
     EffectAvailability::implementedUnverified, "dsp/fx/PitchCorrectionEffect", "VFX-05", "detuned notes to target scale"},
   {"harmony", "Harmony", EffectCategory::pitch, 1, ChannelFormat::monoToStereo, ChannelFormat::stereo,
-    EffectAvailability::unavailable, "dsp/fx/HarmonyEffect", "VFX-06", "fixed and diatonic interval accuracy"},
+    EffectAvailability::implementedUnverified, "dsp/fx/HarmonyEffect", "VFX-06", "fixed and diatonic interval accuracy"},
   {"saturation", "Saturation / Drive", EffectCategory::character, 1, ChannelFormat::mono, ChannelFormat::mono,
     EffectAvailability::implementedUnverified, "dsp/fx/SaturationEffect", "VFX-03", "harmonics/output/DC suppression"},
   {"flanger", "Flanger", EffectCategory::modulation, 1, ChannelFormat::monoToStereo, ChannelFormat::stereo,
