@@ -2876,3 +2876,31 @@ Validation:
 Known limitations:
 - This is a command/control and WAV-container foundation only. It does not yet connect the Core Audio callback to the writer or prove live mic/system PCM recording.
 - Recorded take insertion/replay, latency alignment, and packaged manual record-stop-replay acceptance remain PARTIAL/NOT_RUN.
+
+### Phase19 Hardening Checkpoint — Export Recording Command Handler Split
+
+Changed files:
+- `native/engine/src/engine/ExportCommandHandlers.hpp`, `native/engine/src/engine/ExportCommandHandlers.cpp`: moved `export-plan` and `export-render` JSON field assembly out of the engine entrypoint.
+- `native/engine/src/engine/RecordingCommandHandlers.hpp`, `native/engine/src/engine/RecordingCommandHandlers.cpp`: moved `recording-plan`, `recording-start`, and `recording-stop` JSON field assembly out of the engine entrypoint.
+- `native/engine/src/main.cpp`: delegates export and recording stdio commands to the focused native handlers.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: registered the new native sources and Phase19 evidence.
+
+Implemented behavior:
+- No user-facing behavior change intended; this is modular hardening before the next workflow checkpoint.
+- `native/engine/src/main.cpp` was reduced from 905 to 747 lines, keeping the engine entrypoint comfortably below the 1,000-line first-party file limit.
+- Export/recording logic remains native C++20; renderer still receives status/metadata only, never PCM.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-engine`
+- exit/result: `0`; native engine target rebuilt with the new handler modules.
+- command: `wc -l native/engine/src/main.cpp native/engine/src/engine/ExportCommandHandlers.cpp native/engine/src/engine/RecordingCommandHandlers.cpp`
+- exit/result: `0`; line counts were 747, 103, and 108 respectively.
+- command: `src=/tmp/local-mixer-handler-split-source.wav; out=/tmp/local-mixer-handler-split-render.wav; rm -f "$src" "$out"; printf '{"id":"make-src","type":"export-render","outputPath":"'$src'","sampleRate":48000,"durationFrames":1024,"blockFrames":256,"liveSourceCount":0}\n' | native/engine/build/native/engine/local-mixer-engine --stdio >/tmp/local-mixer-handler-make-src.log; test -s "$src"; printf '{"id":"render-media","type":"export-render","outputPath":"'$out'","sampleRate":48000,"durationFrames":1024,"blockFrames":256,"liveSourceCount":0,"mediaPath":"'$src'"}\n' | native/engine/build/native/engine/local-mixer-engine --stdio; test -s "$out"`
+- exit/result: `0`; engine returned `rendered:true`, `framesWritten:1024`, and the rendered media WAV existed with nonzero size.
+- command: `take_dir=/tmp/local-mixer-handler-split-recording; rm -rf "$take_dir"; mkdir -p "$take_dir"; printf '{"id":"rec-start","type":"recording-start","directory":"'$take_dir'","baseName":"desktop-take","tap":"master","sampleRate":48000,"channels":2,"armedChannelCount":1}\n{"id":"rec-stop","type":"recording-stop"}\n' | native/engine/build/native/engine/local-mixer-engine --stdio; test -s "$take_dir/desktop-take.wav"`
+- exit/result: `0`; engine returned `started:true`, then `saved:true`, and the take WAV container existed with nonzero size.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 39/39, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- This checkpoint is structural hardening only. It does not add new live capture, live recording, packaged export, or hardware verification coverage.

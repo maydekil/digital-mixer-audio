@@ -30,6 +30,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/EngineResponseJson.cpp
   src/engine/EngineRuntime.cpp
   src/engine/Export.cpp
+  src/engine/ExportCommandHandlers.cpp
   src/engine/FxProgramController.cpp
   src/engine/FxProgramRegistry.cpp
   src/engine/FxProgramRegistryJson.cpp
@@ -47,6 +48,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/PerAppCapture.cpp
   src/engine/PluginRegistry.cpp
   src/engine/Recording.cpp
+  src/engine/RecordingCommandHandlers.cpp
   src/engine/RealtimeMetrics.cpp
   src/engine/RoutingGraph.cpp
   src/engine/SessionDocument.cpp

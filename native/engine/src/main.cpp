@@ -4,16 +4,16 @@
 #include "engine/EngineGraphSyncJson.hpp"
 #include "engine/EngineResponseJson.hpp"
 #include "engine/EngineRuntime.hpp"
-#include "engine/Export.hpp"
+#include "engine/ExportCommandHandlers.hpp"
 #include "engine/FxProgramController.hpp"
 #include "engine/FxProgramRegistryJson.hpp"
 #include "engine/JsonProtocol.hpp"
-#include "engine/MediaFile.hpp"
 #include "engine/MediaTransportJson.hpp"
 #include "engine/MixerGraph.hpp"
 #include "engine/MixerGraphController.hpp"
 #include "engine/PerAppCapture.hpp"
 #include "engine/Recording.hpp"
+#include "engine/RecordingCommandHandlers.hpp"
 #include "engine/SystemRouteRecovery.hpp"
 #include "engine/SystemRouting.hpp"
 #include "engine/SystemRoutingJson.hpp"
@@ -264,13 +264,6 @@ std::optional<localmixer::engine::FxBusId> readFxUnitId(const std::string& line)
   return localmixer::engine::fxUnitFromName(readJsonStringField(line, "unitId"));
 }
 
-localmixer::engine::RecordingTap readRecordingTap(const std::string& line) {
-  const auto tap = readJsonStringField(line, "tap");
-  if (tap == "dry") return localmixer::engine::RecordingTap::dry;
-  if (tap == "processed") return localmixer::engine::RecordingTap::processed;
-  return localmixer::engine::RecordingTap::master;
-}
-
 void printDevices() {
   const auto devices = loadNativeDevices();
   std::cout << "{\"devices\":" << devicesJson(devices)
@@ -486,168 +479,17 @@ int runStdioProtocol() {
     } else if (type == "transport-status") {
       writeRawResponse(id, true, "transport-status", transportJson(transportClock.snapshot()));
     } else if (type == "export-plan") {
-      const auto outputPath = readJsonStringField(line, "outputPath");
-      const auto liveSourceCount = static_cast<std::uint32_t>(readJsonNumberField(line, "liveSourceCount").value_or(0.0));
-      const auto plan = localmixer::engine::buildExportStemPlan(localmixer::engine::ExportStemRequest{
-        .master = readJsonBoolField(line, "master").value_or(true),
-        .fxAReturn = readJsonBoolField(line, "fxAReturn").value_or(false),
-        .fxBReturn = readJsonBoolField(line, "fxBReturn").value_or(false),
-        .includeMonitorVolume = readJsonBoolField(line, "includeMonitorVolume").value_or(false),
-      });
-      const bool exportable = !outputPath.empty() && liveSourceCount == 0 && plan.stemCount > 0;
-      const std::string error = outputPath.empty()
-        ? "INVALID_EXPORT_OUTPUT"
-        : (liveSourceCount > 0 ? "LIVE_SOURCES_UNAVAILABLE_FOR_OFFLINE_EXPORT" : "");
-      writeRawResponse(id, true, "export-plan",
-        "\"exportable\":" + std::string(exportable ? "true" : "false") +
-        ",\"error\":\"" + escapeJson(error) + "\"" +
-        ",\"outputPath\":\"" + escapeJson(outputPath) + "\"" +
-        ",\"sampleRate\":" + std::to_string(readJsonNumberField(line, "sampleRate").value_or(48000.0)) +
-        ",\"master\":" + std::string(plan.master ? "true" : "false") +
-        ",\"fxAReturn\":" + std::string(plan.fxAReturn ? "true" : "false") +
-        ",\"fxBReturn\":" + std::string(plan.fxBReturn ? "true" : "false") +
-        ",\"stemCount\":" + std::to_string(plan.stemCount) +
-        ",\"liveSourceCount\":" + std::to_string(liveSourceCount) +
-        ",\"monitorVolumePrinted\":" + std::string(plan.monitorVolumePrinted ? "true" : "false"));
+      writeRawResponse(id, true, "export-plan", localmixer::engine::exportPlanJsonFields(line));
     } else if (type == "export-render") {
-      const auto outputPath = readJsonStringField(line, "outputPath");
-      const auto liveSourceCount = static_cast<std::uint32_t>(readJsonNumberField(line, "liveSourceCount").value_or(0.0));
-      const auto sampleRate = static_cast<std::uint32_t>(readJsonNumberField(line, "sampleRate").value_or(48000.0));
-      const auto durationFrames = static_cast<std::uint64_t>(readJsonNumberField(line, "durationFrames").value_or(0.0));
-      const auto blockFrames = static_cast<std::uint32_t>(readJsonNumberField(line, "blockFrames").value_or(512.0));
-      const auto mediaPath = readJsonStringField(line, "mediaPath");
-      localmixer::engine::TimelineScheduler timeline;
-      if (!mediaPath.empty()) {
-        localmixer::engine::WavStreamReader reader;
-        const auto openError = reader.open(mediaPath);
-        if (openError != localmixer::engine::MediaFileError::none) {
-          writeRawResponse(id, true, "export-render",
-            "\"rendered\":false,\"canceled\":false,\"error\":\"" +
-            std::string(localmixer::engine::mediaFileErrorName(openError)) +
-            "\",\"path\":\"" + escapeJson(outputPath) +
-            "\",\"framesWritten\":0,\"ignoredLiveSources\":" + std::to_string(liveSourceCount));
-          continue;
-        }
-        if (reader.info().sampleRate != sampleRate) {
-          writeRawResponse(id, true, "export-render",
-            std::string("\"rendered\":false,\"canceled\":false,\"error\":\"MEDIA_SAMPLE_RATE_MISMATCH\"") +
-            ",\"path\":\"" + escapeJson(outputPath) +
-            "\",\"framesWritten\":0,\"ignoredLiveSources\":" + std::to_string(liveSourceCount));
-          continue;
-        }
-        const auto framesToRead = static_cast<std::uint32_t>(std::min<std::uint64_t>(
-          durationFrames == 0 ? reader.info().frameCount : durationFrames,
-          std::min<std::uint64_t>(reader.info().frameCount, 0xffffffffu)
-        ));
-        const auto read = reader.readFrames(0, framesToRead);
-        if (read.error != localmixer::engine::MediaFileError::none || read.framesRead == 0 ||
-            !timeline.addMedia("media", localmixer::engine::TimelineMedia{.samples = read.samples, .channels = reader.info().channels})) {
-          writeRawResponse(id, true, "export-render",
-            std::string("\"rendered\":false,\"canceled\":false,\"error\":\"MEDIA_READ_FAILED\"") +
-            ",\"path\":\"" + escapeJson(outputPath) +
-            "\",\"framesWritten\":0,\"ignoredLiveSources\":" + std::to_string(liveSourceCount));
-          continue;
-        }
-        timeline.setClips({localmixer::engine::TimelineClip{.mediaId = "media", .durationFrames = read.framesRead}});
-      }
-      const auto result = localmixer::engine::exportTimelineToWav(timeline, localmixer::engine::ExportRequest{
-        .outputPath = outputPath,
-        .sampleRate = sampleRate,
-        .durationFrames = durationFrames,
-        .blockFrames = blockFrames,
-        .liveSourceCount = liveSourceCount,
-      });
-      writeRawResponse(id, true, "export-render",
-        "\"rendered\":" + std::string(result.success ? "true" : "false") +
-        ",\"canceled\":" + std::string(result.canceled ? "true" : "false") +
-        ",\"error\":\"" + escapeJson(result.error) + "\"" +
-        ",\"path\":\"" + escapeJson(result.path.string()) + "\"" +
-        ",\"framesWritten\":" + std::to_string(result.framesWritten) +
-        ",\"ignoredLiveSources\":" + std::to_string(result.ignoredLiveSources));
+      writeRawResponse(id, true, "export-render", localmixer::engine::exportRenderJsonFields(line));
     } else if (type == "recording-plan") {
-      const auto directory = readJsonStringField(line, "directory");
-      const auto baseName = readJsonStringField(line, "baseName");
-      const auto sampleRate = static_cast<std::uint32_t>(readJsonNumberField(line, "sampleRate").value_or(48000.0));
-      const auto channels = static_cast<std::uint16_t>(readJsonNumberField(line, "channels").value_or(2.0));
-      const auto armedChannelCount = static_cast<std::uint32_t>(readJsonNumberField(line, "armedChannelCount").value_or(0.0));
-      const auto tap = readRecordingTap(line);
-      const bool valid = !directory.empty() && sampleRate > 0 && channels > 0 && armedChannelCount > 0;
-      const auto path = valid
-        ? localmixer::engine::makeCollisionSafeTakePath(directory, baseName.empty() ? "take" : baseName, ".wav")
-        : std::filesystem::path();
-      const auto tapName = std::string(localmixer::engine::recordingTapName(tap));
-      const std::string takeId = path.empty() ? "" : path.stem().string();
-      const std::string error = directory.empty()
-        ? "INVALID_RECORDING_DIRECTORY"
-        : (armedChannelCount == 0 ? "NO_ARMED_CHANNELS" : "");
-      writeRawResponse(id, true, "recording-plan",
-        "\"planned\":" + std::string(valid ? "true" : "false") +
-        ",\"error\":\"" + escapeJson(error) + "\"" +
-        ",\"takeId\":\"" + escapeJson(takeId) + "\"" +
-        ",\"path\":\"" + escapeJson(path.string()) + "\"" +
-        ",\"tap\":\"" + tapName + "\"" +
-        ",\"sampleRate\":" + std::to_string(sampleRate) +
-        ",\"channels\":" + std::to_string(channels) +
-        ",\"frames\":0" +
-        ",\"replayWithNeutralInserts\":" + std::string(tap == localmixer::engine::RecordingTap::dry ? "false" : "true") +
-        ",\"partial\":false" +
-        ",\"armedChannelCount\":" + std::to_string(armedChannelCount));
+      writeRawResponse(id, true, "recording-plan", localmixer::engine::recordingPlanJsonFields(line));
     } else if (type == "recording-start") {
-      const auto directory = readJsonStringField(line, "directory");
-      const auto baseName = readJsonStringField(line, "baseName");
-      const auto sampleRate = static_cast<std::uint32_t>(readJsonNumberField(line, "sampleRate").value_or(48000.0));
-      const auto channels = static_cast<std::uint16_t>(readJsonNumberField(line, "channels").value_or(2.0));
-      const auto armedChannelCount = static_cast<std::uint32_t>(readJsonNumberField(line, "armedChannelCount").value_or(0.0));
-      const auto tap = readRecordingTap(line);
-      const bool valid = !directory.empty() && sampleRate > 0 && channels > 0 && armedChannelCount > 0;
-      if (!valid || !recordingSession.arm(localmixer::engine::RecordingConfig{
-            .directory = directory,
-            .baseName = baseName.empty() ? "take" : baseName,
-            .sampleRate = sampleRate,
-            .channels = channels,
-            .tap = tap,
-          }) || !recordingSession.start()) {
-        const std::string error = directory.empty()
-          ? "INVALID_RECORDING_DIRECTORY"
-          : (armedChannelCount == 0 ? "NO_ARMED_CHANNELS" : "RECORDING_START_FAILED");
-        writeRawResponse(id, true, "recording-start",
-          "\"started\":false,\"error\":\"" + escapeJson(error) +
-          "\",\"path\":\"\",\"takeId\":\"\",\"tap\":\"" + std::string(localmixer::engine::recordingTapName(tap)) +
-          "\",\"sampleRate\":" + std::to_string(sampleRate) +
-          ",\"channels\":" + std::to_string(channels) +
-          ",\"frames\":0,\"replayWithNeutralInserts\":" +
-          std::string(tap == localmixer::engine::RecordingTap::dry ? "false" : "true") +
-          ",\"partial\":false");
-        continue;
-      }
-      const auto metadata = recordingSession.metadata();
       writeRawResponse(id, true, "recording-start",
-        "\"started\":true,\"error\":\"\"" +
-        std::string(",\"takeId\":\"") + escapeJson(metadata.path.stem().string()) +
-        "\",\"path\":\"" + escapeJson(metadata.path.string()) +
-        "\",\"tap\":\"" + std::string(localmixer::engine::recordingTapName(metadata.tap)) +
-        "\",\"sampleRate\":" + std::to_string(metadata.sampleRate) +
-        ",\"channels\":" + std::to_string(metadata.channels) +
-        ",\"frames\":" + std::to_string(metadata.frames) +
-        ",\"replayWithNeutralInserts\":" + std::string(metadata.replayWithNeutralInserts ? "true" : "false") +
-        ",\"partial\":" + std::string(metadata.partial ? "true" : "false"));
+        localmixer::engine::recordingStartJsonFields(line, recordingSession));
     } else if (type == "recording-stop") {
-      if (!recordingSession.stop()) {
-        writeRawResponse(id, true, "recording-stop",
-          "\"saved\":false,\"error\":\"RECORDING_NOT_ACTIVE\",\"takeId\":\"\",\"path\":\"\",\"tap\":\"master\",\"sampleRate\":48000,\"channels\":2,\"frames\":0,\"replayWithNeutralInserts\":true,\"partial\":true");
-        continue;
-      }
-      const auto metadata = recordingSession.metadata();
       writeRawResponse(id, true, "recording-stop",
-        "\"saved\":true,\"error\":\"\"" +
-        std::string(",\"takeId\":\"") + escapeJson(metadata.path.stem().string()) +
-        "\",\"path\":\"" + escapeJson(metadata.path.string()) +
-        "\",\"tap\":\"" + std::string(localmixer::engine::recordingTapName(metadata.tap)) +
-        "\",\"sampleRate\":" + std::to_string(metadata.sampleRate) +
-        ",\"channels\":" + std::to_string(metadata.channels) +
-        ",\"frames\":" + std::to_string(metadata.frames) +
-        ",\"replayWithNeutralInserts\":" + std::string(metadata.replayWithNeutralInserts ? "true" : "false") +
-        ",\"partial\":" + std::string(metadata.partial ? "true" : "false"));
+        localmixer::engine::recordingStopJsonFields(recordingSession));
     } else if (type == "routing-system-diagnostics") {
       runtime.refreshDevices(loadNativeDevices());
       const auto sampleRate = readJsonNumberField(line, "sampleRate").value_or(48000.0);
