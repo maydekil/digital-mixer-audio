@@ -75,11 +75,15 @@ describe("PreviewAdapter", () => {
 
   it("updates selected channel dynamics parameters", () => {
     const adapter = new PreviewAdapter();
+    adapter.setChannelNoiseParam("voice", "thresholdDb", -46);
+    adapter.setChannelNoiseParam("voice", "rangeDb", -70);
     adapter.setChannelCompressorParam("voice", "thresholdDb", -22);
     adapter.setChannelCompressorParam("voice", "ratio", 4);
     adapter.setChannelDeEsserParam("voice", "frequencyHz", 7200);
 
     const voice = adapter.getSnapshot().channels.find((channel) => channel.id === "voice");
+    expect(voice?.dynamics.noise.thresholdDb).toBe(-46);
+    expect(voice?.dynamics.noise.rangeDb).toBe(-70);
     expect(voice?.dynamics.compressor.thresholdDb).toBe(-22);
     expect(voice?.dynamics.compressor.ratio).toBe(4);
     expect(voice?.dynamics.deEsser.frequencyHz).toBe(7200);

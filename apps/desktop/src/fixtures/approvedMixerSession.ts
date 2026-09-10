@@ -9,6 +9,7 @@ const baseEqBands = [
 ] as const;
 
 const defaultDynamics = {
+  noise: { thresholdDb: -50, rangeDb: -80, holdMs: 3, releaseMs: 80 },
   compressor: { thresholdDb: -18, ratio: 3, attackMs: 10, releaseMs: 120 },
   deEsser: { frequencyHz: 6000, thresholdDb: -24, maxReductionDb: 6 }
 };

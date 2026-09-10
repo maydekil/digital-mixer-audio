@@ -59,6 +59,12 @@ export interface FxUnitState {
 export type EqBandState = EqBandDisplay;
 
 export interface ChannelDynamicsState {
+  noise: {
+    thresholdDb: number;
+    rangeDb: number;
+    holdMs: number;
+    releaseMs: number;
+  };
   compressor: {
     thresholdDb: number;
     ratio: number;
@@ -146,6 +152,7 @@ export interface MixerControlPort {
   setChannelMonitor(channelId: string, monitor: boolean): void;
   setChannelRecordArm(channelId: string, armed: boolean): void;
   setChannelProcessor(channelId: string, processorId: ProcessorId, enabled: boolean): void;
+  setChannelNoiseParam(channelId: string, field: keyof ChannelDynamicsState["noise"], value: number): void;
   setChannelCompressorParam(channelId: string, field: keyof ChannelDynamicsState["compressor"], value: number): void;
   setChannelDeEsserParam(channelId: string, field: keyof ChannelDynamicsState["deEsser"], value: number): void;
   setFxProgram(unitId: FxUnitId, programId: number): void;

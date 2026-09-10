@@ -81,6 +81,19 @@ export class PreviewAdapter implements MixerControlPort {
     } : channel);
   }
 
+  setChannelNoiseParam(channelId: string, field: keyof ChannelDynamicsState["noise"], value: number): void {
+    this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? {
+      ...channel,
+      dynamics: {
+        ...channel.dynamics,
+        noise: {
+          ...channel.dynamics.noise,
+          [field]: clampNoise(field, value)
+        }
+      }
+    } : channel);
+  }
+
   setChannelCompressorParam(channelId: string, field: keyof ChannelDynamicsState["compressor"], value: number): void {
     this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? {
       ...channel,
@@ -276,6 +289,13 @@ function clampCompressor(field: keyof ChannelDynamicsState["compressor"], value:
   if (field === "ratio") return clamp(value, 1, 20);
   if (field === "attackMs") return clamp(value, 0.1, 200);
   return clamp(value, 10, 3000);
+}
+
+function clampNoise(field: keyof ChannelDynamicsState["noise"], value: number) {
+  if (field === "thresholdDb") return clamp(value, -90, 0);
+  if (field === "rangeDb") return clamp(value, -90, 0);
+  if (field === "holdMs") return clamp(value, 0, 1000);
+  return clamp(value, 5, 3000);
 }
 
 function clampDeEsser(field: keyof ChannelDynamicsState["deEsser"], value: number) {

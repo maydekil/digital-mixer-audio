@@ -304,6 +304,7 @@ export function MixerPage() {
             linkedProgram={programA}
             onSendA={(value) => refresh(() => adapter.setChannelSend(selected.id, "fx-a", value))}
             onEqChange={(bandId, field, value) => refresh(() => adapter.updateEqBand(bandId, field, value))}
+            onNoiseChange={(field, value) => refresh(() => adapter.setChannelNoiseParam(selected.id, field, value))}
             onCompressorChange={(field, value) => refresh(() => adapter.setChannelCompressorParam(selected.id, field, value))}
             onDeEsserChange={(field, value) => refresh(() => adapter.setChannelDeEsserParam(selected.id, field, value))}
           />
@@ -365,6 +366,10 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}ProcessorNoise`] = channel.processing.noise;
     payload[`${prefix}ProcessorInsertFx`] = channel.processing.insertFx;
     payload[`${prefix}ProcessorDeEsser`] = channel.role === "vocal";
+    payload[`${prefix}NoiseThresholdDb`] = channel.dynamics.noise.thresholdDb;
+    payload[`${prefix}NoiseRangeDb`] = channel.dynamics.noise.rangeDb;
+    payload[`${prefix}NoiseHoldMs`] = channel.dynamics.noise.holdMs;
+    payload[`${prefix}NoiseReleaseMs`] = channel.dynamics.noise.releaseMs;
     payload[`${prefix}CompThresholdDb`] = channel.dynamics.compressor.thresholdDb;
     payload[`${prefix}CompRatio`] = channel.dynamics.compressor.ratio;
     payload[`${prefix}CompAttackMs`] = channel.dynamics.compressor.attackMs;

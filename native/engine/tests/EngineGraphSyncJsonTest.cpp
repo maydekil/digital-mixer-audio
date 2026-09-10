@@ -50,6 +50,10 @@ int main() {
     "\"channel0ProcessorNoise\":true,"
     "\"channel0ProcessorInsertFx\":true,"
     "\"channel0ProcessorDeEsser\":true,"
+    "\"channel0NoiseThresholdDb\":-48,"
+    "\"channel0NoiseRangeDb\":-72,"
+    "\"channel0NoiseHoldMs\":40,"
+    "\"channel0NoiseReleaseMs\":120,"
     "\"channel0CompThresholdDb\":-22,"
     "\"channel0CompRatio\":4,"
     "\"channel0CompAttackMs\":12,"
@@ -77,6 +81,13 @@ int main() {
   if (!selection.processors.eqEnabled || !selection.processors.compressorEnabled || !selection.processors.noiseEnabled ||
       !selection.processors.deEsserEnabled) {
     std::cerr << "monitor selection should keep processor enable flags\n";
+    return 1;
+  }
+  if (!near(selection.processors.noise.thresholdDb, -48.0) ||
+      !near(selection.processors.noise.rangeDb, -72.0) ||
+      !near(selection.processors.noise.holdMs, 40.0) ||
+      !near(selection.processors.noise.releaseMs, 120.0)) {
+    std::cerr << "monitor selection should keep noise parameters\n";
     return 1;
   }
   if (!near(selection.processors.compressor.thresholdDb, -22.0) ||

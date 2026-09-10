@@ -130,6 +130,14 @@ std::string syncMixerGraphResultJson(
     processors.noiseEnabled = readJsonBoolField(line, indexedField(index, "ProcessorNoise")).value_or(false);
     processors.deEsserEnabled = readJsonBoolField(line, indexedField(index, "ProcessorDeEsser")).value_or(false);
     const auto insertFxEnabled = readJsonBoolField(line, indexedField(index, "ProcessorInsertFx")).value_or(false);
+    processors.noise.thresholdDb = static_cast<float>(
+      readJsonNumberField(line, indexedField(index, "NoiseThresholdDb")).value_or(processors.noise.thresholdDb));
+    processors.noise.rangeDb = static_cast<float>(
+      readJsonNumberField(line, indexedField(index, "NoiseRangeDb")).value_or(processors.noise.rangeDb));
+    processors.noise.holdMs = static_cast<float>(
+      readJsonNumberField(line, indexedField(index, "NoiseHoldMs")).value_or(processors.noise.holdMs));
+    processors.noise.releaseMs = static_cast<float>(
+      readJsonNumberField(line, indexedField(index, "NoiseReleaseMs")).value_or(processors.noise.releaseMs));
     processors.compressor.thresholdDb = static_cast<float>(
       readJsonNumberField(line, indexedField(index, "CompThresholdDb")).value_or(processors.compressor.thresholdDb));
     processors.compressor.ratio = static_cast<float>(

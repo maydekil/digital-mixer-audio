@@ -186,7 +186,8 @@
 .compressor-controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .gain-reduction { margin-left: auto; display: flex; align-items: center; gap: 8px; color: #bde7ef; font-size: 12px; }
 .gain-reduction i { display: block; width: 130px; height: 10px; background: repeating-linear-gradient(90deg, #16f2c5 0 5px, #0d2530 5px 9px); border: 1px solid #14323b; }
-.lower-processors { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lower-processors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mini-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .processing-panel .rotary-face { width: 30px; height: 30px; }
 .processing-panel .rotary-value { font-size: 10.5px; }
 .processing-panel .rotary-label { font-size: 9.5px; }

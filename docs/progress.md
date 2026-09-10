@@ -2522,3 +2522,25 @@ Validation:
 
 Known limitations:
 - This does not implement the desktop record-stop-insert-playback journey; it only makes the saved session schema ready for that flow.
+
+### Phase19 Hardening Checkpoint — Noise Gate Parameter Sync
+
+Changed files:
+- `apps/desktop/src/adapters/MixerControlPort.ts`, `apps/desktop/src/adapters/preview/PreviewAdapter.ts`, `apps/desktop/src/fixtures/approvedMixerSession.ts`: added per-channel noise threshold, range, hold, and release state with bounded preview updates.
+- `apps/desktop/src/features/processing/components/ChannelProcessingPanel.tsx`, `apps/desktop/src/styles/app.css`: added a compact NOISE card to the channel processing panel.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: includes noise gate parameter fields in the `sync-mixer-graph` payload.
+- `native/engine/src/engine/EngineGraphSyncJson.cpp`, `native/engine/tests/EngineGraphSyncJsonTest.cpp`: parses and verifies noise gate parameter fields for the monitored channel selection.
+- `tests/ui/preview-adapter.test.ts`, `docs/feature-traceability.md`, `docs/task-plan.json`, `docs/progress.md`: updated UI state coverage and DSP evidence.
+
+Implemented behavior:
+- NOISE is no longer native-default-only when configured from the UI; threshold/range/timing values can now reach native graph sync.
+- Existing command payloads remain backward compatible by falling back to native defaults when noise fields are absent.
+
+Validation:
+- command: `npm run typecheck && npm run test:ui && cmake --build native/engine/build --target local-mixer-engine-graph-sync-json-tests && ctest --test-dir native/engine/build -R local-mixer-engine-graph-sync-json-tests --output-on-failure`
+- exit/result: `0`; TypeScript, Vitest 19/19, and focused native graph-sync parser test passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 19/19, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- Hardware listening of the configured NOISE gate through the desktop monitor path is NOT_RUN in this environment.

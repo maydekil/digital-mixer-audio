@@ -11,12 +11,14 @@ interface ChannelProcessingPanelProps {
   linkedProgram: FxProgram;
   onSendA(valueDb: number): void;
   onEqChange(bandId: EqBandState["id"], field: "freqHz" | "gainDb" | "qValue" | "type", value: number | string): void;
+  onNoiseChange(field: keyof ChannelState["dynamics"]["noise"], value: number): void;
   onCompressorChange(field: keyof ChannelState["dynamics"]["compressor"], value: number): void;
   onDeEsserChange(field: keyof ChannelState["dynamics"]["deEsser"], value: number): void;
 }
 
-export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSendA, onEqChange, onCompressorChange, onDeEsserChange }: ChannelProcessingPanelProps) {
+export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSendA, onEqChange, onNoiseChange, onCompressorChange, onDeEsserChange }: ChannelProcessingPanelProps) {
   const sendA = channel.sends["fx-a"];
+  const noise = channel.dynamics.noise;
   const compressor = channel.dynamics.compressor;
   const deEsser = channel.dynamics.deEsser;
   return (
@@ -59,6 +61,15 @@ export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSend
         </div>
       </section>
       <div className="lower-processors">
+        <section className={`processor-card ${channel.processing.noise ? "is-active" : "is-bypassed"}`}>
+          <div className="processor-title"><span>⏻</span><strong>NOISE</strong></div>
+          <div className="mini-controls">
+            <RotaryKnob label="Threshold" value={`${noise.thresholdDb} dB`} numericValue={noise.thresholdDb} min={-90} max={0} onChange={(value) => onNoiseChange("thresholdDb", value)} />
+            <RotaryKnob label="Range" value={`${noise.rangeDb} dB`} numericValue={noise.rangeDb} min={-90} max={0} onChange={(value) => onNoiseChange("rangeDb", value)} />
+            <RotaryKnob label="Hold" value={`${noise.holdMs} ms`} numericValue={noise.holdMs} min={0} max={1000} onChange={(value) => onNoiseChange("holdMs", value)} />
+            <RotaryKnob label="Release" value={`${noise.releaseMs} ms`} numericValue={noise.releaseMs} min={5} max={3000} onChange={(value) => onNoiseChange("releaseMs", value)} />
+          </div>
+        </section>
         <section className={`processor-card ${channel.role === "vocal" ? "is-active" : "is-bypassed"}`}>
           <div className="processor-title"><span>⏻</span><strong>DE-ESSER</strong></div>
           <RotaryKnob label="Frequency" value={formatFrequency(deEsser.frequencyHz)} numericValue={deEsser.frequencyHz} min={1000} max={12000} step={100} onChange={(value) => onDeEsserChange("frequencyHz", value)} />
