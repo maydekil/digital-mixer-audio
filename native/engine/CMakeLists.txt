@@ -18,6 +18,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/MixerGraphController.cpp
   src/engine/Recording.cpp
   src/engine/RoutingGraph.cpp
+  src/engine/SessionDocument.cpp
   src/engine/SystemRouteRecovery.cpp
   src/engine/SystemRouting.cpp
   src/engine/Timeline.cpp
@@ -212,3 +213,12 @@ target_link_libraries(local-mixer-export-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-export-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-export-tests COMMAND local-mixer-export-tests)
+
+add_executable(local-mixer-session-document-tests
+  tests/SessionDocumentTest.cpp
+)
+
+target_link_libraries(local-mixer-session-document-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-session-document-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-session-document-tests COMMAND local-mixer-session-document-tests)

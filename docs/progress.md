@@ -1304,3 +1304,28 @@ Validation:
 Known limitations:
 - Offline export is not yet using the full realtime DSP graph, automation, pan law, plugin latency graph, stems, normalization, LUFS, or true-peak validation.
 - FLAC/MP3 export, TPDF dither for integer output, and UI export jobs are pending.
+
+## Phase15 — Session, Preset, Autosave, And Recovery
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: Phase14 IMPLEMENTED_UNVERIFIED
+
+### Phase15 Checkpoint — Native Session Document Foundation
+
+Changed files:
+- `native/engine/src/engine/SessionDocument.hpp`, `native/engine/src/engine/SessionDocument.cpp`: added native session JSON document serialization/parsing, schema version validation, atomic save temp+rename, previous-good backup, autosave path, and recovery candidate lookup.
+- `native/engine/tests/SessionDocumentTest.cpp`: verifies save/open round-trip, newer schema rejection, corrupt session rejection, previous-good backup survival, and autosave recovery candidate behavior.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired Phase15 build/test/progress evidence.
+
+Implemented behavior:
+- Saved session path and autosave recovery path are represented separately.
+- Sessions with schema versions newer than the engine are rejected.
+- Atomic save writes a temp file and preserves a previous-good backup on subsequent saves.
+- Autosave recovery can be offered without overwriting the original session.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 19/19 including `local-mixer-session-document-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- Full routing/FX/automation/session schema, migrations, relink UI, portable media collection, debounce timers, and preset library persistence are not yet implemented.
+- JSON parser currently supports the engine-owned session shape only; external arbitrary JSON compatibility is not claimed.
