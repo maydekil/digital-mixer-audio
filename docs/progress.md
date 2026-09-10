@@ -2367,3 +2367,24 @@ Validation:
 Known limitations:
 - Hardware listening of FX returns from the packaged/desktop monitor path is NOT_RUN in this environment.
 - Full 99-program rendered fixture comparison, audible QA, transition crossfade listening, export parity, callback timing metrics, and stress QA remain partial.
+
+### Phase19 Hardening Checkpoint — Vocal FX Processor Factory
+
+Changed files:
+- `native/engine/src/dsp/fx/EffectProcessorFactory.hpp`, `native/engine/src/dsp/fx/EffectProcessorFactory.cpp`: added a production factory for native effect processors used by the rack.
+- `native/engine/tests/fx/EffectProcessorFactoryTest.cpp`: verifies construct/prepare/process coverage for the 10 effect types that already have concrete processor classes, explicit pending behavior for `pitch_shift` and `formant_shift`, and rack replacement using the production factory.
+- `native/engine/CMakeLists.txt`, `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: wired build/test evidence and updated remaining-gap wording.
+
+Implemented behavior:
+- The native Vocal FX rack can now be backed by production processor construction for reverb, delay, chorus, doubler, pitch correction, harmony, saturation, flanger, phaser, and vocoder.
+- Pitch-shift and formant-shift remain explicit gaps instead of silently mapping to the wrong processor.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-effect-processor-factory-tests && ctest --test-dir native/engine/build -R local-mixer-effect-processor-factory-tests --output-on-failure`
+- exit/result: `0`; focused processor factory test passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 19/19, native CTest 40/40, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- The Vocal FX rack still needs live channel insertion, UI slot state sync into native graph, and real vocal listening QA.
+- Dedicated `pitch_shift` and `formant_shift` EffectProcessor wrappers are pending.
