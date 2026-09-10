@@ -63,6 +63,13 @@ MixerError MixerGraph::setColor(StripId id, std::string color) {
   return MixerError::none;
 }
 
+MixerError MixerGraph::setSourceUid(StripId id, std::string sourceUid) {
+  const auto index = indexOf(id);
+  if (!index.has_value()) return MixerError::staleStripId;
+  strips_[*index].sourceUid = std::move(sourceUid);
+  return MixerError::none;
+}
+
 MixerError MixerGraph::setAssignment(StripId id, SourceAssignment assignment, std::uint32_t inputChannel, bool stereoLinked) {
   const auto index = indexOf(id);
   if (!index.has_value()) return MixerError::staleStripId;

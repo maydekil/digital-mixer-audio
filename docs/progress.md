@@ -469,6 +469,31 @@ Validation:
 - command: `npm run verify`
 - exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
 
+### Phase05 Checkpoint — Desktop State Sync To Native Graph
+
+Changed files:
+- `native/engine/src/main.cpp`: added `sync-mixer-graph` stdio command that validates a flat channel snapshot, prepares a native `MixerGraph`, publishes it through `MixerGraphController`, and reports strip/monitor counts.
+- `native/engine/src/engine/MixerGraph.hpp`, `native/engine/src/engine/MixerGraph.cpp`: strip configs now retain `sourceUid` so selected input devices can be owned by the native graph state.
+- `apps/desktop/electron/main.ts`: whitelisted `sync-mixer-graph` for the Electron IPC bridge.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: desktop UI now syncs channel enabled/mute/solo/monitor/source/gain/fader/pan state to the native engine when state changes.
+- `scripts/test-native.mjs`: protocol smoke now verifies `sync-mixer-graph` over the engine stdio path.
+- `native/engine/tests/MixerGraphTest.cpp`: verifies `sourceUid` is stored on strip config.
+
+Implemented behavior:
+- Desktop channel state has a native graph owner path; source UID selections are included in the graph sync payload.
+- The new sync path does not use Web Audio, renderer audio capture, PCM IPC, or browser playback APIs.
+- Native graph publication remains transactional: prepared graph is published only after validation succeeds.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; CMake/Ninja build passed, CTest passed 5/5, engine self-test passed, and protocol smoke confirmed `sync-mixer-graph` with `stripCount: 2` and `activeMonitorCount: 1`.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- The desktop MON button still uses the short Phase03 `monitor-passthrough` command for audible monitoring.
+- Persistent graph-owned realtime monitoring, live graph meters, and graph-owned output routing remain the next Phase05 work.
+
 ## Native Sound Pad Spike — Early User-Requested
 Status: IMPLEMENTED_UNVERIFIED_PLAYBACK
 Prerequisites: user explicitly requested this before UI-04

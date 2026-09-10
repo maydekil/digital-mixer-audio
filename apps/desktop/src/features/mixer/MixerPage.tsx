@@ -6,6 +6,7 @@ import { HardwareMonitorPanel } from "../hardware/components/HardwareMonitorPane
 import { ChannelProcessingPanel } from "../processing/components/ChannelProcessingPanel";
 import { SoundPadPanel } from "../sound-pads/components/SoundPadPanel";
 import { ChannelBank } from "./components/ChannelBank";
+import type { ChannelState, MixerSnapshot } from "../../adapters/MixerControlPort";
 
 interface HardwareDevice {
   uid: string;
@@ -52,6 +53,10 @@ export function MixerPage() {
   useEffect(() => {
     void refreshDevices();
   }, []);
+
+  useEffect(() => {
+    void syncMixerGraph(snapshot);
+  }, [snapshot, outputUid]);
 
   const selected = snapshot.channels.find((channel) => channel.id === snapshot.selectedChannelId) ?? snapshot.channels[0];
   const fxA = snapshot.fxUnits[0];
@@ -123,6 +128,37 @@ export function MixerPage() {
       <HardwareMonitorPanel open={hardwareOpen} onClose={() => setHardwareOpen(false)} />
     </main>
   );
+}
+
+async function syncMixerGraph(snapshot: MixerSnapshot) {
+  if (!window.localMixer?.engineCommand) return;
+  const channels = snapshot.channels.slice(0, 32);
+  const payload: Record<string, string | number | boolean> = { channelCount: channels.length };
+  channels.forEach((channel, index) => {
+    const prefix = `channel${index}`;
+    payload[`${prefix}Id`] = channel.id;
+    payload[`${prefix}Kind`] = channel.kind;
+    payload[`${prefix}Name`] = channel.name;
+    payload[`${prefix}Color`] = channelColor(channel);
+    payload[`${prefix}SourceUid`] = channel.kind === "source" ? channel.source : "";
+    payload[`${prefix}Assignment`] = channel.role === "music" || channel.kind !== "source" ? "stereo" : "mono";
+    payload[`${prefix}Enabled`] = channel.enabled;
+    payload[`${prefix}Mute`] = channel.mute;
+    payload[`${prefix}Solo`] = channel.solo;
+    payload[`${prefix}Monitor`] = Boolean(channel.monitor);
+    payload[`${prefix}TrimDb`] = channel.trimDb;
+    payload[`${prefix}FaderDb`] = channel.faderDb;
+    payload[`${prefix}Pan`] = channel.pan / 100;
+  });
+  await window.localMixer.engineCommand("sync-mixer-graph", payload);
+}
+
+function channelColor(channel: ChannelState) {
+  if (channel.role === "vocal") return "#18d6e7";
+  if (channel.role === "music") return "#f3c842";
+  if (channel.role === "group") return "#b568f0";
+  if (channel.role === "master") return "#20f0a0";
+  return "#6ed6e8";
 }
 
 function TopBar({ projectName, time, rate, status, mode }: { projectName: string; time: string; rate: string; status: string; mode: string }) {

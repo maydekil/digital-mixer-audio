@@ -67,6 +67,46 @@ async function testEngineProtocol() {
       typeof message.status === "object"
     )
   );
+  child.stdin.write(`${JSON.stringify({
+    id: "native-sync-graph",
+    type: "sync-mixer-graph",
+    channelCount: 2,
+    channel0Id: "voice",
+    channel0Kind: "source",
+    channel0Name: "VOICE",
+    channel0Color: "#18d6e7",
+    channel0SourceUid: "mic",
+    channel0Assignment: "mono",
+    channel0Enabled: true,
+    channel0Mute: false,
+    channel0Solo: false,
+    channel0Monitor: true,
+    channel0TrimDb: 0,
+    channel0FaderDb: -6,
+    channel0Pan: 0,
+    channel1Id: "master",
+    channel1Kind: "master",
+    channel1Name: "MASTER",
+    channel1Color: "#20f0a0",
+    channel1SourceUid: "",
+    channel1Assignment: "stereo",
+    channel1Enabled: true,
+    channel1Mute: false,
+    channel1Solo: false,
+    channel1Monitor: false,
+    channel1TrimDb: 0,
+    channel1FaderDb: -1,
+    channel1Pan: 0
+  })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-sync-graph" &&
+      message.type === "sync-mixer-graph" &&
+      message.synced === true &&
+      message.stripCount === 2 &&
+      message.activeMonitorCount === 1
+    )
+  );
   child.stdin.write(`${JSON.stringify({ id: "native-tone", type: "play-test-tone", durationMs: 0 })}\n`);
   await waitFor(() =>
     messages.some((message) =>

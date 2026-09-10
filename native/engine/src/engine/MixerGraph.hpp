@@ -22,6 +22,7 @@ struct StripConfig {
   StripId id;
   std::string name;
   std::string color;
+  std::string sourceUid;
   SourceAssignment assignment = SourceAssignment::mono;
   std::uint32_t inputChannel = 0;
   bool stereoLinked = false;
@@ -64,6 +65,7 @@ class MixerGraph {
   MixerError removeStrip(StripId id);
   MixerError renameStrip(StripId id, std::string name);
   MixerError setColor(StripId id, std::string color);
+  MixerError setSourceUid(StripId id, std::string sourceUid);
   MixerError setAssignment(StripId id, SourceAssignment assignment, std::uint32_t inputChannel, bool stereoLinked);
   MixerError setLevel(StripId id, float trimDb, float faderDb, float pan);
   MixerError setMute(StripId id, bool mute);

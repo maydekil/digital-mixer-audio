@@ -19,7 +19,8 @@ const supportedEngineCommands = new Set([
   "meter-input",
   "play-test-tone",
   "monitor-passthrough",
-  "prepare-passthrough"
+  "prepare-passthrough",
+  "sync-mixer-graph"
 ]);
 const soundPadMaxMs = 6000;
 let activeSoundPad: { child: ReturnType<typeof spawn>; timeout: ReturnType<typeof setTimeout> } | null = null;

@@ -42,6 +42,7 @@ int main() {
 
   graph.renameStrip(vocal.id, "Lead Voice");
   graph.setColor(vocal.id, "#58f28a");
+  graph.setSourceUid(vocal.id, "mic-1");
   graph.setAssignment(vocal.id, SourceAssignment::mono, 0, false);
   graph.setAssignment(music.id, SourceAssignment::stereo, 0, true);
   graph.setLevel(vocal.id, 0.0f, -6.0f, 0.0f);
@@ -49,7 +50,8 @@ int main() {
   graph.setInputMonitoring(vocal.id, true);
 
   const auto config = graph.strip(vocal.id);
-  if (!config.has_value() || config->name != "Lead Voice" || config->color != "#58f28a" || !config->inputMonitoring) {
+  if (!config.has_value() || config->name != "Lead Voice" || config->color != "#58f28a" ||
+      config->sourceUid != "mic-1" || !config->inputMonitoring) {
     std::cerr << "strip metadata/state mismatch\n";
     return 1;
   }
