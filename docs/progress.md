@@ -1600,3 +1600,27 @@ Validation:
 Known limitations:
 - VFX-08 is UI/adapter foundation only; production native IPC commands for rack slot add/remove/reorder, parameter automation, A/B snapshots, and engine CPU/latency telemetry are still pending integration phases.
 - Visual Playwright evidence is refreshed, but full native rack IPC, persistence, and automation acceptance remain pending.
+
+## MIXFX-00 — Registry 99 Program And Contracts
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: VFX-08 IMPLEMENTED_UNVERIFIED
+
+### MIXFX-00 Checkpoint — Native Factory FX Bank Contract
+
+Changed files:
+- `native/engine/src/engine/FxProgramRegistry.hpp`, `native/engine/src/engine/FxProgramRegistry.cpp`: added native factory bank version 1 with programs 01-99 from spec section 8B.5, family metadata, macro labels/units/values, and expanded wet-only recipe parameters.
+- `native/engine/tests/FxProgramRegistryTest.cpp`: verifies exactly 99 unique contiguous IDs, non-empty names, stable family labels, wet-only/output-trim expanded recipes, and key contracts for 12 Vocal Plate, 50 Stereo 320, and 99 Infinite Mood.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired MIXFX-00 build/test/progress evidence.
+
+Implemented behavior:
+- The native engine now owns a checked-in deterministic 99-program registry instead of relying only on React fixtures.
+- Program recipes encode the required family constants: room/plate/hall damping and width, delay filters, chorus/phaser constants, and bounded Delay + Plate branch gains.
+- `Infinite Mood` remains bounded at 6-second plate decay and 20% delay feedback; it is not an infinite/freeze effect.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 29/29 including `local-mixer-fx-program-registry-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- MIXFX-00 is contract/registry work only; no dedicated FX A/B wet-only bus processing is implemented in this checkpoint.
+- Program switching crossfade, ACK state, session persistence, automation/MIDI mapping, and return stem export remain pending in MIXFX-01 through MIXFX-05.

@@ -24,6 +24,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/DeviceService.cpp
   src/engine/EngineRuntime.cpp
   src/engine/Export.cpp
+  src/engine/FxProgramRegistry.cpp
   src/engine/Metronome.cpp
   src/engine/MediaFile.cpp
   src/engine/MediaImportJob.cpp
@@ -132,6 +133,15 @@ target_link_libraries(local-mixer-fx-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-fx-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-fx-tests COMMAND local-mixer-fx-tests)
+
+add_executable(local-mixer-fx-program-registry-tests
+  tests/FxProgramRegistryTest.cpp
+)
+
+target_link_libraries(local-mixer-fx-program-registry-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-fx-program-registry-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-fx-program-registry-tests COMMAND local-mixer-fx-program-registry-tests)
 
 add_executable(local-mixer-output-protection-tests
   tests/OutputProtectionTest.cpp
