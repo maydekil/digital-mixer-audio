@@ -134,7 +134,8 @@ async function testEngineProtocol() {
     messages.some((message) =>
       message.id === "native-transport-seek" &&
       message.type === "transport-status" &&
-      message.positionFrame === 24000
+      message.positionFrame === 24000 &&
+      message.bufferGeneration === 1
     )
   );
   child.stdin.write(`${JSON.stringify({ id: "native-transport-stop", type: "transport-stop" })}\n`);
@@ -143,7 +144,8 @@ async function testEngineProtocol() {
       message.id === "native-transport-stop" &&
       message.type === "transport-status" &&
       message.state === "stopped" &&
-      message.positionFrame === 0
+      message.positionFrame === 0 &&
+      message.bufferGeneration === 2
     )
   );
   child.stdin.write(`${JSON.stringify({ id: "native-route-diagnostics", type: "routing-system-diagnostics", sampleRate: 48000 })}\n`);

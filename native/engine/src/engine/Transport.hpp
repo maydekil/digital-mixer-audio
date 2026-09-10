@@ -20,6 +20,7 @@ struct TransportSnapshot {
   TransportState state = TransportState::stopped;
   std::uint64_t positionFrame = 0;
   std::uint64_t startFrame = 0;
+  std::uint64_t bufferGeneration = 0;
   TransportLoop loop;
 };
 

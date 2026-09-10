@@ -23,10 +23,12 @@ void TransportClock::pause() {
 void TransportClock::stop() {
   snapshot_.state = TransportState::stopped;
   snapshot_.positionFrame = snapshot_.startFrame;
+  snapshot_.bufferGeneration += 1;
 }
 
 void TransportClock::seek(std::uint64_t frame) {
   snapshot_.positionFrame = frame;
+  snapshot_.bufferGeneration += 1;
 }
 
 std::uint64_t TransportClock::advance(std::uint32_t frames) {

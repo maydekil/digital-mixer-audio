@@ -39,6 +39,7 @@ std::string transportJson(const localmixer::engine::TransportSnapshot& snapshot)
   return "\"state\":\"" + std::string(localmixer::engine::transportStateName(snapshot.state)) +
     "\",\"positionFrame\":" + std::to_string(snapshot.positionFrame) +
     ",\"startFrame\":" + std::to_string(snapshot.startFrame) +
+    ",\"bufferGeneration\":" + std::to_string(snapshot.bufferGeneration) +
     ",\"loopEnabled\":" + std::string(snapshot.loop.enabled ? "true" : "false") +
     ",\"loopStartFrame\":" + std::to_string(snapshot.loop.startFrame) +
     ",\"loopEndFrame\":" + std::to_string(snapshot.loop.endFrame);

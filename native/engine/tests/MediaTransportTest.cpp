@@ -126,6 +126,7 @@ int main() {
     return 1;
   }
   clock.seek(20);
+  const auto seekGeneration = clock.snapshot().bufferGeneration;
   clock.setLoop(TransportLoop{.enabled = true, .startFrame = 20, .endFrame = 24});
   clock.play();
   clock.advance(6);
@@ -134,7 +135,8 @@ int main() {
     return 1;
   }
   clock.stop();
-  if (clock.snapshot().state != TransportState::stopped || clock.snapshot().positionFrame != 10) {
+  if (clock.snapshot().state != TransportState::stopped || clock.snapshot().positionFrame != 10 ||
+      clock.snapshot().bufferGeneration <= seekGeneration) {
     std::cerr << "stop should return to playback start\n";
     return 1;
   }

@@ -1021,3 +1021,22 @@ Validation:
 Known limitations:
 - Scheduler currently renders in-memory fixture media, not imported file readers in the device callback.
 - Loop boundary fade and resampling are still not implemented.
+
+### Phase06 Checkpoint — Transport Buffer Invalidation
+
+Changed files:
+- `native/engine/src/engine/Transport.hpp`, `native/engine/src/engine/Transport.cpp`: added `bufferGeneration` to transport snapshots and increment it on seek/stop.
+- `native/engine/src/engine/MediaTransportJson.cpp`: exposes `bufferGeneration` in transport protocol status.
+- `native/engine/tests/MediaTransportTest.cpp`, `scripts/test-native.mjs`: verify generation changes on seek/stop.
+- `docs/progress.md`: recorded evidence.
+
+Implemented behavior:
+- Native consumers can detect seek/stop invalidation and discard stale file buffers.
+- Protocol smoke confirms generation increments deterministically.
+
+Validation:
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Actual queued file playback buffers are not implemented yet, so invalidation is exposed before a device-callback file player consumes it.
