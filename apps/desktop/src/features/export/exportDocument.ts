@@ -8,6 +8,7 @@ export interface ExportWorkflowRequest {
   sampleRate: number;
   durationFrames: number;
   blockFrames: number;
+  mediaPath: string;
   master: boolean;
   fxAReturn: boolean;
   fxBReturn: boolean;
@@ -24,12 +25,22 @@ export function snapshotToExportRequest(snapshot: MixerSnapshot, outputPath: str
     sampleRate: 48000,
     durationFrames: 48000 * 10,
     blockFrames: 512,
+    mediaPath: firstOfflineMediaPath(snapshot),
     master: true,
     fxAReturn: snapshot.fxUnits.some((unit) => unit.id === "fx-a" && unit.enabled),
     fxBReturn: snapshot.fxUnits.some((unit) => unit.id === "fx-b" && unit.enabled),
     includeMonitorVolume: false,
     liveSourceCount: countLiveSources(snapshot)
   };
+}
+
+function firstOfflineMediaPath(snapshot: MixerSnapshot) {
+  return snapshot.channels.find((channel) => (
+    channel.kind === "source" &&
+    channel.enabled &&
+    channel.role === "music" &&
+    /\.(wav|wave)$/i.test(channel.source.trim())
+  ))?.source.trim() ?? "";
 }
 
 function countLiveSources(snapshot: MixerSnapshot) {

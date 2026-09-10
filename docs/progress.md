@@ -2813,3 +2813,33 @@ Validation:
 Known limitations:
 - This checkpoint renders an offline-safe timeline path; imported media timeline export through the desktop journey, FX return stem files, and packaged playback inspection remain PARTIAL/NOT_RUN.
 - Live sources are still intentionally rejected for offline export until live recording/timeline material is available.
+
+### Phase19 Hardening Checkpoint — Offline WAV Media Export Render
+
+Changed files:
+- `apps/desktop/src/features/export/exportDocument.ts`: added optional WAV `mediaPath` selection from enabled music source channels.
+- `tests/ui/export-document.test.ts`: verifies WAV media source selection and omits non-WAV source paths from native render input.
+- `native/engine/src/main.cpp`: `export-render` can now load an optional WAV input through `WavStreamReader`, add it to the native timeline scheduler, and render it to the selected output path.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated export evidence.
+
+Implemented behavior:
+- Desktop export requests can carry a WAV music source path to native code.
+- Native `export-render` validates/reads the WAV source, rejects sample-rate mismatch/read failures, and renders the media through `TimelineScheduler` to a WAV output.
+- Non-WAV source paths are not sent as native render input by the renderer request builder.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 38/38 passed.
+- command: `cmake --build native/engine/build --target local-mixer-engine local-mixer-export-tests`
+- exit/result: `0`; native engine and export tests built.
+- command: `npm run build:desktop:main`
+- exit/result: `0`; Electron main/preload build passed.
+- command: `src=/tmp/local-mixer-export-source.wav; out=/tmp/local-mixer-export-from-media.wav; rm -f "$src" "$out"; printf '{"id":"make-src","type":"export-render","outputPath":"'$src'","sampleRate":48000,"durationFrames":1024,"blockFrames":256,"liveSourceCount":0}\n' | native/engine/build/native/engine/local-mixer-engine --stdio >/tmp/local-mixer-make-src.log; test -s "$src"; printf '{"id":"render-media","type":"export-render","outputPath":"'$out'","sampleRate":48000,"durationFrames":1024,"blockFrames":256,"liveSourceCount":0,"mediaPath":"'$src'"}\n' | native/engine/build/native/engine/local-mixer-engine --stdio; test -s "$out"`
+- exit/result: `0`; engine returned `rendered:true`, `framesWritten:1024`, and the rendered media-output WAV existed with nonzero size.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 38/38, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- This is WAV-media render foundation. It does not yet prove packaged UI import/export playback, FX return stem files, loudness normalization, or live-source export.

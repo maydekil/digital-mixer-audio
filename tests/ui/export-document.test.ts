@@ -14,6 +14,7 @@ describe("export workflow request", () => {
       sampleRate: 48000,
       durationFrames: 480000,
       blockFrames: 512,
+      mediaPath: "Backing.wav",
       master: true,
       fxAReturn: true,
       fxBReturn: true,
@@ -29,5 +30,13 @@ describe("export workflow request", () => {
       : channel);
 
     expect(snapshotToExportRequest(snapshot, "/tmp/mix.wav").liveSourceCount).toBe(0);
+  });
+
+  it("omits non-WAV music sources from native render input", () => {
+    const snapshot = structuredClone(approvedMixerSession);
+    const music = snapshot.channels.find((channel) => channel.id === "music");
+    if (music) music.source = "playlist.mp3";
+
+    expect(snapshotToExportRequest(snapshot, "/tmp/mix.wav").mediaPath).toBe("");
   });
 });

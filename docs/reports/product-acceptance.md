@@ -23,7 +23,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 
 | ID | Scenario | Status | Blocking gap |
 | --- | --- | --- | --- |
-| E2E-01 | File-only import/play/EQ/fader/export | `PARTIAL` | Native processed graph export has focused coverage; desktop export output dialog/preflight/render command exists; offline playback of result and full imported-media desktop export are not run. |
+| E2E-01 | File-only import/play/EQ/fader/export | `PARTIAL` | Native processed graph export has focused coverage; desktop export output dialog/preflight/render command exists and can render WAV media input; offline playback of result and full packaged imported-media journey are not run. |
 | E2E-02 | System audio via BlackHole | `PARTIAL` | Full processed route and restore not run from packaged app. |
 | E2E-03 | Hybrid mic+backing with FX A/B | `PARTIAL` | Audible isolation and dual-return evidence not run. |
 | E2E-04 | Harmony ON/OFF/key/level | `PARTIAL` | Real vocal intervals, measured delay, and no-click audition not run. |

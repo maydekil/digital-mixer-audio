@@ -8,6 +8,7 @@
 #include "engine/FxProgramController.hpp"
 #include "engine/FxProgramRegistryJson.hpp"
 #include "engine/JsonProtocol.hpp"
+#include "engine/MediaFile.hpp"
 #include "engine/MediaTransportJson.hpp"
 #include "engine/MixerGraph.hpp"
 #include "engine/MixerGraphController.hpp"
@@ -26,6 +27,7 @@
 #endif
 
 #include <array>
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
@@ -512,7 +514,41 @@ int runStdioProtocol() {
       const auto sampleRate = static_cast<std::uint32_t>(readJsonNumberField(line, "sampleRate").value_or(48000.0));
       const auto durationFrames = static_cast<std::uint64_t>(readJsonNumberField(line, "durationFrames").value_or(0.0));
       const auto blockFrames = static_cast<std::uint32_t>(readJsonNumberField(line, "blockFrames").value_or(512.0));
+      const auto mediaPath = readJsonStringField(line, "mediaPath");
       localmixer::engine::TimelineScheduler timeline;
+      if (!mediaPath.empty()) {
+        localmixer::engine::WavStreamReader reader;
+        const auto openError = reader.open(mediaPath);
+        if (openError != localmixer::engine::MediaFileError::none) {
+          writeRawResponse(id, true, "export-render",
+            "\"rendered\":false,\"canceled\":false,\"error\":\"" +
+            std::string(localmixer::engine::mediaFileErrorName(openError)) +
+            "\",\"path\":\"" + escapeJson(outputPath) +
+            "\",\"framesWritten\":0,\"ignoredLiveSources\":" + std::to_string(liveSourceCount));
+          continue;
+        }
+        if (reader.info().sampleRate != sampleRate) {
+          writeRawResponse(id, true, "export-render",
+            std::string("\"rendered\":false,\"canceled\":false,\"error\":\"MEDIA_SAMPLE_RATE_MISMATCH\"") +
+            ",\"path\":\"" + escapeJson(outputPath) +
+            "\",\"framesWritten\":0,\"ignoredLiveSources\":" + std::to_string(liveSourceCount));
+          continue;
+        }
+        const auto framesToRead = static_cast<std::uint32_t>(std::min<std::uint64_t>(
+          durationFrames == 0 ? reader.info().frameCount : durationFrames,
+          std::min<std::uint64_t>(reader.info().frameCount, 0xffffffffu)
+        ));
+        const auto read = reader.readFrames(0, framesToRead);
+        if (read.error != localmixer::engine::MediaFileError::none || read.framesRead == 0 ||
+            !timeline.addMedia("media", localmixer::engine::TimelineMedia{.samples = read.samples, .channels = reader.info().channels})) {
+          writeRawResponse(id, true, "export-render",
+            std::string("\"rendered\":false,\"canceled\":false,\"error\":\"MEDIA_READ_FAILED\"") +
+            ",\"path\":\"" + escapeJson(outputPath) +
+            "\",\"framesWritten\":0,\"ignoredLiveSources\":" + std::to_string(liveSourceCount));
+          continue;
+        }
+        timeline.setClips({localmixer::engine::TimelineClip{.mediaId = "media", .durationFrames = read.framesRead}});
+      }
       const auto result = localmixer::engine::exportTimelineToWav(timeline, localmixer::engine::ExportRequest{
         .outputPath = outputPath,
         .sampleRate = sampleRate,
