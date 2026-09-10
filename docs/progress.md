@@ -1329,3 +1329,29 @@ Validation:
 Known limitations:
 - Full routing/FX/automation/session schema, migrations, relink UI, portable media collection, debounce timers, and preset library persistence are not yet implemented.
 - JSON parser currently supports the engine-owned session shape only; external arbitrary JSON compatibility is not claimed.
+
+## Phase16 — Automation And MIDI
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: Phase15 IMPLEMENTED_UNVERIFIED
+
+### Phase16 Checkpoint — Native Automation Lane And MIDI Mapping Foundation
+
+Changed files:
+- `native/engine/src/engine/Automation.hpp`, `native/engine/src/engine/Automation.cpp`: added native automation lanes, continuous interpolation, discrete event lookup, gesture undo snapshot, MIDI CC mapping, and soft-takeover helper.
+- `native/engine/tests/AutomationTest.cpp`: verifies value-at-seek, interpolation, discrete mute timing, one-gesture undo, MIDI mapping retention across disconnect, injected CC mapping, mismatched channel ignore, and soft-takeover pickup behavior.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired Phase16 build/test/progress evidence.
+
+Implemented behavior:
+- Continuous automation interpolates by engine sample frame.
+- Discrete automation changes exactly at keyed frames for mute-style parameters.
+- Undo restores a single edited gesture as one action.
+- MIDI CC mappings are data-owned independently of current device connection status.
+- Soft takeover prevents fader jumps until the incoming control reaches the current value tolerance.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 20/20 including `local-mixer-automation-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- Native MIDI device enumeration/input callbacks, timestamped realtime scheduling, write/touch/latch mode engine integration, mapping persistence in session JSON, and UI MIDI learn are not yet implemented.
+- Offline/realtime automation parity is covered only at value lookup level, not full graph rendering.

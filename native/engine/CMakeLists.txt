@@ -6,6 +6,7 @@ add_library(local_mixer_dsp STATIC
   src/dsp/Gain.cpp
   src/dsp/Meter.cpp
   src/dsp/OutputProtection.cpp
+  src/engine/Automation.cpp
   src/engine/DeviceService.cpp
   src/engine/EngineRuntime.cpp
   src/engine/Export.cpp
@@ -222,3 +223,12 @@ target_link_libraries(local-mixer-session-document-tests PRIVATE local_mixer_dsp
 target_compile_features(local-mixer-session-document-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-session-document-tests COMMAND local-mixer-session-document-tests)
+
+add_executable(local-mixer-automation-tests
+  tests/AutomationTest.cpp
+)
+
+target_link_libraries(local-mixer-automation-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-automation-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-automation-tests COMMAND local-mixer-automation-tests)
