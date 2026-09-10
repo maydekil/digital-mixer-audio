@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { normalizeExportOutputPath, validateExportOutputPath } from "../../apps/desktop/electron/ExportDialogs";
 import {
   collectProjectMedia,
   inspectProjectMedia,
@@ -14,6 +15,13 @@ import {
 } from "../../apps/desktop/electron/ProjectDialogs";
 
 describe("Project dialog path helpers", () => {
+  it("normalizes export output paths to WAV", () => {
+    expect(normalizeExportOutputPath("/tmp/mix")).toBe("/tmp/mix.wav");
+    expect(normalizeExportOutputPath("/tmp/mix.wave")).toBe("/tmp/mix.wav");
+    expect(validateExportOutputPath(" ")).toMatchObject({ ok: false });
+    expect(validateExportOutputPath("/tmp/mix.wav")).toEqual({ ok: true, path: "/tmp/mix.wav" });
+  });
+
   it("normalizes save paths to the Local Audio Mixer project extension", () => {
     expect(normalizeProjectSavePath("/tmp/session")).toBe("/tmp/session.lam.json");
     expect(normalizeProjectSavePath("/tmp/session.json")).toBe("/tmp/session.lam.json");

@@ -13,5 +13,6 @@ contextBridge.exposeInMainWorld("localMixer", {
   inspectProjectMedia: (content: string) => ipcRenderer.invoke("project:inspect-media", content),
   collectProjectMedia: (path: string, content: string) => ipcRenderer.invoke("project:collect-media", { path, content }),
   relinkProjectMedia: (content: string, mediaId: string, path: string) => ipcRenderer.invoke("project:relink-media", { content, mediaId, path }),
+  chooseExportOutputPath: () => ipcRenderer.invoke("export:choose-output"),
   engineCommand: (type: string, payload?: Record<string, unknown>) => ipcRenderer.invoke("engine:command", type, payload)
 });

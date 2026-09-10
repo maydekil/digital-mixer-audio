@@ -4,6 +4,7 @@
 #include "engine/EngineGraphSyncJson.hpp"
 #include "engine/EngineResponseJson.hpp"
 #include "engine/EngineRuntime.hpp"
+#include "engine/Export.hpp"
 #include "engine/FxProgramController.hpp"
 #include "engine/FxProgramRegistryJson.hpp"
 #include "engine/JsonProtocol.hpp"
@@ -473,6 +474,30 @@ int runStdioProtocol() {
       writeRawResponse(id, true, "transport-status", transportJson(transportClock.snapshot()));
     } else if (type == "transport-status") {
       writeRawResponse(id, true, "transport-status", transportJson(transportClock.snapshot()));
+    } else if (type == "export-plan") {
+      const auto outputPath = readJsonStringField(line, "outputPath");
+      const auto liveSourceCount = static_cast<std::uint32_t>(readJsonNumberField(line, "liveSourceCount").value_or(0.0));
+      const auto plan = localmixer::engine::buildExportStemPlan(localmixer::engine::ExportStemRequest{
+        .master = readJsonBoolField(line, "master").value_or(true),
+        .fxAReturn = readJsonBoolField(line, "fxAReturn").value_or(false),
+        .fxBReturn = readJsonBoolField(line, "fxBReturn").value_or(false),
+        .includeMonitorVolume = readJsonBoolField(line, "includeMonitorVolume").value_or(false),
+      });
+      const bool exportable = !outputPath.empty() && liveSourceCount == 0 && plan.stemCount > 0;
+      const std::string error = outputPath.empty()
+        ? "INVALID_EXPORT_OUTPUT"
+        : (liveSourceCount > 0 ? "LIVE_SOURCES_UNAVAILABLE_FOR_OFFLINE_EXPORT" : "");
+      writeRawResponse(id, true, "export-plan",
+        "\"exportable\":" + std::string(exportable ? "true" : "false") +
+        ",\"error\":\"" + escapeJson(error) + "\"" +
+        ",\"outputPath\":\"" + escapeJson(outputPath) + "\"" +
+        ",\"sampleRate\":" + std::to_string(readJsonNumberField(line, "sampleRate").value_or(48000.0)) +
+        ",\"master\":" + std::string(plan.master ? "true" : "false") +
+        ",\"fxAReturn\":" + std::string(plan.fxAReturn ? "true" : "false") +
+        ",\"fxBReturn\":" + std::string(plan.fxBReturn ? "true" : "false") +
+        ",\"stemCount\":" + std::to_string(plan.stemCount) +
+        ",\"liveSourceCount\":" + std::to_string(liveSourceCount) +
+        ",\"monitorVolumePrinted\":" + std::string(plan.monitorVolumePrinted ? "true" : "false"));
     } else if (type == "routing-system-diagnostics") {
       runtime.refreshDevices(loadNativeDevices());
       const auto sampleRate = readJsonNumberField(line, "sampleRate").value_or(48000.0);

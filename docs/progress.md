@@ -2678,3 +2678,35 @@ Validation:
 Known limitations:
 - This is a project-file foundation, not a full missing-file relink dialog. Manual packaged Open/Save/Collect/Relink acceptance remains NOT_RUN.
 - Collect/relink only moves project metadata and media file copies; it does not decode, play, process, record, or export audio.
+
+### Phase19 Hardening Checkpoint — Export Workflow Preflight Foundation
+
+Changed files:
+- `apps/desktop/electron/ExportDialogs.ts`: added WAV export output path normalization and validation helpers.
+- `apps/desktop/electron/main.ts`, `apps/desktop/electron/preload.ts`, `apps/desktop/src/types/localMixer.d.ts`: exposed `export:choose-output` and allowed native `export-plan` preflight through the existing engine command boundary.
+- `apps/desktop/src/features/export/exportDocument.ts`: added renderer export request serialization from the current mixer snapshot.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: added a compact top-bar Export Mix action that chooses an output path and sends native export preflight when the engine is available.
+- `native/engine/src/main.cpp`: added `export-plan` stdio command that reports master/FX-return stem plan, monitor-volume exclusion, output path, sample rate, and live-source blockers without rendering audio.
+- `tests/ui/export-document.test.ts`, `tests/electron/project-dialogs.test.ts`: verify export request payloads and WAV path normalization.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated export evidence.
+
+Implemented behavior:
+- Desktop export workflow now has a reachable WAV output dialog and typed renderer request payload.
+- Native engine preflight can plan master plus FX A/B return stems and report live source blockers before offline export.
+- The preflight path does not use browser audio APIs, renderer PCM, or Web Audio.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 31/31 passed.
+- command: `cmake --build native/engine/build --target local-mixer-engine local-mixer-export-tests`
+- exit/result: `0`; native engine and export tests built.
+- command: `printf '{"id":"cmd-export","type":"export-plan","outputPath":"/tmp/mix.wav","master":true,"fxAReturn":true,"fxBReturn":true,"liveSourceCount":0,"sampleRate":48000}\n' | native/engine/build/native/engine/local-mixer-engine --stdio`
+- exit/result: `0`; engine returned `exportable:true`, `stemCount:3`, and `monitorVolumePrinted:false`.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 31/31, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- This is export preflight and UI/dialog foundation. It does not yet render a desktop-initiated WAV file, inspect exported stems, or play the result back.
+- Live-source export remains blocked by design until record/timeline rendering provides offline source material.

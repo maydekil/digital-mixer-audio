@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { EngineSupervisor } from "./EngineSupervisor.js";
+import { normalizeExportOutputPath } from "./ExportDialogs.js";
 import {
   collectProjectMedia,
   inspectProjectMedia,
@@ -46,6 +47,7 @@ const supportedEngineCommands = new Set([
   "transport-stop",
   "transport-seek",
   "transport-status",
+  "export-plan",
   "routing-system-diagnostics",
   "routing-system-enable",
   "routing-system-disable",
@@ -233,6 +235,19 @@ function registerProjectIpc() {
   });
 }
 
+function registerExportIpc() {
+  ipcMain.handle("export:choose-output", async () => {
+    const result = await dialog.showSaveDialog({
+      defaultPath: "Local Audio Mixer Export.wav",
+      filters: [
+        { name: "WAV Audio", extensions: ["wav"] }
+      ]
+    });
+    if (result.canceled || !result.filePath) return { ok: true, canceled: true };
+    return { ok: true, path: normalizeExportOutputPath(result.filePath) };
+  });
+}
+
 function registerEngineIpc() {
   ipcMain.handle("engine:command", async (_event, type: unknown, payload: unknown) => {
     if (typeof type !== "string" || !supportedEngineCommands.has(type)) {
@@ -297,6 +312,7 @@ app.whenReady().then(async () => {
   registerSoundPadIpc();
   registerMediaIpc();
   registerProjectIpc();
+  registerExportIpc();
   registerEngineIpc();
   await createWindow();
   app.on("activate", async () => {

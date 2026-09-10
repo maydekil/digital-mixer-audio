@@ -21,6 +21,7 @@ declare global {
         error?: string;
       }>;
       relinkProjectMedia?: (content: string, mediaId: string, path: string) => Promise<{ ok: boolean; content?: string; error?: string }>;
+      chooseExportOutputPath?: () => Promise<{ ok: boolean; path?: string; canceled?: boolean; error?: string }>;
       engineCommand?: (type: string, payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
     };
   }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PreviewAdapter } from "../../adapters/preview/PreviewAdapter";
+import { snapshotToExportRequest } from "../export/exportDocument";
 import { CompactFxRow } from "../fx/components/CompactFxRow";
 import { HarmonyQuickPanel } from "../harmony/components/HarmonyQuickPanel";
 import { HardwareMonitorPanel } from "../hardware/components/HardwareMonitorPanel";
@@ -109,6 +110,14 @@ export function MixerPage() {
     if (!written.ok) return;
     refresh(() => adapter.replaceSnapshot(projectSessionToSnapshot(collected.content ?? "", adapter.getSnapshot())));
     setProjectPath(written.path ?? targetPath);
+  }
+
+  async function exportProject() {
+    if (!window.localMixer?.chooseExportOutputPath) return;
+    const target = await window.localMixer.chooseExportOutputPath();
+    if (!target.ok || target.canceled || !target.path) return;
+    const request = snapshotToExportRequest(adapter.getSnapshot(), target.path);
+    await window.localMixer.engineCommand?.("export-plan", request as unknown as Record<string, unknown>);
   }
 
   async function selectFxProgram(unitId: "fx-a" | "fx-b", programId: number) {
@@ -284,6 +293,7 @@ export function MixerPage() {
         onOpen={() => void openProject()}
         onSave={() => void saveProject()}
         onCollect={() => void collectProject()}
+        onExport={() => void exportProject()}
       />
       <div className="fx-stack">
         <CompactFxRow unit={fxA} program={programA} programs={snapshot.programs} onProgramChange={(id) => void selectFxProgram("fx-a", id)} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-a", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-a", value))} onMacro={(macro, value) => void setFxMacro("fx-a", macro, value)} onReset={() => void resetFxProgram("fx-a")} />
@@ -461,7 +471,7 @@ function parseFxPrograms(programs: unknown[]): FxProgram[] {
   });
 }
 
-function TopBar({ projectName, time, rate, status, mode, transportState, onVocalFx, onTimeline, onPlay, onStop, onOpen, onSave, onCollect }: {
+function TopBar({ projectName, time, rate, status, mode, transportState, onVocalFx, onTimeline, onPlay, onStop, onOpen, onSave, onCollect, onExport }: {
   projectName: string;
   time: string;
   rate: string;
@@ -475,6 +485,7 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onVocal
   onOpen(): void;
   onSave(): void;
   onCollect(): void;
+  onExport(): void;
 }) {
   return (
     <header className="top-bar">
@@ -495,6 +506,7 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onVocal
       <button className="settings" aria-label="Open Project" title="Open Project" onClick={onOpen}>□</button>
       <button className="settings" aria-label="Save Project" title="Save Project" onClick={onSave}>▣</button>
       <button className="settings" aria-label="Collect Media" title="Collect Media" onClick={onCollect}>◇</button>
+      <button className="settings" aria-label="Export Mix" title="Export Mix" onClick={onExport}>⇩</button>
       <button className="settings">⚙</button>
     </header>
   );
