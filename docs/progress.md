@@ -1204,3 +1204,27 @@ Validation:
 Known limitations:
 - The foundation does not yet instantiate all fixed buses (4 subgroups, 4 aux, FX A/B returns, 4 DCA) in a session graph.
 - Route graph is not yet connected to realtime mixing buffers, monitor selector UI, or save/session persistence.
+
+## Phase11 — Reverb, Delay, And Voice Ducking
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: Phase10 IMPLEMENTED_UNVERIFIED
+
+### Phase11 Checkpoint — Native FX Processor Foundation
+
+Changed files:
+- `native/engine/src/dsp/Fx.hpp`, `native/engine/src/dsp/Fx.cpp`: added native wet-only delay, simple wet reverb, and voice ducking processors.
+- `native/engine/tests/FxTest.cpp`: verifies decreasing delay repeats, feedback capping below unity, wet reverb tail generation, and voice-ducking gain reduction/recovery.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired Phase11 build/test/progress evidence.
+
+Implemented behavior:
+- Delay send-return processing outputs wet signal only and clamps feedback below unity.
+- Reverb processor produces a native wet tail from an impulse.
+- Voice ducking uses a detector signal to attenuate a target bus with attack/hold/release behavior.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 15/15 including `local-mixer-fx-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- FX processors are not yet wired into FX A/B buses, realtime routing, UI controls, panic mute, or tail policy during transport pause.
+- Reverb is a lightweight native foundation, not final quality/program bank DSP.

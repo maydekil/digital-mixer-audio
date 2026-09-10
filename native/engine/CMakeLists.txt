@@ -2,6 +2,7 @@ add_library(local_mixer_dsp STATIC
   src/dsp/DeEsser.cpp
   src/dsp/Dynamics.cpp
   src/dsp/Eq.cpp
+  src/dsp/Fx.cpp
   src/dsp/Gain.cpp
   src/dsp/Meter.cpp
   src/dsp/OutputProtection.cpp
@@ -99,6 +100,15 @@ target_link_libraries(local-mixer-vocal-strip-preset-tests PRIVATE local_mixer_d
 target_compile_features(local-mixer-vocal-strip-preset-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-vocal-strip-preset-tests COMMAND local-mixer-vocal-strip-preset-tests)
+
+add_executable(local-mixer-fx-tests
+  tests/FxTest.cpp
+)
+
+target_link_libraries(local-mixer-fx-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-fx-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-fx-tests COMMAND local-mixer-fx-tests)
 
 add_executable(local-mixer-output-protection-tests
   tests/OutputProtectionTest.cpp
