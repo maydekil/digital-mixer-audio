@@ -2082,3 +2082,36 @@ Validation:
 
 Known limitations:
 - INT-03 is an honest audit, not product completion. Critical gaps remain before Phase19 can produce a final handoff with `PRODUCT_VERIFIED`.
+
+## Phase19 — Hardening, Packaging, And Handoff
+Status: IMPLEMENTED_UNVERIFIED_HANDOFF
+Prerequisites: INT-03 IMPLEMENTED_UNVERIFIED
+
+### Phase19 Checkpoint — Development Handoff Materials
+
+Changed files:
+- `README.md`: added setup, development, native test, packaging, system-audio, and known-gap instructions.
+- `docs/reports/phase19-handoff.md`: added artifact path, archive checksum, package source revision, bundle identity, command list, report index, and final blocker table.
+- `scripts/package-mac-unsigned.mjs`: fixed packaged `Info.plist` updates so the dev app uses bundle ID `audio.local-mixer.dev` and a single microphone usage description.
+- `docs/reports/int02-package-smoke.md`: regenerated package smoke after the `Info.plist` fix.
+- `docs/task-plan.json`, `docs/progress.md`: updated Phase19 status and evidence paths.
+
+Implemented behavior:
+- Unsigned development app and archive are generated at `build/package/Local Audio Mixer.app` and `build/package/Local-Audio-Mixer-dev.zip`.
+- Archive SHA-256 is recorded as `1f76af5198503a55866d6b82b234804912e650905bda91b12f3befe97d8306e8`.
+- Packaged app `Info.plist` now reports `CFBundleIdentifier` as `audio.local-mixer.dev` and includes microphone/screen-capture usage descriptions.
+- Handoff docs point users to the exact reports that still block final acceptance.
+
+Validation:
+- command: `npm run package:mac:unsigned`
+- exit/result: `0`; rebuilt unsigned development `.app`, archive, and package smoke report.
+- command: `plutil -p 'build/package/Local Audio Mixer.app/Contents/Info.plist' | rg 'CFBundleIdentifier|CFBundleName|CFBundleDisplayName|NSMicrophone|NSScreenCapture'`
+- exit/result: `0`; bundle ID, app names, microphone usage description, and screen-capture usage description were present and correct.
+- command: `shasum -a 256 build/package/Local-Audio-Mixer-dev.zip`
+- exit/result: `0`; checksum `1f76af5198503a55866d6b82b234804912e650905bda91b12f3befe97d8306e8`.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 36/36, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- Phase19 is not `PRODUCT_VERIFIED`. Packaged GUI launch, packaged TCC prompt, clean-location offline workflow, plugin editor, device disconnect/sleep/wake, live record/replay/export, AU/VST3 runtime hosting, per-app taps, and stress benchmarks remain PARTIAL or NOT_RUN.
+- The archive was built from source revision `0f7acca`; rerun `npm run package:mac:unsigned` after committing Phase19 docs if an artifact stamped with the final documentation commit is required.

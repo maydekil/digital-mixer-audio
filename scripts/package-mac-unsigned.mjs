@@ -57,19 +57,20 @@ function copyRuntimeResources() {
 
 function writeInfoPlist() {
   const plistPath = join(appPath, "Contents", "Info.plist");
-  const plist = readFileSync(plistPath, "utf8")
-    .replace(/<string>org\.electronjs\.electron<\/string>/, `<string>${bundleId}</string>`)
-    .replace(/<string>Electron<\/string>/g, `<string>${appName}</string>`)
-    .replace(
-      "</dict>",
-      [
-        "  <key>NSMicrophoneUsageDescription</key>",
-        "  <string>Local Audio Mixer needs microphone access for native live input monitoring and recording.</string>",
-        "  <key>NSScreenCaptureUsageDescription</key>",
-        "  <string>Local Audio Mixer may request system audio capture permission for supported Core Audio tap workflows.</string>",
-        "</dict>"
-      ].join("\n")
-    );
+  let plist = readFileSync(plistPath, "utf8");
+  plist = upsertPlistString(plist, "CFBundleIdentifier", bundleId);
+  plist = upsertPlistString(plist, "CFBundleName", appName);
+  plist = upsertPlistString(plist, "CFBundleDisplayName", appName);
+  plist = upsertPlistString(
+    plist,
+    "NSMicrophoneUsageDescription",
+    "Local Audio Mixer needs microphone access for native live input monitoring and recording."
+  );
+  plist = upsertPlistString(
+    plist,
+    "NSScreenCaptureUsageDescription",
+    "Local Audio Mixer may request system audio capture permission for supported Core Audio tap workflows."
+  );
   writeFileSync(plistPath, plist);
 }
 
@@ -87,6 +88,7 @@ function createArchive() {
 function writeReport() {
   const smoke = [
     binaryInfo(join(appPath, "Contents", "MacOS", "Electron")),
+    plistIdentityInfo(join(appPath, "Contents", "Info.plist")),
     binaryInfo(join(resourcesPath, "native", "engine", "local-mixer-engine")),
     binaryInfo(join(resourcesPath, "native", "engine", "local-mixer-plugin-scanner")),
     binaryInfo(join(resourcesPath, "native", "sound-pad", "sound-pad-helper")),
@@ -140,8 +142,34 @@ function binaryInfo(path) {
   return { label: `file ${basename(path)}`, ok: result.status === 0, detail: result.stdout.trim() };
 }
 
+function plistIdentityInfo(path) {
+  const result = spawnSync("plutil", ["-p", path], { encoding: "utf8", shell: false });
+  const output = result.stdout + result.stderr;
+  const ok = result.status === 0 &&
+    output.includes(`"CFBundleIdentifier" => "${bundleId}"`) &&
+    output.includes('"NSMicrophoneUsageDescription"') &&
+    output.includes('"NSScreenCaptureUsageDescription"');
+  return { label: "packaged plist identity", ok, detail: output.trim() };
+}
+
 function packageVersion() {
   return JSON.parse(readFileSync("package.json", "utf8")).version ?? "0.0.0";
+}
+
+function upsertPlistString(plist, key, value) {
+  const escapedValue = escapeXml(value);
+  const keyPattern = new RegExp(`\\s*<key>${key}</key>\\s*<string>[\\s\\S]*?</string>`, "g");
+  const replacement = `\n\t<key>${key}</key>\n\t<string>${escapedValue}</string>`;
+  if (keyPattern.test(plist)) return plist.replace(keyPattern, replacement);
+  return plist.replace("\n</dict>", `${replacement}\n</dict>`);
+}
+
+function escapeXml(value) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
 function gitRevision() {
