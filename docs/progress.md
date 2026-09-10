@@ -1410,3 +1410,30 @@ Validation:
 Known limitations:
 - Full latency-compensated dry alignment/history, graph publication/retirement from the realtime mixer graph, IPC commands, and UI editor skeleton are not yet connected.
 - Bypass crossfade is represented by state changes only; click-free ramp verification is pending with real processors.
+
+## VFX-02 — Reverb, Delay, Chorus, Flanger, And Phaser
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: VFX-01 IMPLEMENTED_UNVERIFIED
+
+### VFX-02 Checkpoint — Native Time And Modulation FX Processors
+
+Changed files:
+- `native/engine/src/dsp/fx/DelayEffect.hpp`, `native/engine/src/dsp/fx/DelayEffect.cpp`: adapted the native wet-only delay processor to the VFX `EffectProcessor` interface.
+- `native/engine/src/dsp/fx/ReverbEffect.hpp`, `native/engine/src/dsp/fx/ReverbEffect.cpp`: adapted native wet reverb to the VFX interface with tail reporting.
+- `native/engine/src/dsp/fx/ModulationEffects.hpp`, `native/engine/src/dsp/fx/ModulationEffects.cpp`: added native chorus, flanger, and phaser processors.
+- `native/engine/tests/fx/TimeModulationEffectsTest.cpp`: verifies delay wet-only repeat spacing and feedback, reverb wet tail and tail report, chorus finite modulated output, flanger bounded feedback behavior, and phaser altered finite output.
+- `native/engine/src/dsp/fx/EffectRegistry.cpp`, `docs/reports/vocal-fx-catalog-vfx00.md`: updated reverb/delay/chorus/flanger/phaser to `implemented_unverified`.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired VFX-02 build/test/progress evidence.
+
+Implemented behavior:
+- Reverb and delay no longer need to be treated as only Phase11 primitives; they now have VFX runtime wrappers.
+- Chorus, flanger, and phaser are native processors with bounded state and no renderer/browser DSP.
+- Delay and reverb output wet signal for rack/send-return use; dry/mix remains owned by the rack layer.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 23/23 including `local-mixer-time-modulation-effects-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- Room/Plate/Hall character differences, ping-pong/stereo delay modes, tempo-sync note mapping, damping filters, and click-free automation ramps remain incomplete.
+- Processors are not yet connected to production UI controls/presets, offline export equivalence tests, or realtime rack publication.
