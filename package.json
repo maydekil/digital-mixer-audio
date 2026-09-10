@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit",
     "test:ui": "vitest run",
     "test:native": "node scripts/test-native.mjs",
+    "test:int01": "node scripts/run-int01-journey.mjs",
     "build:ui": "tsc --noEmit && vite build && npm run build:desktop:main",
     "test:e2e": "npm run test:visual",
     "test:visual": "playwright test tests/ui/visual.visual.ts --reporter=line",

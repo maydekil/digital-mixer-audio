@@ -1936,3 +1936,29 @@ Validation:
 Known limitations:
 - INT-00 is a connection/audit checkpoint. It does not complete INT-01 daily journey, INT-02 packaging smoke, VFX-09/MIXFX-05/HARM-03 listening QA, or final PRODUCT_VERIFIED status.
 - Several traceability rows remain `PARTIAL` by design until their real UI flows, packaged app checks, hardware tests, or listening tests are executed.
+
+## INT-01 — Daily Journey And Data Integrity
+Status: IMPLEMENTED_UNVERIFIED_CONTRACT
+Prerequisites: INT-00 IMPLEMENTED_UNVERIFIED
+
+### INT-01 Checkpoint — Automated Contract Journey
+
+Changed files:
+- `scripts/run-int01-journey.mjs`: added a repeatable integration script that builds native targets, runs recording/export/session data-integrity CTest targets, drives the native stdio engine from an empty fixture journey, and writes a report.
+- `docs/reports/int01-daily-journey.md`: generated evidence report with scenario coverage and explicit partial/not-run items.
+- `package.json`: added `npm run test:int01`.
+
+Implemented behavior:
+- The automated journey imports a generated backing WAV through native media jobs, polls waveform completion, starts transport, loads the FX bank, selects FX A program 12, enables Harmony for the vocal channel, exercises invalid-file fault handling, checks per-app capture capability, stops transport, and shuts down cleanly.
+- Recording/export/session native integrity tests are grouped into a repeatable INT-01 command.
+- The report separates contract PASS evidence from live hardware, live record/replay, audible FX, and packaged export playback work that has not run.
+
+Validation:
+- command: `npm run test:int01`
+- exit/result: `0`; generated `docs/reports/int01-daily-journey.md` with PASS for native build, record/export/session CTest subset, and stdio daily journey contract.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 36/36, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- This is not a full daily-use PRODUCT_VERIFIED result. Real mic monitor, audible A/B effects, real Harmony audition, record-stop-playback take, save/open through desktop menu, export dialog, and offline playback of an exported result are still partial or NOT_RUN.
+- Slow disk, device disconnect, and packaged-app fault injection remain pending later gates.
