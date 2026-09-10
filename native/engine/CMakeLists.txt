@@ -23,6 +23,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/Automation.cpp
   src/engine/ChannelHarmonyController.cpp
   src/engine/DeviceService.cpp
+  src/engine/EngineResponseJson.cpp
   src/engine/EngineRuntime.cpp
   src/engine/Export.cpp
   src/engine/FxProgramController.cpp

@@ -2115,3 +2115,24 @@ Validation:
 Known limitations:
 - Phase19 is not `PRODUCT_VERIFIED`. Packaged GUI launch, packaged TCC prompt, clean-location offline workflow, plugin editor, device disconnect/sleep/wake, live record/replay/export, AU/VST3 runtime hosting, per-app taps, and stress benchmarks remain PARTIAL or NOT_RUN.
 - The archive was built from source revision `0f7acca`; rerun `npm run package:mac:unsigned` after committing Phase19 docs if an artifact stamped with the final documentation commit is required.
+
+### Phase19 Hardening Checkpoint — Engine Response Serializer Split
+
+Changed files:
+- `native/engine/src/engine/EngineResponseJson.hpp`, `native/engine/src/engine/EngineResponseJson.cpp`: moved reusable native protocol response serializers out of the CLI entry point.
+- `native/engine/src/main.cpp`: now delegates device/status/persistent-monitor/FX-program/harmony response JSON formatting to the engine protocol helper.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired the helper into the native library and recorded evidence paths.
+
+Implemented behavior:
+- No audio behavior is intentionally changed.
+- The native CLI entry point shrank from 915 lines to 811 lines, reducing pressure on the 1,000-line hard limit before deeper realtime DSP graph integration.
+
+Validation:
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 36/36, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+- command: `git diff --check`
+- exit/result: `0`; no whitespace errors.
+
+Known limitations:
+- `native/engine/src/main.cpp` still reports a file-size warning at 812 lines and should be split further before adding more command handlers.
+- This checkpoint does not resolve the remaining product gaps in realtime DSP graph wiring, plugin hosting, per-app taps, record/replay/export, packaged TCC, or stress QA.

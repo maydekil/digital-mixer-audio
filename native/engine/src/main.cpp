@@ -1,6 +1,7 @@
 #include "dsp/Gain.hpp"
 #include "dsp/OutputProtection.hpp"
 #include "engine/ChannelHarmonyController.hpp"
+#include "engine/EngineResponseJson.hpp"
 #include "engine/EngineRuntime.hpp"
 #include "engine/FxProgramController.hpp"
 #include "engine/FxProgramRegistryJson.hpp"
@@ -27,7 +28,6 @@
 #include <filesystem>
 #include <iostream>
 #include <optional>
-#include <span>
 #include <string>
 #include <vector>
 
@@ -37,11 +37,18 @@ constexpr int kProtocolVersion = 1;
 constexpr std::size_t kMaxMessageBytes = 65536;
 
 using localmixer::engine::protocol::escapeJson;
+using localmixer::engine::protocol::devicesJson;
+using localmixer::engine::protocol::fxProgramAckJson;
+using localmixer::engine::protocol::fxProgramSnapshotJson;
+using localmixer::engine::protocol::harmonyAckJson;
+using localmixer::engine::protocol::harmonyStateJson;
 using localmixer::engine::protocol::mediaInfoJson;
 using localmixer::engine::protocol::mediaImportStatusJson;
+using localmixer::engine::protocol::persistentMonitorStatusJson;
 using localmixer::engine::protocol::readJsonBoolField;
 using localmixer::engine::protocol::readJsonNumberField;
 using localmixer::engine::protocol::readJsonStringField;
+using localmixer::engine::protocol::statusJson;
 using localmixer::engine::protocol::systemRouteDiagnosticsJson;
 using localmixer::engine::protocol::systemRouteTransactionJson;
 using localmixer::engine::protocol::transportJson;
@@ -239,25 +246,6 @@ std::string monitorPassthroughResultJson(
 #endif
 }
 
-std::string devicesJson(std::span<const localmixer::engine::DeviceDescriptor> devices) {
-  std::string json = "[";
-  for (std::size_t index = 0; index < devices.size(); index += 1) {
-    const auto& device = devices[index];
-    if (index > 0) json += ",";
-    json += "{\"uid\":\"" + escapeJson(device.uid) + "\"";
-    json += ",\"name\":\"" + escapeJson(device.name) + "\"";
-    json += ",\"defaultInput\":" + std::string(device.isDefaultInput ? "true" : "false");
-    json += ",\"defaultOutput\":" + std::string(device.isDefaultOutput ? "true" : "false");
-    json += ",\"inputChannels\":" + std::to_string(device.inputChannels);
-    json += ",\"outputChannels\":" + std::to_string(device.outputChannels);
-    json += ",\"sampleRate\":" + std::to_string(device.sampleRate);
-    json += ",\"maxBlockSize\":" + std::to_string(device.maxBlockSize);
-    json += "}";
-  }
-  json += "]";
-  return json;
-}
-
 std::string perAppCaptureCapabilityResultJson() {
   return localmixer::engine::perAppCaptureCapabilityJson(localmixer::engine::PerAppCaptureCapability{
 #if defined(__APPLE__)
@@ -275,109 +263,18 @@ std::string perAppCaptureCapabilityResultJson() {
   });
 }
 
-std::string statusJson(const localmixer::engine::RuntimeStatus& status) {
-  std::string json = "{\"state\":\"";
-  json += localmixer::engine::runtimeStateName(status.state);
-  json += "\",\"deviceCount\":" + std::to_string(status.deviceCount);
-  json += ",\"monitoringEnabled\":" + std::string(status.monitoringEnabled ? "true" : "false");
-  json += ",\"inputUid\":\"" + escapeJson(status.inputUid) + "\"";
-  json += ",\"outputUid\":\"" + escapeJson(status.outputUid) + "\"";
-  if (!status.error.empty()) json += ",\"error\":\"" + escapeJson(status.error) + "\"";
-  json += "}";
-  return json;
-}
-
-std::string fxProgramSnapshotJson(const localmixer::engine::FxProgramUnitSnapshot& snapshot) {
-  std::string json = "\"programId\":" + std::to_string(snapshot.programId);
-  json += ",\"previousProgramId\":" + std::to_string(snapshot.previousProgramId);
-  json += ",\"revision\":" + std::to_string(snapshot.revision);
-  json += ",\"modified\":" + std::string(snapshot.modified ? "true" : "false");
-  json += ",\"pending\":" + std::string(snapshot.pending ? "true" : "false");
-  json += ",\"transitionActive\":" + std::string(snapshot.transitionActive ? "true" : "false");
-  json += ",\"crossfadeFramesRemaining\":" + std::to_string(snapshot.crossfadeFramesRemaining);
-  return json;
-}
-
-std::string fxProgramAckJson(const localmixer::engine::FxProgramAck& ack) {
-  std::string json = "\"accepted\":" + std::string(ack.accepted ? "true" : "false");
-  json += ",\"applied\":" + std::string(ack.applied ? "true" : "false");
-  json += ",\"error\":\"" + std::string(localmixer::engine::fxProgramErrorName(ack.error)) + "\"";
-  json += ",\"unitId\":\"" + std::string(localmixer::engine::fxUnitName(ack.unit)) + "\"";
-  json += ",\"requestedProgramId\":" + std::to_string(ack.requestedProgramId);
-  json += "," + fxProgramSnapshotJson(ack.snapshot);
-  return json;
-}
-
 std::optional<localmixer::engine::FxBusId> readFxUnitId(const std::string& line) {
   return localmixer::engine::fxUnitFromName(readJsonStringField(line, "unitId"));
 }
 
-std::string harmonyStateJson(const localmixer::engine::ChannelHarmonyState& state) {
-  std::string json = "\"channelId\":\"" + escapeJson(state.channelId) + "\"";
-  json += ",\"contentRole\":\"" + std::string(localmixer::engine::channelContentRoleName(state.contentRole)) + "\"";
-  json += ",\"primaryHarmonyInstanceId\":\"" + escapeJson(state.primaryInstanceId) + "\"";
-  json += ",\"desiredEnabled\":" + std::string(state.desiredEnabled ? "true" : "false");
-  json += ",\"effectiveEnabled\":" + std::string(state.effectiveEnabled ? "true" : "false");
-  json += ",\"pending\":" + std::string(state.pending ? "true" : "false");
-  json += ",\"revision\":" + std::to_string(state.revision);
-  json += ",\"latencySamples\":" + std::to_string(state.latencySamples);
-  json += ",\"key\":\"" + escapeJson(state.params.key) + "\"";
-  json += ",\"scale\":\"" + escapeJson(state.params.scale) + "\"";
-  json += ",\"mode\":\"" + escapeJson(state.params.mode) + "\"";
-  json += ",\"voice1\":\"" + escapeJson(state.params.voice1) + "\"";
-  json += ",\"voice2\":\"" + escapeJson(state.params.voice2) + "\"";
-  json += ",\"levelDb\":" + std::to_string(state.params.levelDb);
-  return json;
-}
-
-std::string harmonyAckJson(const localmixer::engine::HarmonyCommandAck& ack) {
-  std::string json = "\"accepted\":" + std::string(ack.accepted ? "true" : "false");
-  json += ",\"error\":\"" + std::string(localmixer::engine::harmonyCommandErrorName(ack.error)) + "\"";
-  json += "," + harmonyStateJson(ack.state);
-  return json;
-}
-
 void printDevices() {
   const auto devices = loadNativeDevices();
-  std::cout << "{\"devices\":[";
-  for (std::size_t index = 0; index < devices.size(); index += 1) {
-    const auto& device = devices[index];
-    if (index > 0) std::cout << ",";
-    std::cout
-      << "{\"uid\":\"" << escapeJson(device.uid) << "\""
-      << ",\"name\":\"" << escapeJson(device.name) << "\""
-      << ",\"defaultInput\":" << (device.isDefaultInput ? "true" : "false")
-      << ",\"defaultOutput\":" << (device.isDefaultOutput ? "true" : "false")
-      << ",\"inputChannels\":" << device.inputChannels
-      << ",\"outputChannels\":" << device.outputChannels
-      << ",\"sampleRate\":" << device.sampleRate
-      << ",\"maxBlockSize\":" << device.maxBlockSize
-      << "}";
-  }
-  std::cout << "],\"micPermission\":\"" << microphonePermissionState() << "\"}" << std::endl;
+  std::cout << "{\"devices\":" << devicesJson(devices)
+            << ",\"micPermission\":\"" << microphonePermissionState() << "\"}" << std::endl;
 }
 
 std::string indexedField(std::uint32_t index, const std::string& suffix) {
   return "channel" + std::to_string(index) + suffix;
-}
-
-std::string persistentMonitorStatusJson(
-  bool running,
-  const std::string& error,
-  std::uint32_t inputChannels,
-  std::uint32_t outputChannels,
-  double inputSampleRate,
-  double outputSampleRate,
-  float inputPeak
-) {
-  std::string json = "\"monitoring\":" + std::string(running ? "true" : "false");
-  json += ",\"error\":\"" + escapeJson(error) + "\"";
-  json += ",\"inputChannels\":" + std::to_string(inputChannels);
-  json += ",\"outputChannels\":" + std::to_string(outputChannels);
-  json += ",\"inputSampleRate\":" + std::to_string(inputSampleRate);
-  json += ",\"outputSampleRate\":" + std::to_string(outputSampleRate);
-  json += ",\"inputPeak\":" + std::to_string(inputPeak);
-  return json;
 }
 
 #if defined(__APPLE__)
