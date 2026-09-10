@@ -8,6 +8,7 @@ add_library(local_mixer_dsp STATIC
   src/dsp/OutputProtection.cpp
   src/engine/DeviceService.cpp
   src/engine/EngineRuntime.cpp
+  src/engine/Export.cpp
   src/engine/Metronome.cpp
   src/engine/MediaFile.cpp
   src/engine/MediaImportJob.cpp
@@ -202,3 +203,12 @@ target_link_libraries(local-mixer-recording-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-recording-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-recording-tests COMMAND local-mixer-recording-tests)
+
+add_executable(local-mixer-export-tests
+  tests/ExportTest.cpp
+)
+
+target_link_libraries(local-mixer-export-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-export-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-export-tests COMMAND local-mixer-export-tests)

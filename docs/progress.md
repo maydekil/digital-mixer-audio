@@ -1279,3 +1279,28 @@ Validation:
 Known limitations:
 - Realtime writer thread, bounded ring buffer, free-space monitoring, RF64/segmentation, and desktop recording controls are not yet implemented.
 - Dry/processed/master tap routing exists as metadata only; callback tap capture is pending.
+
+## Phase14 — Export, Loudness, Limiter, And Latency Compensation
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: Phase13 IMPLEMENTED_UNVERIFIED
+
+### Phase14 Checkpoint — Native Offline Export Foundation
+
+Changed files:
+- `native/engine/src/engine/Export.hpp`, `native/engine/src/engine/Export.cpp`: added native offline timeline-to-WAV export job, live-source preflight rejection, explicit tail frames, and cancel-to-partial output.
+- `native/engine/tests/ExportTest.cpp`: verifies timeline sample export, explicit tail length, live-source rejection before rendering, and canceled `.partial` output.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired Phase14 build/test/progress evidence.
+
+Implemented behavior:
+- Offline export renders the native timeline scheduler to float32 WAV without opening physical audio devices.
+- Live sources are reported and rejected before an offline export starts.
+- Canceled export jobs write a `.partial` file and do not report success.
+- Tail length is explicit in frames for deterministic testing.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 18/18 including `local-mixer-export-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- Offline export is not yet using the full realtime DSP graph, automation, pan law, plugin latency graph, stems, normalization, LUFS, or true-peak validation.
+- FLAC/MP3 export, TPDF dither for integer output, and UI export jobs are pending.
