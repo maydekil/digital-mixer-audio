@@ -154,6 +154,28 @@ describe("PreviewAdapter", () => {
     expect(snapshot.channels.some((channel) => channel.id === snapshot.selectedChannelId)).toBe(true);
   });
 
+  it("tracks armed channels and planned recording take metadata", () => {
+    const adapter = new PreviewAdapter();
+    adapter.setChannelRecordArm("voice", false);
+    adapter.setChannelRecordArm("guitar", true);
+    adapter.addRecordedTakes([{
+      id: "take-001",
+      path: "/tmp/takes/take-001.wav",
+      tap: "master",
+      sampleRate: 48000,
+      channels: 2,
+      frames: 0,
+      replayWithNeutralInserts: true,
+      partial: false
+    }], ["guitar"], "/tmp/takes");
+
+    const recording = adapter.getSnapshot().recording;
+    expect(recording.status).toBe("planned");
+    expect(recording.armedChannelIds).toEqual(["guitar"]);
+    expect(recording.takeDirectory).toBe("/tmp/takes");
+    expect(recording.takes[0]).toMatchObject({ id: "take-001", tap: "master", replayWithNeutralInserts: true });
+  });
+
   it("updates vocal FX rack selection, bypass, and preset state", () => {
     const adapter = new PreviewAdapter();
     adapter.selectVocalFxSlot("robot");

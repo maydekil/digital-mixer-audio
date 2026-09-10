@@ -12,6 +12,7 @@
 #include "engine/MixerGraph.hpp"
 #include "engine/MixerGraphController.hpp"
 #include "engine/PerAppCapture.hpp"
+#include "engine/Recording.hpp"
 #include "engine/SystemRouteRecovery.hpp"
 #include "engine/SystemRouting.hpp"
 #include "engine/SystemRoutingJson.hpp"
@@ -261,6 +262,13 @@ std::optional<localmixer::engine::FxBusId> readFxUnitId(const std::string& line)
   return localmixer::engine::fxUnitFromName(readJsonStringField(line, "unitId"));
 }
 
+localmixer::engine::RecordingTap readRecordingTap(const std::string& line) {
+  const auto tap = readJsonStringField(line, "tap");
+  if (tap == "dry") return localmixer::engine::RecordingTap::dry;
+  if (tap == "processed") return localmixer::engine::RecordingTap::processed;
+  return localmixer::engine::RecordingTap::master;
+}
+
 void printDevices() {
   const auto devices = loadNativeDevices();
   std::cout << "{\"devices\":" << devicesJson(devices)
@@ -498,6 +506,34 @@ int runStdioProtocol() {
         ",\"stemCount\":" + std::to_string(plan.stemCount) +
         ",\"liveSourceCount\":" + std::to_string(liveSourceCount) +
         ",\"monitorVolumePrinted\":" + std::string(plan.monitorVolumePrinted ? "true" : "false"));
+    } else if (type == "recording-plan") {
+      const auto directory = readJsonStringField(line, "directory");
+      const auto baseName = readJsonStringField(line, "baseName");
+      const auto sampleRate = static_cast<std::uint32_t>(readJsonNumberField(line, "sampleRate").value_or(48000.0));
+      const auto channels = static_cast<std::uint16_t>(readJsonNumberField(line, "channels").value_or(2.0));
+      const auto armedChannelCount = static_cast<std::uint32_t>(readJsonNumberField(line, "armedChannelCount").value_or(0.0));
+      const auto tap = readRecordingTap(line);
+      const bool valid = !directory.empty() && sampleRate > 0 && channels > 0 && armedChannelCount > 0;
+      const auto path = valid
+        ? localmixer::engine::makeCollisionSafeTakePath(directory, baseName.empty() ? "take" : baseName, ".wav")
+        : std::filesystem::path();
+      const auto tapName = std::string(localmixer::engine::recordingTapName(tap));
+      const std::string takeId = path.empty() ? "" : path.stem().string();
+      const std::string error = directory.empty()
+        ? "INVALID_RECORDING_DIRECTORY"
+        : (armedChannelCount == 0 ? "NO_ARMED_CHANNELS" : "");
+      writeRawResponse(id, true, "recording-plan",
+        "\"planned\":" + std::string(valid ? "true" : "false") +
+        ",\"error\":\"" + escapeJson(error) + "\"" +
+        ",\"takeId\":\"" + escapeJson(takeId) + "\"" +
+        ",\"path\":\"" + escapeJson(path.string()) + "\"" +
+        ",\"tap\":\"" + tapName + "\"" +
+        ",\"sampleRate\":" + std::to_string(sampleRate) +
+        ",\"channels\":" + std::to_string(channels) +
+        ",\"frames\":0" +
+        ",\"replayWithNeutralInserts\":" + std::string(tap == localmixer::engine::RecordingTap::dry ? "false" : "true") +
+        ",\"partial\":false" +
+        ",\"armedChannelCount\":" + std::to_string(armedChannelCount));
     } else if (type == "routing-system-diagnostics") {
       runtime.refreshDevices(loadNativeDevices());
       const auto sampleRate = readJsonNumberField(line, "sampleRate").value_or(48000.0);

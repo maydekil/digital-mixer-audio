@@ -48,6 +48,7 @@ const supportedEngineCommands = new Set([
   "transport-seek",
   "transport-status",
   "export-plan",
+  "recording-plan",
   "routing-system-diagnostics",
   "routing-system-enable",
   "routing-system-disable",
@@ -248,6 +249,16 @@ function registerExportIpc() {
   });
 }
 
+function registerRecordingIpc() {
+  ipcMain.handle("recording:choose-directory", async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ["openDirectory", "createDirectory"]
+    });
+    if (result.canceled || result.filePaths.length === 0) return { ok: true, canceled: true };
+    return { ok: true, path: result.filePaths[0] };
+  });
+}
+
 function registerEngineIpc() {
   ipcMain.handle("engine:command", async (_event, type: unknown, payload: unknown) => {
     if (typeof type !== "string" || !supportedEngineCommands.has(type)) {
@@ -313,6 +324,7 @@ app.whenReady().then(async () => {
   registerMediaIpc();
   registerProjectIpc();
   registerExportIpc();
+  registerRecordingIpc();
   registerEngineIpc();
   await createWindow();
   app.on("activate", async () => {

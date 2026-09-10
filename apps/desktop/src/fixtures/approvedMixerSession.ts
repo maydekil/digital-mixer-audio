@@ -44,6 +44,7 @@ export const approvedMixerSession: MixerSnapshot = {
   ],
   eqBands: cloneEqBands(),
   harmony: { enabled: false, effectiveEnabled: false, pending: false, error: "", revision: 0, primaryInstanceId: "", key: "C", scale: "Major", mode: "Diatonic", voice1: "+3rd", voice2: "+5th", levelDb: 0 },
+  recording: { status: "idle", activeTap: "master", takeDirectory: "", error: "", armedChannelIds: ["voice"], takes: [] },
   vocalFx: {
     selectedSlotId: "pitch-correct",
     activePresetId: "studio-pop",

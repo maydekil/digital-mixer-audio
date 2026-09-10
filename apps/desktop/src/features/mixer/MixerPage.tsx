@@ -8,6 +8,7 @@ import { MediaImportPanel } from "../media/components/MediaImportPanel";
 import { ChannelProcessingPanel } from "../processing/components/ChannelProcessingPanel";
 import { SoundPadPanel } from "../sound-pads/components/SoundPadPanel";
 import { VocalFxPanel } from "../vocal-fx/components/VocalFxPanel";
+import { plannedTakeFromResponse, snapshotToRecordingPlan } from "../recording/recordingDocument";
 import { ChannelBank } from "./components/ChannelBank";
 import type { ChannelState, FxProgram, MixerSnapshot } from "../../adapters/MixerControlPort";
 import { projectSessionToSnapshot, serializeProjectSession } from "../project/sessionDocument";
@@ -139,6 +140,20 @@ export function MixerPage() {
     if (!channel || channel.kind === "master") return;
     if (!window.confirm(`Remove channel ${channel.name}?`)) return;
     refresh(() => adapter.removeChannel(channel.id));
+  }
+
+  async function planRecording() {
+    if (!window.localMixer?.chooseRecordingDirectory || !window.localMixer?.engineCommand) return;
+    const target = await window.localMixer.chooseRecordingDirectory();
+    if (!target.ok || target.canceled || !target.path) return;
+    const request = snapshotToRecordingPlan(adapter.getSnapshot(), target.path);
+    refresh(() => adapter.setRecordingStatus("planned"));
+    const result = await window.localMixer.engineCommand("recording-plan", request as unknown as Record<string, unknown>);
+    const takes = plannedTakeFromResponse(result);
+    refresh(() => {
+      if (takes.length > 0) adapter.addRecordedTakes(takes, request.armedChannelIds, target.path);
+      else adapter.setRecordingStatus("failed", typeof result.error === "string" ? result.error : "RECORDING_PLAN_FAILED");
+    });
   }
 
   async function selectFxProgram(unitId: "fx-a" | "fx-b", programId: number) {
@@ -311,6 +326,7 @@ export function MixerPage() {
         onTimeline={() => setMediaImportOpen(true)}
         onPlay={() => void sendTransport(transportState === "playing" ? "transport-pause" : "transport-play")}
         onStop={() => void sendTransport("transport-stop")}
+        onRecord={() => void planRecording()}
         onOpen={() => void openProject()}
         onSave={() => void saveProject()}
         onCollect={() => void collectProject()}
@@ -495,7 +511,7 @@ function parseFxPrograms(programs: unknown[]): FxProgram[] {
   });
 }
 
-function TopBar({ projectName, time, rate, status, mode, transportState, onVocalFx, onTimeline, onPlay, onStop, onOpen, onSave, onCollect, onExport, onAddChannel, onRenameChannel, onRemoveChannel }: {
+function TopBar({ projectName, time, rate, status, mode, transportState, onVocalFx, onTimeline, onPlay, onStop, onRecord, onOpen, onSave, onCollect, onExport, onAddChannel, onRenameChannel, onRemoveChannel }: {
   projectName: string;
   time: string;
   rate: string;
@@ -506,6 +522,7 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onVocal
   onTimeline(): void;
   onPlay(): void;
   onStop(): void;
+  onRecord(): void;
   onOpen(): void;
   onSave(): void;
   onCollect(): void;
@@ -524,7 +541,7 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onVocal
         <button aria-label={transportState === "playing" ? "Pause" : "Play"} className="play" onClick={onPlay}>
           {transportState === "playing" ? "II" : "▶"}
         </button>
-        <button aria-label="Record" className="record">●</button>
+        <button aria-label="Record" className="record" onClick={onRecord}>●</button>
       </div>
       <div className="time-display">{time}</div>
       <div className="rate">{rate}</div>

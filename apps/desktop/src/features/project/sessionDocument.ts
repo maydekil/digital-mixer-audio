@@ -1,4 +1,4 @@
-import type { ChannelKind, ChannelRole, ChannelState, FxUnitState, MixerSnapshot } from "../../adapters/MixerControlPort";
+import type { ChannelKind, ChannelRole, ChannelState, FxUnitState, MixerSnapshot, RecordedTakeState, RecordingTap } from "../../adapters/MixerControlPort";
 
 export interface ProjectSessionDocument {
   schemaVersion: 1;
@@ -9,7 +9,7 @@ export interface ProjectSessionDocument {
   fxSends: ProjectSessionFxSend[];
   channelHarmony: ProjectSessionHarmony[];
   plugins: unknown[];
-  recordedTakes: unknown[];
+  recordedTakes: ProjectSessionRecordedTake[];
 }
 
 export interface ProjectSessionChannel {
@@ -68,6 +68,17 @@ export interface ProjectSessionHarmony {
   harmonyLevelDb: number;
 }
 
+export interface ProjectSessionRecordedTake {
+  id: string;
+  path: string;
+  tap: string;
+  sampleRate: number;
+  channelCount: number;
+  frameCount: number;
+  replayWithNeutralInserts: boolean;
+  partial: boolean;
+}
+
 export function snapshotToProjectSession(snapshot: MixerSnapshot): ProjectSessionDocument {
   return {
     schemaVersion: 1,
@@ -89,7 +100,7 @@ export function snapshotToProjectSession(snapshot: MixerSnapshot): ProjectSessio
       harmonyLevelDb: snapshot.harmony.levelDb
     })),
     plugins: [],
-    recordedTakes: []
+    recordedTakes: snapshot.recording.takes.map(takeToSession)
   };
 }
 
@@ -150,6 +161,14 @@ export function projectSessionToSnapshot(content: string, baseSnapshot: MixerSna
       error: ""
     };
   }
+  snapshot.recording = {
+    ...snapshot.recording,
+    status: "idle",
+    error: "",
+    armedChannelIds: snapshot.channels.filter((channel) => channel.kind === "source" && channel.recordArm).map((channel) => channel.id),
+    takes: (document.recordedTakes ?? []).flatMap(takeSessionToSnapshot),
+    takeDirectory: firstTakeDirectory(document.recordedTakes ?? []) || snapshot.recording.takeDirectory
+  };
   snapshot.selectedChannelId = snapshot.channels.some((channel) => channel.id === snapshot.selectedChannelId)
     ? snapshot.selectedChannelId
     : snapshot.channels[0]?.id ?? "";
@@ -311,6 +330,43 @@ function channelFxSends(channel: ChannelState): ProjectSessionFxSend[] {
     enabled: send.enabled,
     gainDb: send.gainDb
   }));
+}
+
+function takeToSession(take: RecordedTakeState): ProjectSessionRecordedTake {
+  return {
+    id: take.id,
+    path: take.path,
+    tap: take.tap,
+    sampleRate: take.sampleRate,
+    channelCount: take.channels,
+    frameCount: take.frames,
+    replayWithNeutralInserts: take.replayWithNeutralInserts,
+    partial: take.partial
+  };
+}
+
+function takeSessionToSnapshot(take: ProjectSessionRecordedTake): RecordedTakeState[] {
+  if (!take || typeof take.id !== "string" || typeof take.path !== "string") return [];
+  return [{
+    id: take.id,
+    path: take.path,
+    tap: parseTap(take.tap),
+    sampleRate: Number(take.sampleRate) || 48000,
+    channels: Number(take.channelCount) || 2,
+    frames: Number(take.frameCount) || 0,
+    replayWithNeutralInserts: Boolean(take.replayWithNeutralInserts),
+    partial: Boolean(take.partial)
+  }];
+}
+
+function parseTap(tap: string): RecordingTap {
+  if (tap === "dry" || tap === "processed" || tap === "master") return tap;
+  return "master";
+}
+
+function firstTakeDirectory(takes: ProjectSessionRecordedTake[]) {
+  const path = takes.find((take) => typeof take.path === "string" && take.path.includes("/"))?.path;
+  return path ? path.slice(0, path.lastIndexOf("/")) : "";
 }
 
 function mediaRefs(snapshot: MixerSnapshot) {

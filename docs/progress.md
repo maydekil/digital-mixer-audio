@@ -2742,3 +2742,38 @@ Validation:
 Known limitations:
 - Channel add/rename/remove uses simple preview prompts, not a final project management dialog.
 - This checkpoint updates UI/control/session behavior only; hardware source creation, packaged manual UX acceptance, and live routing tests remain NOT_RUN/PARTIAL.
+
+### Phase19 Hardening Checkpoint — Recording Desktop Flow Foundation
+
+Changed files:
+- `apps/desktop/src/adapters/MixerControlPort.ts`, `apps/desktop/src/adapters/preview/PreviewAdapter.ts`, `apps/desktop/src/fixtures/approvedMixerSession.ts`: added recording workflow state, armed-channel tracking, and planned take metadata handling.
+- `apps/desktop/src/features/recording/recordingDocument.ts`: added renderer-side recording preflight request serialization and native response parsing.
+- `apps/desktop/electron/main.ts`, `apps/desktop/electron/preload.ts`, `apps/desktop/src/types/localMixer.d.ts`: exposed a guarded recording take directory chooser and allowed the native `recording-plan` command.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: wired the global Record transport button to choose a take folder, send native recording preflight, and store returned take metadata in the preview/session state.
+- `apps/desktop/src/features/project/sessionDocument.ts`: serializes and applies recorded take metadata through `.lam.json` project sessions.
+- `native/engine/src/main.cpp`: added `recording-plan`, a stdio command that returns collision-safe take path, tap, sample-rate/channel metadata, neutral-insert replay semantics, and armed-channel validation without opening audio devices or writing PCM.
+- `tests/ui/recording-document.test.ts`, `tests/ui/preview-adapter.test.ts`, `tests/ui/project-session.test.ts`: verify recording request payloads, planned take parsing, adapter state, and save/open roundtrip.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/task-plan.json`, `docs/progress.md`: updated recording evidence.
+
+Implemented behavior:
+- Desktop Record now has a reachable foundation flow: choose take directory, ask native for a take plan, and persist planned take metadata.
+- Planned takes distinguish dry/processed/master replay behavior through the existing neutral-insert metadata field.
+- The flow keeps PCM out of renderer IPC/JSON/React state; only file paths and metadata cross the boundary.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 37/37 passed.
+- command: `cmake --build native/engine/build --target local-mixer-engine local-mixer-recording-tests`
+- exit/result: `0`; native engine and recording tests built.
+- command: `npm run build:desktop:main`
+- exit/result: `0`; Electron main/preload build passed.
+- command: `printf '{"id":"cmd-rec","type":"recording-plan","directory":"/tmp/local-mixer-takes","baseName":"local-audio-mixer-master","tap":"master","sampleRate":48000,"channels":2,"armedChannelCount":1}\n' | native/engine/build/native/engine/local-mixer-engine --stdio`
+- exit/result: `0`; engine returned `planned:true`, a `.wav` take path, `tap:"master"`, `frames:0`, and `replayWithNeutralInserts:true`.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 37/37, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- This is preflight and metadata flow only. It does not start a Core Audio recording callback, write live samples, insert a take onto the timeline, or replay recorded audio.
+- Hardware/live mic recording and packaged manual record-stop-replay acceptance remain NOT_RUN/PARTIAL.

@@ -95,4 +95,36 @@ describe("project session serialization", () => {
     expect(restored).toMatchObject({ name: "BREAK MUSIC", source: "/tmp/break.wav", role: "music", faderDb: -9 });
     expect(restored?.sends["fx-a"]).toMatchObject({ enabled: true, gainDb: -18 });
   });
+
+  it("roundtrips recorded take metadata through project sessions", () => {
+    const source = structuredClone(approvedMixerSession);
+    source.recording.takes = [{
+      id: "take-001",
+      path: "/tmp/takes/take-001.wav",
+      tap: "processed",
+      sampleRate: 48000,
+      channels: 2,
+      frames: 128,
+      replayWithNeutralInserts: true,
+      partial: false
+    }];
+
+    const document = snapshotToProjectSession(source);
+    expect(document.recordedTakes[0]).toMatchObject({
+      id: "take-001",
+      tap: "processed",
+      channelCount: 2,
+      frameCount: 128,
+      replayWithNeutralInserts: true
+    });
+
+    const loaded = projectSessionToSnapshot(`${JSON.stringify(document)}\n`, approvedMixerSession);
+    expect(loaded.recording.takes[0]).toMatchObject({
+      id: "take-001",
+      path: "/tmp/takes/take-001.wav",
+      tap: "processed",
+      frames: 128
+    });
+    expect(loaded.recording.takeDirectory).toBe("/tmp/takes");
+  });
 });

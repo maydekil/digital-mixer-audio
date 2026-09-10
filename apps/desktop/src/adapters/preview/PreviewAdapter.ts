@@ -1,4 +1,4 @@
-import type { ChannelDynamicsState, ChannelRole, ChannelState, EqBandState, FxProgram, FxUnitId, HarmonyState, MixerControlPort, MixerSnapshot, ProcessorId } from "../MixerControlPort";
+import type { ChannelDynamicsState, ChannelRole, ChannelState, EqBandState, FxProgram, FxUnitId, HarmonyState, MixerControlPort, MixerSnapshot, ProcessorId, RecordedTakeState, RecordingWorkflowStatus } from "../MixerControlPort";
 import { approvedMixerSession } from "../../fixtures/approvedMixerSession";
 
 export class PreviewAdapter implements MixerControlPort {
@@ -106,6 +106,24 @@ export class PreviewAdapter implements MixerControlPort {
 
   setChannelRecordArm(channelId: string, armed: boolean): void {
     this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? { ...channel, recordArm: armed } : channel);
+    this.syncArmedRecordingChannels();
+  }
+
+  setRecordingStatus(status: RecordingWorkflowStatus, error = ""): void {
+    this.snapshot.recording = { ...this.snapshot.recording, status, error };
+  }
+
+  addRecordedTakes(takes: RecordedTakeState[], armedChannelIds = this.snapshot.recording.armedChannelIds, takeDirectory = this.snapshot.recording.takeDirectory): void {
+    const byId = new Map(this.snapshot.recording.takes.map((take) => [take.id, take]));
+    for (const take of takes) byId.set(take.id, structuredClone(take));
+    this.snapshot.recording = {
+      ...this.snapshot.recording,
+      status: "planned",
+      error: "",
+      armedChannelIds: [...armedChannelIds],
+      takeDirectory,
+      takes: [...byId.values()]
+    };
   }
 
   setChannelProcessor(channelId: string, processorId: ProcessorId, enabled: boolean): void {
@@ -293,6 +311,15 @@ export class PreviewAdapter implements MixerControlPort {
   private syncSelectedEqBands(): void {
     const selected = this.snapshot.channels.find((channel) => channel.id === this.snapshot.selectedChannelId);
     if (selected) this.snapshot.eqBands = structuredClone(selected.eqBands);
+  }
+
+  private syncArmedRecordingChannels(): void {
+    this.snapshot.recording = {
+      ...this.snapshot.recording,
+      armedChannelIds: this.snapshot.channels
+        .filter((channel) => channel.kind === "source" && channel.recordArm)
+        .map((channel) => channel.id)
+    };
   }
 }
 

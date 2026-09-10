@@ -122,6 +122,29 @@ export interface VocalFxState {
   presets: VocalFxPreset[];
 }
 
+export type RecordingTap = "dry" | "processed" | "master";
+export type RecordingWorkflowStatus = "idle" | "planned" | "recording" | "saved" | "failed";
+
+export interface RecordedTakeState {
+  id: string;
+  path: string;
+  tap: RecordingTap;
+  sampleRate: number;
+  channels: number;
+  frames: number;
+  replayWithNeutralInserts: boolean;
+  partial: boolean;
+}
+
+export interface RecordingWorkflowState {
+  status: RecordingWorkflowStatus;
+  activeTap: RecordingTap;
+  takeDirectory: string;
+  error: string;
+  armedChannelIds: string[];
+  takes: RecordedTakeState[];
+}
+
 export interface MixerSnapshot {
   modeLabel: string;
   projectName: string;
@@ -135,6 +158,7 @@ export interface MixerSnapshot {
   eqBands: EqBandState[];
   harmony: HarmonyState;
   vocalFx: VocalFxState;
+  recording: RecordingWorkflowState;
 }
 
 export interface MixerControlPort {
@@ -154,6 +178,8 @@ export interface MixerControlPort {
   setChannelSolo(channelId: string, solo: boolean): void;
   setChannelMonitor(channelId: string, monitor: boolean): void;
   setChannelRecordArm(channelId: string, armed: boolean): void;
+  setRecordingStatus(status: RecordingWorkflowStatus, error?: string): void;
+  addRecordedTakes(takes: RecordedTakeState[], armedChannelIds?: string[], takeDirectory?: string): void;
   setChannelProcessor(channelId: string, processorId: ProcessorId, enabled: boolean): void;
   setChannelNoiseParam(channelId: string, field: keyof ChannelDynamicsState["noise"], value: number): void;
   setChannelCompressorParam(channelId: string, field: keyof ChannelDynamicsState["compressor"], value: number): void;
