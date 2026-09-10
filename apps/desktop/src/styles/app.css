@@ -54,7 +54,8 @@
 .fx-power { display: flex; align-items: center; gap: 8px; width: 84px; font-size: 14px; font-weight: 500; }
 .accent-amber .fx-power, .tone-amber, .accent-amber .power-icon { color: var(--amber); }
 .accent-cyan .fx-power, .tone-cyan, .accent-cyan .power-icon { color: var(--cyan); }
-.program-picker { width: 214px; color: var(--text); background: #102b34; border: 1px solid #30606c; border-radius: 5px; min-height: 30px; padding: 0 9px; font-weight: 400; }
+.program-picker { width: 214px; color: var(--text); background: #102b34; border: 1px solid #30606c; border-radius: 5px; min-height: 30px; padding: 0 28px 0 9px; font-weight: 400; cursor: pointer; }
+.program-picker option { color: var(--text); background: #102b34; }
 .modified-badge, .badge { color: var(--amber); border: 1px solid currentColor; background: transparent; border-radius: 10px; padding: 2px 7px; font-weight: 420; }
 .modified-badge.fx-error { color: var(--danger); }
 .preset-count { color: #a8c8d1; width: 82px; }
