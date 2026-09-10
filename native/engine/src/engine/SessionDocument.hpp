@@ -56,6 +56,17 @@ struct SessionPluginState {
   std::string stateBase64;
 };
 
+struct SessionRecordedTake {
+  std::string id;
+  std::filesystem::path path;
+  std::string tap = "master";
+  std::uint32_t sampleRate = 48000;
+  std::uint16_t channels = 2;
+  std::uint64_t frames = 0;
+  bool replayWithNeutralInserts = false;
+  bool partial = false;
+};
+
 struct SessionDocument {
   std::uint32_t schemaVersion = kCurrentSessionSchemaVersion;
   std::string projectId;
@@ -64,6 +75,7 @@ struct SessionDocument {
   std::vector<SessionFxSendAssignment> fxSends;
   std::vector<SessionChannelHarmonyState> channelHarmony;
   std::vector<SessionPluginState> plugins;
+  std::vector<SessionRecordedTake> recordedTakes;
 };
 
 enum class SessionError {

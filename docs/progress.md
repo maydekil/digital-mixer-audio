@@ -2502,3 +2502,23 @@ Validation:
 
 Known limitations:
 - This is the native metadata contract only; live record-stop-playback insertion into the desktop timeline remains partial.
+
+### Phase19 Hardening Checkpoint — Recorded Take Session Persistence
+
+Changed files:
+- `native/engine/src/engine/SessionDocument.hpp`, `native/engine/src/engine/SessionDocument.cpp`: added `recordedTakes` session state with take ID, path, tap, sample rate, channel count, frame count, neutral-insert replay flag, and partial-take flag.
+- `native/engine/tests/SessionDocumentTest.cpp`: verifies recorded-take metadata save/load roundtrip and backward-compatible loading for sessions without recorded-take state.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/task-plan.json`, `docs/progress.md`: updated session/recording evidence and Phase19 evidence paths.
+
+Implemented behavior:
+- Recording metadata can now survive session save/load instead of existing only on a live `RecordingSession`.
+- Processed/master take replay semantics and partial/overrun markers have a persistence field for later desktop timeline insertion.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-session-document-tests && ctest --test-dir native/engine/build -R local-mixer-session-document-tests --output-on-failure`
+- exit/result: `0`; focused session document test passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 19/19, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- This does not implement the desktop record-stop-insert-playback journey; it only makes the saved session schema ready for that flow.

@@ -112,6 +112,21 @@ std::string serializeSession(const SessionDocument& document) {
          << ", \"stateBase64\": \"" << escapeJson(plugin.stateBase64) << "\"}";
   }
   if (!document.plugins.empty()) json << "\n  ";
+  json << "],\n";
+  json << "  \"recordedTakes\": [";
+  for (std::size_t index = 0; index < document.recordedTakes.size(); index += 1) {
+    const auto& take = document.recordedTakes[index];
+    json << (index == 0 ? "\n" : ",\n");
+    json << "    {\"id\": \"" << escapeJson(take.id)
+         << "\", \"path\": \"" << escapeJson(take.path.string())
+         << "\", \"tap\": \"" << escapeJson(take.tap)
+         << "\", \"sampleRate\": " << take.sampleRate
+         << ", \"channels\": " << take.channels
+         << ", \"frames\": " << take.frames
+         << ", \"replayWithNeutralInserts\": " << (take.replayWithNeutralInserts ? "true" : "false")
+         << ", \"partial\": " << (take.partial ? "true" : "false") << "}";
+  }
+  if (!document.recordedTakes.empty()) json << "\n  ";
   json << "]\n}\n";
   return json.str();
 }
@@ -193,6 +208,22 @@ SessionLoadResult parseSession(std::string_view json) {
       .version = (*it)[3].str(),
       .missing = (*it)[4].str() == "true",
       .stateBase64 = (*it)[5].str(),
+    });
+  }
+
+  const std::regex takePattern("\\{\"id\"\\s*:\\s*\"([^\"]*)\",\\s*\"path\"\\s*:\\s*\"([^\"]*)\",\\s*\"tap\"\\s*:\\s*\"([^\"]*)\",\\s*\"sampleRate\"\\s*:\\s*(\\d+),\\s*\"channels\"\\s*:\\s*(\\d+),\\s*\"frames\"\\s*:\\s*(\\d+),\\s*\"replayWithNeutralInserts\"\\s*:\\s*(true|false),\\s*\"partial\"\\s*:\\s*(true|false)\\}");
+  for (auto it = std::cregex_iterator(json.data(), json.data() + json.size(), takePattern);
+       it != std::cregex_iterator();
+       ++it) {
+    document.recordedTakes.push_back(SessionRecordedTake{
+      .id = (*it)[1].str(),
+      .path = (*it)[2].str(),
+      .tap = (*it)[3].str(),
+      .sampleRate = static_cast<std::uint32_t>(std::stoul((*it)[4].str())),
+      .channels = static_cast<std::uint16_t>(std::stoul((*it)[5].str())),
+      .frames = static_cast<std::uint64_t>(std::stoull((*it)[6].str())),
+      .replayWithNeutralInserts = (*it)[7].str() == "true",
+      .partial = (*it)[8].str() == "true",
     });
   }
   return {.document = document};
