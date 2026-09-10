@@ -28,6 +28,9 @@ struct SyncedMonitorSelection {
   std::string outputUid;
   std::uint32_t activeMonitorCount = 0;
   float monitorGainDb = -18.0f;
+  float channelTrimDb = 0.0f;
+  float channelFaderDb = 0.0f;
+  float channelPan = 0.0f;
 };
 
 std::string argumentValue(int argc, char** argv, const std::string& name, const std::string& fallback = "") {
@@ -357,6 +360,9 @@ std::string syncMixerGraphResultJson(
   std::uint32_t stripCount = 0;
   std::uint32_t monitorCount = 0;
   std::string monitorInputUid;
+  float monitorTrimDb = 0.0f;
+  float monitorFaderDb = 0.0f;
+  float monitorPan = 0.0f;
   const auto outputUid = readJsonStringField(line, "outputUid");
   const auto monitorGainDb = static_cast<float>(readJsonNumberField(line, "monitorGainDb").value_or(-18.0));
   for (std::uint32_t index = 0; index < channelCount; index += 1) {
@@ -394,6 +400,9 @@ std::string syncMixerGraphResultJson(
     if (monitor && enabled && !sourceUid.empty() && kind == "source") {
       monitorCount += 1;
       if (monitorInputUid.empty()) monitorInputUid = sourceUid;
+      monitorTrimDb = trimDb;
+      monitorFaderDb = faderDb;
+      monitorPan = pan;
     }
   }
 
@@ -410,6 +419,9 @@ std::string syncMixerGraphResultJson(
   monitorSelection.outputUid = outputUid;
   monitorSelection.activeMonitorCount = monitorCount;
   monitorSelection.monitorGainDb = monitorGainDb;
+  monitorSelection.channelTrimDb = monitorTrimDb;
+  monitorSelection.channelFaderDb = monitorFaderDb;
+  monitorSelection.channelPan = monitorPan;
   return "\"synced\":true,\"error\":\"\",\"stripCount\":" + std::to_string(stripCount) +
     ",\"activeMonitorCount\":" + std::to_string(monitorCount) +
     ",\"retiredGraphCount\":" + std::to_string(controller.retiredCount());
@@ -511,7 +523,8 @@ int runStdioProtocol() {
           .outputChannel = static_cast<std::uint32_t>(readJsonNumberField(line, "outputChannel").value_or(0.0)),
           .mirrorToAllOutputChannels = readJsonBoolField(line, "mirrorToAllOutputChannels").value_or(true),
           .durationMs = 0,
-          .monitorGainDb = monitorSelection.monitorGainDb,
+          .monitorGainDb = monitorSelection.channelTrimDb + monitorSelection.channelFaderDb + monitorSelection.monitorGainDb,
+          .monitorPan = monitorSelection.channelPan,
         });
         writeRawResponse(id, status.running, "start-mixer-monitor", persistentMonitorStatusJson(status));
 #else

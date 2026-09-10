@@ -519,6 +519,27 @@ Known limitations:
 - The persistent monitor still uses the CoreAudio passthrough ring rather than rendering a full multi-source `MixerGraph` through the output callback.
 - Manual audible desktop verification for persistent MON has not been run in this turn.
 
+### Phase05 Checkpoint — Native Monitor Renders Through MixerGraph
+
+Changed files:
+- `native/engine/src/platform/macos/CoreAudioPassthrough.hpp`, `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: persistent monitor output callback now feeds captured input through a preallocated native `MixerGraph` scratch buffer before writing to CoreAudio output.
+- `native/engine/src/main.cpp`: synced channel Gain/Fader/Pan are carried into the persistent monitor request so audible monitoring follows the selected channel strip level and pan.
+
+Implemented behavior:
+- Persistent MON uses the native mixer graph path for monitored source gain/fader/pan instead of direct sample passthrough.
+- Output callback uses preallocated scratch buffers and a prepared graph strip; no browser audio, renderer PCM IPC, or Web Audio fallback was introduced.
+- One-shot `monitor-passthrough` remains available as a hardware diagnostic command.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native CMake/Ninja build passed, CTest passed 5/5, engine self-test passed, and protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Physical persistent monitoring is still limited to one active source device/channel until Phase04 aggregate/system routing work.
+- Manual audible desktop verification for graph-rendered persistent MON has not been run in this turn.
+
 ## Native Sound Pad Spike — Early User-Requested
 Status: IMPLEMENTED_UNVERIFIED_PLAYBACK
 Prerequisites: user explicitly requested this before UI-04

@@ -1,15 +1,18 @@
 #include "platform/macos/CoreAudioPassthrough.hpp"
 
 #include "dsp/Gain.hpp"
+#include "engine/MixerGraph.hpp"
 
 #include <CoreAudio/CoreAudio.h>
 #include <CoreFoundation/CoreFoundation.h>
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <span>
 #include <thread>
 #include <vector>
 
@@ -28,10 +31,14 @@ struct RingBuffer {
 
 struct PassthroughState {
   RingBuffer ring;
+  localmixer::engine::MixerGraph graph;
+  localmixer::engine::StripId graphStrip;
+  std::vector<float> graphInput;
+  std::vector<float> graphLeft;
+  std::vector<float> graphRight;
   std::uint32_t inputChannel = 0;
   std::uint32_t outputChannel = 0;
   bool mirrorToAllOutputChannels = true;
-  float gain = 1.0f;
 };
 
 struct DeviceContext {
@@ -208,23 +215,52 @@ OSStatus outputCallback(
     const auto write = state->ring.writeFrame.load(std::memory_order_acquire);
     float sample = 0.0f;
     if (read < write) {
-      sample = state->ring.samples[read % capacity] * state->gain;
-      sample = std::clamp(sample, -kLimitCeiling, kLimitCeiling);
+      sample = state->ring.samples[read % capacity];
       state->ring.readFrame.store(read + 1, std::memory_order_release);
     }
+    if (frame < state->graphInput.size()) state->graphInput[frame] = sample;
+  }
+
+  if (frames > state->graphInput.size() || frames > state->graphLeft.size() || frames > state->graphRight.size()) {
+    return noErr;
+  }
+
+  const std::array<localmixer::engine::SourceBuffer, 1> sources{
+    localmixer::engine::SourceBuffer{
+      .stripId = state->graphStrip,
+      .samples = std::span<const float>(state->graphInput.data(), frames),
+      .channels = 1,
+    }
+  };
+  state->graph.process(sources, {
+    .left = std::span<float>(state->graphLeft.data(), frames),
+    .right = std::span<float>(state->graphRight.data(), frames),
+  });
+
+  for (UInt32 frame = 0; frame < frames; frame += 1) {
+    const auto left = std::clamp(state->graphLeft[frame], -kLimitCeiling, kLimitCeiling);
+    const auto right = std::clamp(state->graphRight[frame], -kLimitCeiling, kLimitCeiling);
     if (state->mirrorToAllOutputChannels) {
-      std::uint32_t channelCount = 0;
-      for (UInt32 bufferIndex = 0; bufferIndex < outputData->mNumberBuffers; bufferIndex += 1) {
-        channelCount += std::max<UInt32>(1, outputData->mBuffers[bufferIndex].mNumberChannels);
-      }
-      for (std::uint32_t channel = 0; channel < channelCount; channel += 1) {
-        writeChannel(outputData, channel, frame, sample);
-      }
+      writeChannel(outputData, 0, frame, left);
+      writeChannel(outputData, 1, frame, right);
     } else {
-      writeChannel(outputData, state->outputChannel, frame, sample);
+      writeChannel(outputData, state->outputChannel, frame, (left + right) * 0.5f);
     }
   }
   return noErr;
+}
+
+void prepareMonitorGraph(PassthroughState& state, const PassthroughMonitorRequest& request) {
+  state.graph = localmixer::engine::MixerGraph{};
+  const auto created = state.graph.createStrip("Monitor", "#18d6e7");
+  state.graphStrip = created.id;
+  state.graph.setAssignment(created.id, localmixer::engine::SourceAssignment::mono, 0, false);
+  state.graph.setLevel(created.id, 0.0f, request.monitorGainDb, request.monitorPan);
+  state.graph.setInputMonitoring(created.id, true);
+  const auto scratchFrames = static_cast<std::size_t>(std::max<double>(request.projectSampleRate, 512.0));
+  state.graphInput.assign(scratchFrames, 0.0f);
+  state.graphLeft.assign(scratchFrames, 0.0f);
+  state.graphRight.assign(scratchFrames, 0.0f);
 }
 
 DeviceContext prepareDeviceContext(const PassthroughMonitorRequest& request) {
@@ -305,11 +341,11 @@ struct PersistentPassthroughMonitor::Impl {
     state.inputChannel = request.inputChannel;
     state.outputChannel = request.outputChannel;
     state.mirrorToAllOutputChannels = request.mirrorToAllOutputChannels;
-    state.gain = localmixer::dsp::decibelsToLinear(request.monitorGainDb);
     state.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate), 0.0f);
     state.ring.writeFrame.store(0, std::memory_order_relaxed);
     state.ring.readFrame.store(0, std::memory_order_relaxed);
     state.ring.peakScaled.store(0, std::memory_order_relaxed);
+    prepareMonitorGraph(state, request);
 
     auto audioStatus = AudioDeviceCreateIOProcID(context.input, inputCallback, &state, &inputProc);
     if (audioStatus != noErr || inputProc == nullptr) {
@@ -402,8 +438,8 @@ PassthroughMonitorResult monitorPassthrough(const PassthroughMonitorRequest& req
   state.inputChannel = request.inputChannel;
   state.outputChannel = request.outputChannel;
   state.mirrorToAllOutputChannels = request.mirrorToAllOutputChannels;
-  state.gain = localmixer::dsp::decibelsToLinear(request.monitorGainDb);
   state.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate), 0.0f);
+  prepareMonitorGraph(state, request);
 
   AudioDeviceIOProcID inputProc = nullptr;
   AudioDeviceIOProcID outputProc = nullptr;
