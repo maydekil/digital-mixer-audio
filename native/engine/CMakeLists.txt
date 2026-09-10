@@ -1,5 +1,6 @@
 add_library(local_mixer_dsp STATIC
   src/dsp/Gain.cpp
+  src/dsp/Meter.cpp
   src/dsp/OutputProtection.cpp
   src/engine/DeviceService.cpp
   src/engine/EngineRuntime.cpp
@@ -48,6 +49,15 @@ target_link_libraries(local-mixer-dsp-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-dsp-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-dsp-tests COMMAND local-mixer-dsp-tests)
+
+add_executable(local-mixer-meter-tests
+  tests/MeterTest.cpp
+)
+
+target_link_libraries(local-mixer-meter-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-meter-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-meter-tests COMMAND local-mixer-meter-tests)
 
 add_executable(local-mixer-output-protection-tests
   tests/OutputProtectionTest.cpp

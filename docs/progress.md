@@ -1082,3 +1082,29 @@ Validation:
 Known limitations:
 - Resampler is linear and intended as a correctness foundation; final import quality may require a higher-quality native resampler.
 - Resampler is not yet integrated into import jobs or realtime file playback.
+
+## Phase07 — Meter, Gain Staging, And EQ
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: Phase06 IMPLEMENTED_UNVERIFIED
+
+### Phase07 Checkpoint — Native Peak/RMS Meter
+
+Changed files:
+- `native/engine/src/dsp/Meter.hpp`, `native/engine/src/dsp/Meter.cpp`: added native peak/RMS dBFS metering with clip latch/reset.
+- `native/engine/tests/MeterTest.cpp`: verifies `0.5` amplitude as about `-6.02 dBFS`, RMS fixture behavior, clip latch, and reset.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired the module into native tests and evidence.
+
+Implemented behavior:
+- Peak and RMS readings are represented in dBFS with silence clamped to `-120 dBFS`.
+- Clip state latches until explicitly reset.
+- Meter work is native C++; no renderer audio processing was introduced.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 9/9 including `local-mixer-meter-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Meter taps are not yet wired into realtime graph points.
+- UI meter decay/hold remains preview-simulated.
