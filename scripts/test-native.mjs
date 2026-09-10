@@ -194,6 +194,15 @@ async function testEngineProtocol() {
       message.error === "NO_OWNED_ROUTE"
     )
   );
+  child.stdin.write(`${JSON.stringify({ id: "native-per-app-capability", type: "per-app-capture-capability" })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-per-app-capability" &&
+      message.type === "per-app-capture-capability" &&
+      typeof message.platformSupported === "boolean" &&
+      Array.isArray(message.sources)
+    )
+  );
   child.stdin.write(`${JSON.stringify({
     id: "native-sync-graph",
     type: "sync-mixer-graph",

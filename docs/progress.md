@@ -1910,3 +1910,29 @@ Validation:
 Known limitations:
 - Real Core Audio process tap enumeration, permission request UI, tap creation/cleanup, adaptive clock bridge, app restart recovery, and actual two-app audio capture are NOT_RUN and not claimed as VERIFIED.
 - `canMuteOriginal` is currently false in the runtime capability command until a tested tap backend can prove original muting/exclusion behavior.
+
+## INT-00 — Connected Product Audit
+Status: IMPLEMENTED_UNVERIFIED_AUDIT
+Prerequisites: Phase18 IMPLEMENTED_UNVERIFIED
+
+### INT-00 Checkpoint — Feature Traceability And Command Exposure
+
+Changed files:
+- `docs/feature-traceability.md`: added the required row-per-feature audit for setup/devices, source management, import, transport, strip controls, DSP, routing, Vocal FX, 99 programs, Harmony, recording, export, session, automation/MIDI, plugins, per-app capture, recovery, and packaging.
+- `apps/desktop/electron/main.ts`: whitelisted `per-app-capture-capability` so the desktop shell can call the native Phase18 audit command.
+- `scripts/test-native.mjs`: extended the native stdio protocol smoke test to cover `per-app-capture-capability`.
+
+Implemented behavior:
+- The project now has an explicit traceability matrix with UI entrypoint, command/API, native owner, save field, tests, evidence, and status.
+- INT-00 no longer hides unfinished product areas behind generic build success; partial and not-run items are visible.
+- Per-app capture capability is exposed through the same guarded Electron command bridge as other engine commands.
+
+Validation:
+- command: `npm run check:plan`
+- exit/result: `0`; 49-phase plan remains valid with INT-00 evidence paths.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 36/36, engine self-test, device enumeration smoke, protocol smoke including `per-app-capture-capability`, and UI/desktop build passed.
+
+Known limitations:
+- INT-00 is a connection/audit checkpoint. It does not complete INT-01 daily journey, INT-02 packaging smoke, VFX-09/MIXFX-05/HARM-03 listening QA, or final PRODUCT_VERIFIED status.
+- Several traceability rows remain `PARTIAL` by design until their real UI flows, packaged app checks, hardware tests, or listening tests are executed.

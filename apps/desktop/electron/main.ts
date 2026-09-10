@@ -42,6 +42,7 @@ const supportedEngineCommands = new Set([
   "routing-system-disable",
   "routing-system-status",
   "routing-system-recover",
+  "per-app-capture-capability",
   "sync-mixer-graph",
   "start-mixer-monitor",
   "stop-mixer-monitor",
