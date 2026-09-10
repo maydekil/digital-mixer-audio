@@ -14,6 +14,7 @@ describe("export workflow request", () => {
       sampleRate: 48000,
       durationFrames: 480000,
       blockFrames: 512,
+      tailFrames: 144000,
       mediaPath: "Backing.wav",
       master: true,
       fxAReturn: true,

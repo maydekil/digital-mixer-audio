@@ -2929,3 +2929,34 @@ Validation:
 Known limitations:
 - Packaged manual Open/Collect/Relink acceptance remains NOT_RUN.
 - This checkpoint does not implement undo/autosave/recent-project menus.
+
+### Phase19 Hardening Checkpoint — Export Tail And Cancel Command Fields
+
+Changed files:
+- `apps/desktop/src/features/export/exportDocument.ts`: desktop export requests now include explicit `tailFrames` with the spec default of 3 seconds at 48 kHz.
+- `native/engine/src/engine/ExportCommandHandlers.cpp`: `export-render` now passes `tailFrames` and optional `cancelAfterFrames` through to the native `ExportRequest`.
+- `tests/ui/export-document.test.ts`: verifies the desktop export request includes the default tail.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated export evidence.
+
+Implemented behavior:
+- Export render command can now produce duration plus explicit tail through the stdio path used by Electron.
+- Export render command can now honor a cancellation boundary and leave a `.partial` WAV with `canceled:true`.
+- No Web Audio/browser media path was introduced.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-engine`
+- exit/result: `0`; native engine target rebuilt with export command handler changes.
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 42/42 passed.
+- command: `out=/tmp/local-mixer-export-tail.wav; rm -f "$out"; printf '{"id":"tail","type":"export-render","outputPath":"'$out'","sampleRate":48000,"durationFrames":1024,"tailFrames":512,"blockFrames":256,"liveSourceCount":0}\n' | native/engine/build/native/engine/local-mixer-engine --stdio; test -s "$out"`
+- exit/result: `0`; engine returned `rendered:true`, `framesWritten:1536`, and the WAV existed with nonzero size.
+- command: `out=/tmp/local-mixer-export-cancel.wav; rm -f "$out" "$out.partial"; printf '{"id":"cancel","type":"export-render","outputPath":"'$out'","sampleRate":48000,"durationFrames":2048,"tailFrames":512,"blockFrames":256,"cancelAfterFrames":512,"liveSourceCount":0}\n' | native/engine/build/native/engine/local-mixer-engine --stdio; test -s "$out.partial"`
+- exit/result: `0`; engine returned `rendered:false`, `canceled:true`, `path:/tmp/local-mixer-export-cancel.wav.partial`, and `framesWritten:512`.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 42/42, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Desktop does not expose an interactive export progress/cancel UI yet.
+- FX return stem files and packaged playback/listening inspection remain PARTIAL/NOT_RUN.

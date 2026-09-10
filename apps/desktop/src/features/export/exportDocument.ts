@@ -8,6 +8,8 @@ export interface ExportWorkflowRequest {
   sampleRate: number;
   durationFrames: number;
   blockFrames: number;
+  tailFrames: number;
+  cancelAfterFrames?: number;
   mediaPath: string;
   master: boolean;
   fxAReturn: boolean;
@@ -25,6 +27,7 @@ export function snapshotToExportRequest(snapshot: MixerSnapshot, outputPath: str
     sampleRate: 48000,
     durationFrames: 48000 * 10,
     blockFrames: 512,
+    tailFrames: 48000 * 3,
     mediaPath: firstOfflineMediaPath(snapshot),
     master: true,
     fxAReturn: snapshot.fxUnits.some((unit) => unit.id === "fx-a" && unit.enabled),

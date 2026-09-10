@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 #include <string>
 
 namespace localmixer::engine {
@@ -60,6 +61,8 @@ std::string exportRenderJsonFields(const std::string& line) {
   const auto sampleRate = static_cast<std::uint32_t>(readJsonNumberField(line, "sampleRate").value_or(48000.0));
   const auto durationFrames = static_cast<std::uint64_t>(readJsonNumberField(line, "durationFrames").value_or(0.0));
   const auto blockFrames = static_cast<std::uint32_t>(readJsonNumberField(line, "blockFrames").value_or(512.0));
+  const auto tailFrames = static_cast<std::uint32_t>(readJsonNumberField(line, "tailFrames").value_or(0.0));
+  const auto cancelAfter = readJsonNumberField(line, "cancelAfterFrames");
   const auto mediaPath = readJsonStringField(line, "mediaPath");
 
   TimelineScheduler timeline;
@@ -90,7 +93,11 @@ std::string exportRenderJsonFields(const std::string& line) {
     .sampleRate = sampleRate,
     .durationFrames = durationFrames,
     .blockFrames = blockFrames,
+    .tailFrames = tailFrames,
     .liveSourceCount = liveSourceCount,
+    .cancelAfterFrames = cancelAfter.has_value()
+      ? std::optional<std::uint64_t>(static_cast<std::uint64_t>(*cancelAfter))
+      : std::nullopt,
   });
   return "\"rendered\":" + std::string(result.success ? "true" : "false") +
     ",\"canceled\":" + std::string(result.canceled ? "true" : "false") +
