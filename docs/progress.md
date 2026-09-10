@@ -2014,3 +2014,26 @@ Validation:
 
 Known limitations:
 - VFX-09 remains `IMPLEMENTED_UNVERIFIED_QA_REPORT`, not `VERIFIED`, because real vocal fixtures, listening rubric, persistent dry/wet render files, callback p99/xrun metrics, live monitoring comfort, and record/export graph comparisons are NOT_RUN or PARTIAL.
+
+## MIXFX-05 — 99 Program And Dual-unit QA
+Status: IMPLEMENTED_UNVERIFIED_QA_REPORT
+Prerequisites: VFX-09 IMPLEMENTED_UNVERIFIED
+
+### MIXFX-05 Checkpoint — DSP99 Report
+
+Changed files:
+- `docs/reports/mixer-dsp99.md`: added required QA report for 99 factory programs, dual-unit controller behavior, session/export contracts, 8B.9 user scenario coverage, and open soak/audition work.
+- `docs/task-plan.json`, `docs/progress.md`: updated MIXFX-05 status and evidence paths.
+
+Implemented behavior:
+- The project now records concrete automated evidence for exact 99-program bank size, contiguous IDs, program 12/50/99 anchors, wet-only recipe expansion, dual-unit defaults, transitions, revision conflicts, macro override/reset, prepare rollback, session persistence, and FX return stem planning.
+- The report is explicit that audible plate/delay behavior, all-99 render files, batch audition, and 30-minute soak are still not verified.
+
+Validation:
+- command: `ctest --test-dir native/engine/build -R 'local-mixer-fx-(program|send|tests)|local-mixer-export-tests|local-mixer-session-document-tests' --output-on-failure`
+- exit/result: `0`; 7/7 focused tests passed for FX processors/program registry/program JSON/controller/send-return bus/export/session document.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 36/36, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- MIXFX-05 remains `IMPLEMENTED_UNVERIFIED_QA_REPORT`; 99-program impulse/sine/vocal renders, level-matched audition, hardware system+mic+file soak, CPU/deadline/xrun metrics, and realtime fade listening evidence are NOT_RUN.

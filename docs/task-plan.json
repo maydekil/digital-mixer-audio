@@ -47,7 +47,7 @@
     {"order":43,"id":"INT-01","dependsOn":["INT-00"],"status":"IMPLEMENTED_UNVERIFIED","domain":"integration","evidencePaths":["scripts/run-int01-journey.mjs","docs/reports/int01-daily-journey.md","package.json","docs/progress.md"]},
     {"order":44,"id":"INT-02","dependsOn":["INT-01"],"status":"IMPLEMENTED_UNVERIFIED","domain":"packaging","evidencePaths":["scripts/package-mac-unsigned.mjs","docs/reports/int02-package-smoke.md","docs/progress.md"]},
     {"order":45,"id":"VFX-09","dependsOn":["INT-02"],"status":"IMPLEMENTED_UNVERIFIED","domain":"vocal-fx-qa","evidencePaths":["docs/reports/vocal-fx-quality.md","docs/reports/vocal-fx-latency.md","docs/progress.md"]},
-    {"order":46,"id":"MIXFX-05","dependsOn":["VFX-09"],"status":"NOT_STARTED","domain":"mixer-fx-qa","evidencePaths":[]},
+    {"order":46,"id":"MIXFX-05","dependsOn":["VFX-09"],"status":"IMPLEMENTED_UNVERIFIED","domain":"mixer-fx-qa","evidencePaths":["docs/reports/mixer-dsp99.md","docs/progress.md"]},
     {"order":47,"id":"HARM-03","dependsOn":["MIXFX-05"],"status":"NOT_STARTED","domain":"harmony-qa","evidencePaths":[]},
     {"order":48,"id":"INT-03","dependsOn":["HARM-03"],"status":"NOT_STARTED","domain":"acceptance","evidencePaths":[]},
     {"order":49,"id":"Phase19","dependsOn":["INT-03"],"status":"NOT_STARTED","domain":"handoff","evidencePaths":[]}
