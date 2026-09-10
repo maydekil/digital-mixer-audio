@@ -45,7 +45,7 @@
     {"order":41,"id":"Phase18","dependsOn":["Phase17"],"status":"IMPLEMENTED_UNVERIFIED","domain":"per-app-capture","evidencePaths":["native/engine/src/engine/PerAppCapture.hpp","native/engine/src/engine/PerAppCapture.cpp","native/engine/tests/PerAppCaptureTest.cpp","native/engine/src/main.cpp","native/engine/CMakeLists.txt","apps/desktop/electron/EngineSupervisor.ts","docs/progress.md"]},
     {"order":42,"id":"INT-00","dependsOn":["Phase18"],"status":"IMPLEMENTED_UNVERIFIED","domain":"integration","evidencePaths":["docs/feature-traceability.md","apps/desktop/electron/main.ts","scripts/test-native.mjs","docs/progress.md"]},
     {"order":43,"id":"INT-01","dependsOn":["INT-00"],"status":"IMPLEMENTED_UNVERIFIED","domain":"integration","evidencePaths":["scripts/run-int01-journey.mjs","docs/reports/int01-daily-journey.md","package.json","docs/progress.md"]},
-    {"order":44,"id":"INT-02","dependsOn":["INT-01"],"status":"NOT_STARTED","domain":"packaging","evidencePaths":[]},
+    {"order":44,"id":"INT-02","dependsOn":["INT-01"],"status":"IMPLEMENTED_UNVERIFIED","domain":"packaging","evidencePaths":["scripts/package-mac-unsigned.mjs","docs/reports/int02-package-smoke.md","docs/progress.md"]},
     {"order":45,"id":"VFX-09","dependsOn":["INT-02"],"status":"NOT_STARTED","domain":"vocal-fx-qa","evidencePaths":[]},
     {"order":46,"id":"MIXFX-05","dependsOn":["VFX-09"],"status":"NOT_STARTED","domain":"mixer-fx-qa","evidencePaths":[]},
     {"order":47,"id":"HARM-03","dependsOn":["MIXFX-05"],"status":"NOT_STARTED","domain":"harmony-qa","evidencePaths":[]},

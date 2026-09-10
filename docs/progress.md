@@ -1962,3 +1962,30 @@ Validation:
 Known limitations:
 - This is not a full daily-use PRODUCT_VERIFIED result. Real mic monitor, audible A/B effects, real Harmony audition, record-stop-playback take, save/open through desktop menu, export dialog, and offline playback of an exported result are still partial or NOT_RUN.
 - Slow disk, device disconnect, and packaged-app fault injection remain pending later gates.
+
+## INT-02 — Development Package And Permission Smoke
+Status: IMPLEMENTED_UNVERIFIED_PACKAGE_SMOKE
+Prerequisites: INT-01 IMPLEMENTED_UNVERIFIED
+
+### INT-02 Checkpoint — Unsigned macOS Dev App Bundle
+
+Changed files:
+- `scripts/package-mac-unsigned.mjs`: replaced the packaging stub with an unsigned development `.app` builder that copies Electron runtime, `dist/ui`, `dist/electron`, native engine, plugin scanner, sound-pad helper, and sound-pad assets into app resources; writes bundle identity and microphone/screen-capture usage descriptions; creates a zip archive; and writes a smoke report.
+- `docs/reports/int02-package-smoke.md`: generated package smoke evidence.
+- `docs/task-plan.json`, `docs/progress.md`: updated INT-02 status and evidence paths.
+
+Implemented behavior:
+- `npm run package:mac:unsigned` builds UI, desktop main, native engine, native sound-pad helper, then creates `build/package/Local Audio Mixer.app`.
+- The script also creates `build/package/Local-Audio-Mixer-dev.zip`.
+- Packaged resource smoke checks verify arm64 Electron/runtime binaries, packaged native engine `--version`, plugin scanner `--self-test`, and sound-pad helper `--validate`.
+- The generated `Info.plist` contains `NSMicrophoneUsageDescription` for packaged-app TCC identity.
+
+Validation:
+- command: `npm run package:mac:unsigned`
+- exit/result: `0`; dev `.app`, archive, and `docs/reports/int02-package-smoke.md` were generated. Smoke report shows PASS for Electron, native engine, plugin scanner, sound-pad helper architecture, packaged engine version, plugin scanner self-test, and sound-pad validation.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 36/36, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- Runtime GUI launch from the packaged `.app`, macOS microphone/capture permission prompt behavior, offline import/record/export from installed location, plugin editor opening, disconnect recovery, and clean-location manual acceptance are NOT_RUN in this command flow.
+- Package is unsigned and not notarized; public distribution remains conditional.
