@@ -1,6 +1,7 @@
 #pragma once
 
 #include "engine/ChannelProcessorChain.hpp"
+#include "engine/FxSendReturnBus.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -19,6 +20,12 @@ struct PassthroughMonitorRequest {
   float monitorGainDb = -24.0f;
   float monitorPan = 0.0f;
   localmixer::engine::ChannelProcessorConfig processors = localmixer::engine::defaultChannelProcessorConfig();
+  std::uint32_t fxAProgramId = 12;
+  std::uint32_t fxBProgramId = 50;
+  localmixer::engine::FxUnitRuntime fxA;
+  localmixer::engine::FxUnitRuntime fxB;
+  localmixer::engine::FxSendState sendA;
+  localmixer::engine::FxSendState sendB;
 };
 
 struct PassthroughMonitorResult {

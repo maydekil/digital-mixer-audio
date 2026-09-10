@@ -579,6 +579,12 @@ int runStdioProtocol() {
           .monitorGainDb = monitorSelection.channelTrimDb + monitorSelection.channelFaderDb + monitorSelection.monitorGainDb,
           .monitorPan = monitorSelection.channelPan,
           .processors = monitorSelection.processors,
+          .fxAProgramId = monitorSelection.fxAProgramId,
+          .fxBProgramId = monitorSelection.fxBProgramId,
+          .fxA = monitorSelection.fxA,
+          .fxB = monitorSelection.fxB,
+          .sendA = monitorSelection.sendA,
+          .sendB = monitorSelection.sendB,
         });
         writeRawResponse(id, status.running, "start-mixer-monitor", persistentMonitorStatusJson(status));
 #else

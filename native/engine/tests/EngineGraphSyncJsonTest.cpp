@@ -24,8 +24,10 @@ int main() {
     "\"outputUid\":\"headphones\","
     "\"monitorGainDb\":-18,"
     "\"fxAEnabled\":true,"
+    "\"fxAProgramId\":12,"
     "\"fxAReturnDb\":-6,"
     "\"fxBEnabled\":false,"
+    "\"fxBProgramId\":50,"
     "\"fxBReturnDb\":-12,"
     "\"channel0Kind\":\"source\","
     "\"channel0Name\":\"VOICE\","
@@ -86,6 +88,13 @@ int main() {
       !near(selection.processors.eqBands[0].gainDb, 5.0) ||
       !near(selection.processors.eqBands[0].q, 0.8)) {
     std::cerr << "monitor selection should keep EQ band parameters\n";
+    return 1;
+  }
+  if (selection.fxAProgramId != 12 || selection.fxBProgramId != 50 || !selection.fxA.enabled ||
+      !near(selection.fxA.returnDb, -6.0) || selection.fxB.enabled || !near(selection.fxB.returnDb, -12.0) ||
+      !selection.sendA.enabled || !near(selection.sendA.gainDb, -9.0) || selection.sendB.enabled ||
+      !near(selection.sendB.gainDb, -24.0)) {
+    std::cerr << "monitor selection should keep FX unit, program, and send state\n";
     return 1;
   }
   if (!near(selection.channelTrimDb, 1.0) || !near(selection.channelFaderDb, -6.0) || !near(selection.channelPan, 0.25)) {

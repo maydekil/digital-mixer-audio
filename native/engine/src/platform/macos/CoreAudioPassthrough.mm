@@ -1,7 +1,7 @@
 #include "platform/macos/CoreAudioPassthrough.hpp"
 
 #include "dsp/Gain.hpp"
-#include "engine/MixerGraph.hpp"
+#include "engine/MixerRenderRuntime.hpp"
 
 #include <CoreAudio/CoreAudio.h>
 #include <CoreFoundation/CoreFoundation.h>
@@ -31,7 +31,7 @@ struct RingBuffer {
 
 struct PassthroughState {
   RingBuffer ring;
-  localmixer::engine::MixerGraph graph;
+  localmixer::engine::MixerRenderRuntime runtime;
   localmixer::engine::StripId graphStrip;
   std::vector<float> graphInput;
   std::vector<float> graphLeft;
@@ -232,7 +232,7 @@ OSStatus outputCallback(
       .channels = 1,
     }
   };
-  state->graph.process(sources, {
+  state->runtime.process(sources, {
     .left = std::span<float>(state->graphLeft.data(), frames),
     .right = std::span<float>(state->graphRight.data(), frames),
   });
@@ -251,14 +251,22 @@ OSStatus outputCallback(
 }
 
 void prepareMonitorGraph(PassthroughState& state, const PassthroughMonitorRequest& request) {
-  state.graph = localmixer::engine::MixerGraph{};
-  const auto created = state.graph.createStrip("Monitor", "#18d6e7");
+  state.runtime = localmixer::engine::MixerRenderRuntime{request.projectSampleRate};
+  state.runtime.setFxProgram(localmixer::engine::FxBusId::a, request.fxAProgramId);
+  state.runtime.setFxProgram(localmixer::engine::FxBusId::b, request.fxBProgramId);
+  auto& graph = state.runtime.graph();
+  const auto created = graph.createStrip("Monitor", "#18d6e7");
   state.graphStrip = created.id;
-  state.graph.setAssignment(created.id, localmixer::engine::SourceAssignment::mono, 0, false);
-  state.graph.setLevel(created.id, 0.0f, request.monitorGainDb, request.monitorPan);
-  state.graph.setInputMonitoring(created.id, true);
-  state.graph.setProcessors(created.id, request.processors);
   const auto scratchFrames = static_cast<std::size_t>(std::max<double>(request.projectSampleRate, 512.0));
+  state.runtime.prepare(static_cast<std::uint32_t>(scratchFrames));
+  graph.setAssignment(created.id, localmixer::engine::SourceAssignment::mono, 0, false);
+  graph.setLevel(created.id, 0.0f, request.monitorGainDb, request.monitorPan);
+  graph.setInputMonitoring(created.id, true);
+  graph.setProcessors(created.id, request.processors);
+  graph.setFxUnit(localmixer::engine::FxBusId::a, request.fxA);
+  graph.setFxUnit(localmixer::engine::FxBusId::b, request.fxB);
+  graph.setFxSend(created.id, localmixer::engine::FxBusId::a, request.sendA);
+  graph.setFxSend(created.id, localmixer::engine::FxBusId::b, request.sendB);
   state.graphInput.assign(scratchFrames, 0.0f);
   state.graphLeft.assign(scratchFrames, 0.0f);
   state.graphRight.assign(scratchFrames, 0.0f);

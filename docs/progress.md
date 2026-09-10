@@ -2264,6 +2264,8 @@ Implemented behavior:
 Validation:
 - command: `npm run typecheck`
 - exit/result: `0`; TypeScript check passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 19/19, native CTest 39/39, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
 - command: `cmake --build native/engine/build --target local-mixer-engine-graph-sync-json-tests && ctest --test-dir native/engine/build -R local-mixer-engine-graph-sync-json-tests --output-on-failure`
 - exit/result: `0`; native graph-sync parser test passed.
 - command: `npm run test:ui`
@@ -2339,4 +2341,29 @@ Validation:
 
 Known limitations:
 - This checkpoint verifies the native render module, not yet the desktop live Core Audio callback path.
+- Full 99-program rendered fixture comparison, audible QA, transition crossfade listening, export parity, callback timing metrics, and stress QA remain partial.
+
+### Phase19 Hardening Checkpoint — Core Audio Monitor FX Runtime Binding
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: includes compact FX A/B program IDs in the `sync-mixer-graph` payload.
+- `native/engine/src/engine/EngineGraphSyncJson.hpp`, `native/engine/src/engine/EngineGraphSyncJson.cpp`: preserves FX program IDs, FX unit return state, and the monitored channel's FX send state in `SyncedMonitorSelection`.
+- `native/engine/src/platform/macos/CoreAudioPassthrough.hpp`, `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: adds FX program/unit/send state to monitor requests and renders the callback through `MixerRenderRuntime`.
+- `native/engine/src/main.cpp`: passes synced FX monitor state into the persistent monitor start request.
+- `native/engine/tests/EngineGraphSyncJsonTest.cpp`: verifies monitor selection keeps FX program, unit, and send state.
+
+Implemented behavior:
+- The desktop monitor start path can now carry the selected FX A/B programs, returns, and monitored-channel sends from React state into native monitor rendering.
+- The Core Audio output callback uses the preprepared native render runtime, so channel processing and FX A/B wet returns share the same graph renderer.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-engine local-mixer-engine-graph-sync-json-tests`
+- exit/result: `0`; native engine and graph-sync parser target built.
+- command: `ctest --test-dir native/engine/build -R local-mixer-engine-graph-sync-json-tests --output-on-failure`
+- exit/result: `0`; focused parser test passed.
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+
+Known limitations:
+- Hardware listening of FX returns from the packaged/desktop monitor path is NOT_RUN in this environment.
 - Full 99-program rendered fixture comparison, audible QA, transition crossfade listening, export parity, callback timing metrics, and stress QA remain partial.

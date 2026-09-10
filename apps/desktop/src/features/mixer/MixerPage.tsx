@@ -335,8 +335,10 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     outputUid,
     monitorGainDb: -18,
     fxAEnabled: fxA?.enabled ?? false,
+    fxAProgramId: fxA?.programId ?? 12,
     fxAReturnDb: fxA?.returnDb ?? -12,
     fxBEnabled: fxB?.enabled ?? false,
+    fxBProgramId: fxB?.programId ?? 50,
     fxBReturnDb: fxB?.returnDb ?? -12
   };
   channels.forEach((channel, index) => {

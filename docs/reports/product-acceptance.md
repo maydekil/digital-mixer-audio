@@ -13,10 +13,10 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 | Gate | Result | Evidence |
 | --- | --- | --- |
 | Plan integrity | PASS | `npm run check:plan` covers 49 phases. |
-| File size | PASS_WITH_WARNING | `npm run check:file-size` passes; `native/engine/src/main.cpp` warns at 915 lines and must be split before more protocol growth. |
+| File size | PASS | `npm run check:file-size` passes with all first-party code files under the 1,000-line hard limit. |
 | Architecture | PASS | `npm run check:architecture` rejects browser audio/Web Audio production paths. |
-| UI tests | PASS | Vitest 18/18 in `npm run verify`. |
-| Native tests | PASS | CTest 36/36 in `npm run verify`. |
+| UI tests | PASS | Vitest 19/19 in `npm run verify`. |
+| Native tests | PASS | CTest 39/39 in `npm run verify`. |
 | Dev package smoke | PASS_PARTIAL | `docs/reports/int02-package-smoke.md` proves unsigned `.app` resources/binaries, not GUI/TCC acceptance. |
 
 ## E2E 8E.11 Status
@@ -48,7 +48,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 
 ## Critical Unresolved Work
 
-- Native realtime insert graph and monitor selection have initial channel processor wiring plus FX A/B send-return rendering; factory FX recipes now have native wet processors and a focused render runtime, but still need full desktop live callback binding, 99-program auditory QA, Vocal FX, Harmony, export parity, and live listening QA.
+- Native realtime insert graph and monitor selection have channel processor wiring plus FX A/B send-return state carried into the Core Audio monitor runtime; factory FX recipes now have native wet processors and a focused render runtime, but still need 99-program auditory QA, Vocal FX, Harmony, export parity, callback metrics, and live listening QA.
 - AU/VST3 runtime hosting/editor/latency compensation is not complete; Phase17 is scanner/registry/state foundation.
 - Per-app Core Audio tap capture is not complete; Phase18 is capability/assignment foundation.
 - Live recording to timeline and replay through desktop workflow are not complete.
@@ -58,5 +58,4 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 ## Inputs For Phase19
 
 - Keep final handoff status honest: package artifacts exist, but final acceptance remains incomplete.
-- Split `native/engine/src/main.cpp` before adding more protocol commands.
 - Continue by converting the remaining `PARTIAL` traceability rows into real command/UI flows and hardware/package evidence.
