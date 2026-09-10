@@ -2,6 +2,7 @@
 #include "dsp/OutputProtection.hpp"
 #include "engine/EngineRuntime.hpp"
 #include "engine/JsonProtocol.hpp"
+#include "engine/MediaFile.hpp"
 #include "engine/MixerGraph.hpp"
 #include "engine/MixerGraphController.hpp"
 #include "engine/SystemRouteRecovery.hpp"
@@ -137,6 +138,23 @@ std::vector<localmixer::engine::DeviceDescriptor> loadNativeDevices() {
   }
 #endif
   return devices;
+}
+
+std::string mediaInfoJson(const std::string& path) {
+  if (path.empty()) return "\"imported\":false,\"error\":\"MISSING_PATH\"";
+  localmixer::engine::WavStreamReader reader;
+  const auto error = reader.open(path);
+  if (error != localmixer::engine::MediaFileError::none) {
+    return "\"imported\":false,\"error\":\"" + std::string(localmixer::engine::mediaFileErrorName(error)) + "\"";
+  }
+  const auto& info = reader.info();
+  const auto duration = info.sampleRate == 0 ? 0.0 : static_cast<double>(info.frameCount) / info.sampleRate;
+  return "\"imported\":true,\"error\":\"\",\"container\":\"wav\",\"path\":\"" + escapeJson(path) +
+    "\",\"channels\":" + std::to_string(info.channels) +
+    ",\"sampleRate\":" + std::to_string(info.sampleRate) +
+    ",\"bitsPerSample\":" + std::to_string(info.bitsPerSample) +
+    ",\"frameCount\":" + std::to_string(info.frameCount) +
+    ",\"durationSeconds\":" + std::to_string(duration);
 }
 
 std::string microphonePermissionState() {
@@ -469,6 +487,9 @@ int runStdioProtocol() {
       writeRawResponse(id, ok, "prepare-passthrough",
         "\"error\":\"" + std::string(localmixer::engine::prepareErrorName(result.error)) +
         "\",\"status\":" + statusJson(runtime.status()));
+    } else if (type == "media-inspect") {
+      const auto fields = mediaInfoJson(readJsonStringField(line, "path"));
+      writeRawResponse(id, fields.find("\"imported\":true") != std::string::npos, "media-inspect", fields);
     } else if (type == "routing-system-diagnostics") {
       runtime.refreshDevices(loadNativeDevices());
       const auto sampleRate = readJsonNumberField(line, "sampleRate").value_or(48000.0);

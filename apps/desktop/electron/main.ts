@@ -20,6 +20,7 @@ const supportedEngineCommands = new Set([
   "play-test-tone",
   "monitor-passthrough",
   "prepare-passthrough",
+  "media-inspect",
   "routing-system-diagnostics",
   "routing-system-enable",
   "routing-system-disable",

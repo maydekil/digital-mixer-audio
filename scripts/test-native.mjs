@@ -1,5 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { spawn } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const buildDir = join("native", "engine", "build");
@@ -33,6 +35,7 @@ function testDeviceEnumeration() {
 }
 
 async function testEngineProtocol() {
+  const mediaFixture = writeWavFixture();
   const child = spawn(enginePath, ["--stdio"], { stdio: ["pipe", "pipe", "pipe"], shell: false });
   const exit = waitForExit(child);
   const messages = [];
@@ -65,6 +68,17 @@ async function testEngineProtocol() {
       message.id === "native-prepare" &&
       message.type === "prepare-passthrough" &&
       typeof message.status === "object"
+    )
+  );
+  child.stdin.write(`${JSON.stringify({ id: "native-media-inspect", type: "media-inspect", path: mediaFixture.path })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-media-inspect" &&
+      message.type === "media-inspect" &&
+      message.imported === true &&
+      message.container === "wav" &&
+      message.channels === 1 &&
+      message.frameCount === 2
     )
   );
   child.stdin.write(`${JSON.stringify({ id: "native-route-diagnostics", type: "routing-system-diagnostics", sampleRate: 48000 })}\n`);
@@ -231,7 +245,32 @@ async function testEngineProtocol() {
   await waitFor(() => messages.some((message) => message.id === "native-shutdown" && message.type === "bye"));
   child.stdin.end();
   await exit;
+  rmSync(mediaFixture.dir, { recursive: true, force: true });
   console.log("engine protocol smoke ok");
+}
+
+function writeWavFixture() {
+  const dir = mkdtempSync(join(tmpdir(), "local-mixer-native-media-"));
+  const path = join(dir, "fixture.wav");
+  const dataBytes = 4;
+  const buffer = Buffer.alloc(44 + dataBytes);
+  buffer.write("RIFF", 0);
+  buffer.writeUInt32LE(36 + dataBytes, 4);
+  buffer.write("WAVE", 8);
+  buffer.write("fmt ", 12);
+  buffer.writeUInt32LE(16, 16);
+  buffer.writeUInt16LE(1, 20);
+  buffer.writeUInt16LE(1, 22);
+  buffer.writeUInt32LE(48000, 24);
+  buffer.writeUInt32LE(96000, 28);
+  buffer.writeUInt16LE(2, 32);
+  buffer.writeUInt16LE(16, 34);
+  buffer.write("data", 36);
+  buffer.writeUInt32LE(dataBytes, 40);
+  buffer.writeInt16LE(0, 44);
+  buffer.writeInt16LE(16384, 46);
+  writeFileSync(path, buffer);
+  return { dir, path };
 }
 
 function waitFor(predicate) {

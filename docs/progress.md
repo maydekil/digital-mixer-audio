@@ -839,3 +839,26 @@ Known limitations:
 - AIFF, FLAC, MP3, and M4A import are not implemented yet.
 - Import job progress/cancel, waveform pyramid, timeline scheduling, stale-buffer flush, and audible file playback are not implemented yet.
 - Mixed-rate resampling and hardware playback verification remain `NOT_RUN`.
+
+### Phase06 Checkpoint — Native Media Inspect Protocol
+
+Changed files:
+- `native/engine/src/main.cpp`: added `media-inspect` protocol command for metadata-only WAV import.
+- `apps/desktop/electron/main.ts`: whitelisted `media-inspect` for desktop engine IPC.
+- `scripts/test-native.mjs`: added a temporary WAV fixture and protocol smoke assertion for metadata import.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Renderer/Electron can request file metadata through the native engine without receiving PCM over IPC.
+- `media-inspect` returns container, path, channels, sample rate, bit depth, frame count, and duration.
+- Missing/unsupported files return typed native errors instead of pretending import succeeded.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 7/7, engine self-test, device enumeration smoke, and protocol smoke including `media-inspect` passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Metadata import is not yet a queued import job with progress/cancel.
+- PCM streaming is available in native tests but is not yet scheduled into audible timeline playback.
