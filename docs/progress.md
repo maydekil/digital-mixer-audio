@@ -1462,3 +1462,32 @@ Validation:
 Known limitations:
 - Telephone/megaphone preset band-limiting, oversampling modes, aliasing comparison, detune cents, slow modulation, and mono fold-down tests remain pending.
 - Processors are not yet connected to production UI controls/presets, offline export equivalence tests, or realtime rack publication.
+
+## VFX-04 — Pitch And Formant Backend
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: VFX-03 IMPLEMENTED_UNVERIFIED
+
+### VFX-04 Checkpoint — Native Rubber Band Pitch Backend
+
+Changed files:
+- `native/engine/src/dsp/fx/PitchBackend.hpp`, `native/engine/src/dsp/fx/PitchBackend.cpp`: added a native Rubber Band LiveShifter backend boundary with prepare/reset, pitch ratio, formant ratio, latency, block-size, and deinterleaved mono/stereo processing support.
+- `native/engine/tests/fx/PitchBackendTest.cpp`: verifies semitone ratio conversion and measured octave up/down pitch shifts on generated native sine input.
+- `native/engine/src/dsp/fx/EffectRegistry.cpp`, `docs/reports/vocal-fx-catalog-vfx00.md`: updated `pitch_shift` and `formant_shift` to `implemented_unverified`.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired Rubber Band via pkg-config and added VFX-04 build/test/progress evidence.
+
+Implemented behavior:
+- Pitch/formant processing remains native C++ and does not use Web Audio, renderer media capture/playback, or browser DSP.
+- The backend reports Rubber Band block size and startup latency for later rack dry-alignment integration.
+- Pitch shift evidence measures 220 Hz shifted to 440 Hz and 110 Hz within a 10-cent tolerance.
+- Formant control is exposed through Rubber Band `setFormantScale`; detailed perceptual formant QA remains later work.
+
+Validation:
+- command: `pkg-config --modversion rubberband`
+- exit/result: `0`; installed native Rubber Band version `4.0.0` found.
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 25/25 including `local-mixer-pitch-backend-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- Pitch/formant processors are not yet wrapped as production `EffectProcessor` instances in the rack.
+- Latency compensation is reported but not yet integrated with rack dry alignment or the realtime mixer graph.
+- Pitch correction, harmony generation, and vocal formant listening QA remain pending in VFX-05 through VFX-09.

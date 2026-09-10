@@ -60,6 +60,15 @@ int main() {
     return 1;
   }
 
+  const auto pitchShift = findEffect("pitch_shift");
+  const auto formantShift = findEffect("formant_shift");
+  if (!pitchShift.has_value() || !formantShift.has_value() ||
+      pitchShift->availability != EffectAvailability::implementedUnverified ||
+      formantShift->availability != EffectAvailability::implementedUnverified) {
+    std::cerr << "Pitch/formant backend should be marked implemented_unverified after VFX-04\n";
+    return 1;
+  }
+
   if (availabilityName(EffectAvailability::verified) != std::string_view("verified") ||
       fxErrorName(localmixer::dsp::fx::FxError::staleRevision) != std::string_view("STALE_REVISION")) {
     std::cerr << "developer report names and IPC error names should be stable\n";

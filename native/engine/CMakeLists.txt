@@ -1,3 +1,6 @@
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(RUBBERBAND REQUIRED rubberband)
+
 add_library(local_mixer_dsp STATIC
   src/dsp/DeEsser.cpp
   src/dsp/Dynamics.cpp
@@ -11,6 +14,7 @@ add_library(local_mixer_dsp STATIC
   src/dsp/fx/CharacterEffects.cpp
   src/dsp/fx/DelayEffect.cpp
   src/dsp/fx/ModulationEffects.cpp
+  src/dsp/fx/PitchBackend.cpp
   src/dsp/fx/ReverbEffect.cpp
   src/engine/Automation.cpp
   src/engine/DeviceService.cpp
@@ -36,6 +40,9 @@ add_library(local_mixer_dsp STATIC
 )
 
 target_include_directories(local_mixer_dsp PUBLIC src)
+target_include_directories(local_mixer_dsp PRIVATE ${RUBBERBAND_INCLUDE_DIRS})
+target_link_directories(local_mixer_dsp PUBLIC ${RUBBERBAND_LIBRARY_DIRS})
+target_link_libraries(local_mixer_dsp PUBLIC ${RUBBERBAND_LIBRARIES} ${RUBBERBAND_LDFLAGS_OTHER})
 target_compile_features(local_mixer_dsp PUBLIC cxx_std_20)
 
 add_executable(local-mixer-engine
@@ -274,3 +281,12 @@ target_link_libraries(local-mixer-character-effects-tests PRIVATE local_mixer_ds
 target_compile_features(local-mixer-character-effects-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-character-effects-tests COMMAND local-mixer-character-effects-tests)
+
+add_executable(local-mixer-pitch-backend-tests
+  tests/fx/PitchBackendTest.cpp
+)
+
+target_link_libraries(local-mixer-pitch-backend-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-pitch-backend-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-pitch-backend-tests COMMAND local-mixer-pitch-backend-tests)
