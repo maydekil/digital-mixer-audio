@@ -1712,3 +1712,38 @@ Known limitations:
 - MIXFX-03 implements transition/ACK contracts and bounded crossfade state, but the controller is not yet wired to actual FX DSP graph replacement inside realtime `MixerGraph`.
 - Undo/redo and Custom preset migration are not fully persisted until MIXFX-04 save/open integration.
 - Auditory click testing with real FX program swaps remains pending final mixer FX QA.
+
+## MIXFX-04 — Save/Open, Automation/MIDI, And Export Contracts
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: MIXFX-03 IMPLEMENTED_UNVERIFIED
+
+### MIXFX-04 Checkpoint — FX A/B Persistence And Export Stem Planning
+
+Changed files:
+- `native/engine/src/engine/SessionDocument.hpp`, `native/engine/src/engine/SessionDocument.cpp`: added persisted FX unit snapshots and send assignments, including unit ID, active program ID, processor type, revision, enabled/modified state, return dB, macro display values, channel ID, send unit ID, send enable, and send gain.
+- `native/engine/tests/SessionDocumentTest.cpp`: verifies FX unit/send roundtrip persistence and backward-compatible loading of legacy sessions without FX state.
+- `native/engine/src/engine/Automation.hpp`, `native/engine/src/engine/Automation.cpp`: added stable automation parameter IDs for FX sends, FX returns, and FX macros, plus MIDI mapping target IDs that survive device disconnect.
+- `native/engine/tests/AutomationTest.cpp`: verifies stable FX automation IDs and a disconnected FX return MIDI CC mapping.
+- `native/engine/src/engine/Export.hpp`, `native/engine/src/engine/Export.cpp`: added an export stem plan contract for master, FX A return, FX B return, and explicit monitor-volume exclusion.
+- `native/engine/tests/ExportTest.cpp`: verifies FX A/B returns are planned as separate stems and monitor volume is not printed/exported.
+
+Implemented behavior:
+- Session save/open can now preserve the actual FX unit snapshot instead of recomputing state from the current factory catalog.
+- Legacy schema-1 sessions without FX blocks remain loadable with empty FX vectors.
+- Automation/MIDI IDs are explicit and stable for `fx.send.*`, `fx.return.*`, and `fx.macro.*` targets.
+- Export planning represents FX A and FX B returns as separate stems and excludes monitor volume from offline export.
+
+Validation:
+- command: `native/engine/build/native/engine/local-mixer-session-document-tests`
+- exit/result: `0`; session document tests passed with FX roundtrip and legacy load coverage.
+- command: `native/engine/build/native/engine/local-mixer-automation-tests`
+- exit/result: `0`; automation/MIDI tests passed with FX parameter IDs.
+- command: `native/engine/build/native/engine/local-mixer-export-tests`
+- exit/result: `0`; export tests passed with FX return stem planning.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 32/32, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- MIXFX-04 is persistence/automation/export contract foundation; actual realtime/offline FX return audio rendering remains pending integration with `MixerGraph` and final mixer FX QA.
+- Session JSON parsing is intentionally minimal for current internal schema fixtures; hardened migration tooling and richer Custom preset migration are still pending.
+- Full deterministic reopen-mix tolerance testing cannot pass until FX DSP graph rendering is wired end to end.

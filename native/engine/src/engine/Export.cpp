@@ -64,6 +64,21 @@ ExportResult exportTimelineToWav(const TimelineScheduler& timeline, const Export
   return result;
 }
 
+ExportStemPlan buildExportStemPlan(const ExportStemRequest& request) {
+  ExportStemPlan plan{
+    .master = request.master,
+    .fxAReturn = request.fxAReturn,
+    .fxBReturn = request.fxBReturn,
+    .monitorVolumePrinted = false,
+    .stemCount = 0,
+  };
+  if (plan.master) plan.stemCount += 1;
+  if (plan.fxAReturn) plan.stemCount += 1;
+  if (plan.fxBReturn) plan.stemCount += 1;
+  (void)request.includeMonitorVolume;
+  return plan;
+}
+
 std::filesystem::path partialExportPath(const std::filesystem::path& outputPath) {
   auto path = outputPath;
   path += ".partial";

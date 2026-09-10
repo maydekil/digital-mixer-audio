@@ -12,6 +12,8 @@ enum class AutomationParameter {
   pan,
   mute,
   send,
+  fxReturn,
+  fxMacro,
 };
 
 enum class AutomationValueMode {
@@ -67,9 +69,11 @@ struct MidiMapping {
   std::uint8_t channel = 1;
   std::uint8_t controller = 0;
   AutomationParameter parameter = AutomationParameter::fader;
+  std::string targetId;
   bool deviceConnected = true;
 };
 
+std::string automationParameterId(AutomationParameter parameter, const std::string& targetId);
 std::optional<float> midiControlValue(const MidiEvent& event, const MidiMapping& mapping);
 bool softTakeoverAllowsUpdate(float currentValue, float incomingValue, float tolerance);
 

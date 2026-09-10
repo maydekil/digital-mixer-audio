@@ -9,11 +9,13 @@
 namespace {
 
 using localmixer::engine::ExportRequest;
+using localmixer::engine::ExportStemRequest;
 using localmixer::engine::MediaFileError;
 using localmixer::engine::TimelineClip;
 using localmixer::engine::TimelineMedia;
 using localmixer::engine::TimelineScheduler;
 using localmixer::engine::WavStreamReader;
+using localmixer::engine::buildExportStemPlan;
 using localmixer::engine::exportTimelineToWav;
 using localmixer::engine::partialExportPath;
 
@@ -80,6 +82,18 @@ int main() {
   if (canceled.success || !canceled.canceled || canceled.path != partialExportPath(cancelPath) ||
       !std::filesystem::exists(canceled.path)) {
     std::cerr << "canceled export should leave a .partial file\n";
+    return 1;
+  }
+
+  const auto stemPlan = buildExportStemPlan(ExportStemRequest{
+    .master = true,
+    .fxAReturn = true,
+    .fxBReturn = true,
+    .includeMonitorVolume = true,
+  });
+  if (!stemPlan.master || !stemPlan.fxAReturn || !stemPlan.fxBReturn || stemPlan.stemCount != 3 ||
+      stemPlan.monitorVolumePrinted) {
+    std::cerr << "FX returns should export as separate stems without printing monitor volume\n";
     return 1;
   }
 

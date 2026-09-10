@@ -53,6 +53,18 @@ void AutomationEditHistory::commitGesture(const AutomationLane& lane) {
   (void)lane;
 }
 
+std::string automationParameterId(AutomationParameter parameter, const std::string& targetId) {
+  switch (parameter) {
+    case AutomationParameter::fader: return "channel." + targetId + ".fader";
+    case AutomationParameter::pan: return "channel." + targetId + ".pan";
+    case AutomationParameter::mute: return "channel." + targetId + ".mute";
+    case AutomationParameter::send: return "fx.send." + targetId;
+    case AutomationParameter::fxReturn: return "fx.return." + targetId;
+    case AutomationParameter::fxMacro: return "fx.macro." + targetId;
+  }
+  return "unknown." + targetId;
+}
+
 std::optional<AutomationLane> AutomationEditHistory::undo() {
   auto lane = undoLane_;
   undoLane_.reset();

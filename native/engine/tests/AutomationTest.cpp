@@ -13,6 +13,7 @@ using localmixer::engine::AutomationValueMode;
 using localmixer::engine::MidiEvent;
 using localmixer::engine::MidiEventType;
 using localmixer::engine::MidiMapping;
+using localmixer::engine::automationParameterId;
 using localmixer::engine::midiControlValue;
 using localmixer::engine::softTakeoverAllowsUpdate;
 
@@ -75,6 +76,27 @@ int main() {
 
   if (softTakeoverAllowsUpdate(0.8f, 0.1f, 0.05f) || !softTakeoverAllowsUpdate(0.8f, 0.82f, 0.05f)) {
     std::cerr << "soft takeover should prevent fader jumps until pickup\n";
+    return 1;
+  }
+
+  if (automationParameterId(AutomationParameter::send, "voice.fx-a") != "fx.send.voice.fx-a" ||
+      automationParameterId(AutomationParameter::fxReturn, "fx-a") != "fx.return.fx-a" ||
+      automationParameterId(AutomationParameter::fxMacro, "fx-a.macro1") != "fx.macro.fx-a.macro1") {
+    std::cerr << "FX automation parameter IDs should be stable and explicit\n";
+    return 1;
+  }
+
+  MidiMapping fxReturnMapping{
+    .deviceUid = "midi-controller",
+    .channel = 1,
+    .controller = 91,
+    .parameter = AutomationParameter::fxReturn,
+    .targetId = "fx-a",
+    .deviceConnected = false,
+  };
+  const auto fxReturnValue = midiControlValue(MidiEvent{.channel = 1, .number = 91, .value = 100}, fxReturnMapping);
+  if (!fxReturnValue.has_value() || !near(*fxReturnValue, 100.0f / 127.0f)) {
+    std::cerr << "FX return MIDI mapping should survive disconnect and map CC values\n";
     return 1;
   }
 

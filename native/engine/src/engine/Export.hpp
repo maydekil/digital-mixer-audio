@@ -28,7 +28,23 @@ struct ExportResult {
   std::uint64_t framesWritten = 0;
 };
 
+struct ExportStemRequest {
+  bool master = true;
+  bool fxAReturn = false;
+  bool fxBReturn = false;
+  bool includeMonitorVolume = false;
+};
+
+struct ExportStemPlan {
+  bool master = true;
+  bool fxAReturn = false;
+  bool fxBReturn = false;
+  bool monitorVolumePrinted = false;
+  std::uint32_t stemCount = 1;
+};
+
 ExportResult exportTimelineToWav(const TimelineScheduler& timeline, const ExportRequest& request);
+ExportStemPlan buildExportStemPlan(const ExportStemRequest& request);
 std::filesystem::path partialExportPath(const std::filesystem::path& outputPath);
 
 }  // namespace localmixer::engine

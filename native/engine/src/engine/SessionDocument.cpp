@@ -60,6 +60,30 @@ std::string serializeSession(const SessionDocument& document) {
          << escapeJson(media.path.string()) << "\", \"missing\": " << (media.missing ? "true" : "false") << "}";
   }
   if (!document.media.empty()) json << "\n  ";
+  json << "],\n";
+  json << "  \"fxUnits\": [";
+  for (std::size_t index = 0; index < document.fxUnits.size(); index += 1) {
+    const auto& unit = document.fxUnits[index];
+    json << (index == 0 ? "\n" : ",\n");
+    json << "    {\"unitId\": \"" << escapeJson(unit.unitId) << "\", \"programId\": " << unit.programId
+         << ", \"processorType\": \"" << escapeJson(unit.processorType) << "\", \"revision\": " << unit.revision
+         << ", \"enabled\": " << (unit.enabled ? "true" : "false")
+         << ", \"modified\": " << (unit.modified ? "true" : "false")
+         << ", \"returnDb\": " << unit.returnDb
+         << ", \"macro1Value\": \"" << escapeJson(unit.macro1Value)
+         << "\", \"macro2Value\": \"" << escapeJson(unit.macro2Value) << "\"}";
+  }
+  if (!document.fxUnits.empty()) json << "\n  ";
+  json << "],\n";
+  json << "  \"fxSends\": [";
+  for (std::size_t index = 0; index < document.fxSends.size(); index += 1) {
+    const auto& send = document.fxSends[index];
+    json << (index == 0 ? "\n" : ",\n");
+    json << "    {\"channelId\": \"" << escapeJson(send.channelId) << "\", \"unitId\": \"" << escapeJson(send.unitId)
+         << "\", \"enabled\": " << (send.enabled ? "true" : "false")
+         << ", \"gainDb\": " << send.gainDb << "}";
+  }
+  if (!document.fxSends.empty()) json << "\n  ";
   json << "]\n}\n";
   return json.str();
 }
@@ -81,6 +105,35 @@ SessionLoadResult parseSession(std::string_view json) {
       .id = (*it)[1].str(),
       .path = (*it)[2].str(),
       .missing = (*it)[3].str() == "true",
+    });
+  }
+
+  const std::regex fxUnitPattern("\\{\"unitId\"\\s*:\\s*\"([^\"]*)\",\\s*\"programId\"\\s*:\\s*(\\d+),\\s*\"processorType\"\\s*:\\s*\"([^\"]*)\",\\s*\"revision\"\\s*:\\s*(\\d+),\\s*\"enabled\"\\s*:\\s*(true|false),\\s*\"modified\"\\s*:\\s*(true|false),\\s*\"returnDb\"\\s*:\\s*(-?\\d+(?:\\.\\d+)?),\\s*\"macro1Value\"\\s*:\\s*\"([^\"]*)\",\\s*\"macro2Value\"\\s*:\\s*\"([^\"]*)\"\\}");
+  for (auto it = std::cregex_iterator(json.data(), json.data() + json.size(), fxUnitPattern);
+       it != std::cregex_iterator();
+       ++it) {
+    document.fxUnits.push_back(SessionFxUnitState{
+      .unitId = (*it)[1].str(),
+      .programId = static_cast<std::uint32_t>(std::stoul((*it)[2].str())),
+      .processorType = (*it)[3].str(),
+      .revision = static_cast<std::uint64_t>(std::stoull((*it)[4].str())),
+      .enabled = (*it)[5].str() == "true",
+      .modified = (*it)[6].str() == "true",
+      .returnDb = std::stof((*it)[7].str()),
+      .macro1Value = (*it)[8].str(),
+      .macro2Value = (*it)[9].str(),
+    });
+  }
+
+  const std::regex sendPattern("\\{\"channelId\"\\s*:\\s*\"([^\"]*)\",\\s*\"unitId\"\\s*:\\s*\"([^\"]*)\",\\s*\"enabled\"\\s*:\\s*(true|false),\\s*\"gainDb\"\\s*:\\s*(-?\\d+(?:\\.\\d+)?)\\}");
+  for (auto it = std::cregex_iterator(json.data(), json.data() + json.size(), sendPattern);
+       it != std::cregex_iterator();
+       ++it) {
+    document.fxSends.push_back(SessionFxSendAssignment{
+      .channelId = (*it)[1].str(),
+      .unitId = (*it)[2].str(),
+      .enabled = (*it)[3].str() == "true",
+      .gainDb = std::stof((*it)[4].str()),
     });
   }
   return {.document = document};
