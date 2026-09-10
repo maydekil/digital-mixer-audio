@@ -303,6 +303,7 @@ int runStdioProtocol() {
   localmixer::engine::SystemRouteTransactionManager routeTransactionManager;
   localmixer::engine::SystemRouteRecoveryStore routeRecoveryStore(routeRecoveryMarkerPath());
   localmixer::engine::TransportClock transportClock;
+  localmixer::engine::RecordingSession recordingSession;
   SyncedMonitorSelection monitorSelection;
 #if defined(__APPLE__)
   localmixer::platform::macos::PersistentPassthroughMonitor persistentMonitor;
@@ -591,6 +592,62 @@ int runStdioProtocol() {
         ",\"replayWithNeutralInserts\":" + std::string(tap == localmixer::engine::RecordingTap::dry ? "false" : "true") +
         ",\"partial\":false" +
         ",\"armedChannelCount\":" + std::to_string(armedChannelCount));
+    } else if (type == "recording-start") {
+      const auto directory = readJsonStringField(line, "directory");
+      const auto baseName = readJsonStringField(line, "baseName");
+      const auto sampleRate = static_cast<std::uint32_t>(readJsonNumberField(line, "sampleRate").value_or(48000.0));
+      const auto channels = static_cast<std::uint16_t>(readJsonNumberField(line, "channels").value_or(2.0));
+      const auto armedChannelCount = static_cast<std::uint32_t>(readJsonNumberField(line, "armedChannelCount").value_or(0.0));
+      const auto tap = readRecordingTap(line);
+      const bool valid = !directory.empty() && sampleRate > 0 && channels > 0 && armedChannelCount > 0;
+      if (!valid || !recordingSession.arm(localmixer::engine::RecordingConfig{
+            .directory = directory,
+            .baseName = baseName.empty() ? "take" : baseName,
+            .sampleRate = sampleRate,
+            .channels = channels,
+            .tap = tap,
+          }) || !recordingSession.start()) {
+        const std::string error = directory.empty()
+          ? "INVALID_RECORDING_DIRECTORY"
+          : (armedChannelCount == 0 ? "NO_ARMED_CHANNELS" : "RECORDING_START_FAILED");
+        writeRawResponse(id, true, "recording-start",
+          "\"started\":false,\"error\":\"" + escapeJson(error) +
+          "\",\"path\":\"\",\"takeId\":\"\",\"tap\":\"" + std::string(localmixer::engine::recordingTapName(tap)) +
+          "\",\"sampleRate\":" + std::to_string(sampleRate) +
+          ",\"channels\":" + std::to_string(channels) +
+          ",\"frames\":0,\"replayWithNeutralInserts\":" +
+          std::string(tap == localmixer::engine::RecordingTap::dry ? "false" : "true") +
+          ",\"partial\":false");
+        continue;
+      }
+      const auto metadata = recordingSession.metadata();
+      writeRawResponse(id, true, "recording-start",
+        "\"started\":true,\"error\":\"\"" +
+        std::string(",\"takeId\":\"") + escapeJson(metadata.path.stem().string()) +
+        "\",\"path\":\"" + escapeJson(metadata.path.string()) +
+        "\",\"tap\":\"" + std::string(localmixer::engine::recordingTapName(metadata.tap)) +
+        "\",\"sampleRate\":" + std::to_string(metadata.sampleRate) +
+        ",\"channels\":" + std::to_string(metadata.channels) +
+        ",\"frames\":" + std::to_string(metadata.frames) +
+        ",\"replayWithNeutralInserts\":" + std::string(metadata.replayWithNeutralInserts ? "true" : "false") +
+        ",\"partial\":" + std::string(metadata.partial ? "true" : "false"));
+    } else if (type == "recording-stop") {
+      if (!recordingSession.stop()) {
+        writeRawResponse(id, true, "recording-stop",
+          "\"saved\":false,\"error\":\"RECORDING_NOT_ACTIVE\",\"takeId\":\"\",\"path\":\"\",\"tap\":\"master\",\"sampleRate\":48000,\"channels\":2,\"frames\":0,\"replayWithNeutralInserts\":true,\"partial\":true");
+        continue;
+      }
+      const auto metadata = recordingSession.metadata();
+      writeRawResponse(id, true, "recording-stop",
+        "\"saved\":true,\"error\":\"\"" +
+        std::string(",\"takeId\":\"") + escapeJson(metadata.path.stem().string()) +
+        "\",\"path\":\"" + escapeJson(metadata.path.string()) +
+        "\",\"tap\":\"" + std::string(localmixer::engine::recordingTapName(metadata.tap)) +
+        "\",\"sampleRate\":" + std::to_string(metadata.sampleRate) +
+        ",\"channels\":" + std::to_string(metadata.channels) +
+        ",\"frames\":" + std::to_string(metadata.frames) +
+        ",\"replayWithNeutralInserts\":" + std::string(metadata.replayWithNeutralInserts ? "true" : "false") +
+        ",\"partial\":" + std::string(metadata.partial ? "true" : "false"));
     } else if (type == "routing-system-diagnostics") {
       runtime.refreshDevices(loadNativeDevices());
       const auto sampleRate = readJsonNumberField(line, "sampleRate").value_or(48000.0);

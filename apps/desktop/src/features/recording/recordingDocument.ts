@@ -30,7 +30,7 @@ export function snapshotToRecordingPlan(snapshot: MixerSnapshot, directory: stri
 }
 
 export function plannedTakeFromResponse(message: Record<string, unknown>): RecordedTakeState[] {
-  if (message.planned !== true || typeof message.path !== "string") return [];
+  if (!isTakeResponse(message) || typeof message.path !== "string") return [];
   return [{
     id: typeof message.takeId === "string" ? message.takeId : "take",
     path: message.path,
@@ -41,6 +41,10 @@ export function plannedTakeFromResponse(message: Record<string, unknown>): Recor
     replayWithNeutralInserts: message.replayWithNeutralInserts === true,
     partial: message.partial === true
   }];
+}
+
+function isTakeResponse(message: Record<string, unknown>) {
+  return message.planned === true || message.started === true || message.saved === true;
 }
 
 function parseTap(value: unknown): RecordingTap {

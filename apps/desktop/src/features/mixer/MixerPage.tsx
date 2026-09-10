@@ -146,14 +146,30 @@ export function MixerPage() {
 
   async function planRecording() {
     if (!window.localMixer?.chooseRecordingDirectory || !window.localMixer?.engineCommand) return;
+    if (adapter.getSnapshot().recording.status === "recording") {
+      const result = await window.localMixer.engineCommand("recording-stop");
+      const takes = plannedTakeFromResponse(result);
+      refresh(() => {
+        if (takes.length > 0) {
+          adapter.addRecordedTakes(takes);
+          adapter.setRecordingStatus("saved");
+        } else {
+          adapter.setRecordingStatus("failed", typeof result.error === "string" ? result.error : "RECORDING_STOP_FAILED");
+        }
+      });
+      return;
+    }
     const target = await window.localMixer.chooseRecordingDirectory();
     if (!target.ok || target.canceled || !target.path) return;
     const request = snapshotToRecordingPlan(adapter.getSnapshot(), target.path);
     refresh(() => adapter.setRecordingStatus("planned"));
-    const result = await window.localMixer.engineCommand("recording-plan", request as unknown as Record<string, unknown>);
+    const result = await window.localMixer.engineCommand("recording-start", request as unknown as Record<string, unknown>);
     const takes = plannedTakeFromResponse(result);
     refresh(() => {
-      if (takes.length > 0) adapter.addRecordedTakes(takes, request.armedChannelIds, target.path);
+      if (takes.length > 0) {
+        adapter.addRecordedTakes(takes, request.armedChannelIds, target.path);
+        adapter.setRecordingStatus("recording");
+      }
       else adapter.setRecordingStatus("failed", typeof result.error === "string" ? result.error : "RECORDING_PLAN_FAILED");
     });
   }

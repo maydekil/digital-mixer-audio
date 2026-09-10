@@ -43,4 +43,20 @@ describe("recording workflow document", () => {
       partial: false
     }]);
   });
+
+  it("parses saved native take metadata", () => {
+    const takes = plannedTakeFromResponse({
+      saved: true,
+      takeId: "take-002",
+      path: "/tmp/takes/take-002.wav",
+      tap: "master",
+      sampleRate: 48000,
+      channels: 2,
+      frames: 0,
+      replayWithNeutralInserts: true,
+      partial: false
+    });
+
+    expect(takes[0]).toMatchObject({ id: "take-002", tap: "master", frames: 0, partial: false });
+  });
 });

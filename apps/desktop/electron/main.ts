@@ -50,6 +50,8 @@ const supportedEngineCommands = new Set([
   "export-plan",
   "export-render",
   "recording-plan",
+  "recording-start",
+  "recording-stop",
   "routing-system-diagnostics",
   "routing-system-enable",
   "routing-system-disable",

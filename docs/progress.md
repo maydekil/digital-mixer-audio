@@ -2843,3 +2843,36 @@ Validation:
 
 Known limitations:
 - This is WAV-media render foundation. It does not yet prove packaged UI import/export playback, FX return stem files, loudness normalization, or live-source export.
+
+### Phase19 Hardening Checkpoint — Recording Start Stop Container Foundation
+
+Changed files:
+- `apps/desktop/electron/main.ts`: allowed native `recording-start` and `recording-stop` commands through the desktop engine boundary.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: global Record now starts native recording control and toggles to stop/finalize when recording state is active.
+- `apps/desktop/src/features/recording/recordingDocument.ts`: parses native started/saved take metadata in addition to planned metadata.
+- `native/engine/src/main.cpp`: added `recording-start` and `recording-stop` stdio commands backed by `RecordingSession`.
+- `tests/ui/recording-document.test.ts`: verifies saved take metadata parsing.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated recording evidence.
+
+Implemented behavior:
+- Native engine can open a recording take WAV container and finalize it through command protocol.
+- Desktop Record can use start/stop control flow and store returned take metadata.
+- This keeps PCM out of renderer IPC/JSON/React state.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 39/39 passed.
+- command: `cmake --build native/engine/build --target local-mixer-engine local-mixer-recording-tests`
+- exit/result: `0`; native engine and recording tests built.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size guard passed; `native/engine/src/main.cpp` warned at 906 lines, below the 1,000-line hard limit.
+- command: `take_dir=/tmp/local-mixer-recording-start-stop; rm -rf "$take_dir"; mkdir -p "$take_dir"; printf '{"id":"rec-start","type":"recording-start","directory":"'$take_dir'","baseName":"desktop-take","tap":"master","sampleRate":48000,"channels":2,"armedChannelCount":1}\n{"id":"rec-stop","type":"recording-stop"}\n' | native/engine/build/native/engine/local-mixer-engine --stdio; test -s "$take_dir/desktop-take.wav"`
+- exit/result: `0`; engine returned `started:true`, then `saved:true`, and the take WAV container existed with nonzero size.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 39/39, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- This is a command/control and WAV-container foundation only. It does not yet connect the Core Audio callback to the writer or prove live mic/system PCM recording.
+- Recorded take insertion/replay, latency alignment, and packaged manual record-stop-replay acceptance remain PARTIAL/NOT_RUN.
