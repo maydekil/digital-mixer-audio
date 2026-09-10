@@ -36,6 +36,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/MixerControlQueue.cpp
   src/engine/MixerGraph.cpp
   src/engine/MixerGraphController.cpp
+  src/engine/PluginRegistry.cpp
   src/engine/Recording.cpp
   src/engine/RoutingGraph.cpp
   src/engine/SessionDocument.cpp
@@ -63,6 +64,15 @@ add_executable(local-mixer-engine
 
 target_link_libraries(local-mixer-engine PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-engine PRIVATE cxx_std_20)
+
+add_executable(local-mixer-plugin-scanner
+  src/plugin_scanner_main.cpp
+)
+
+target_link_libraries(local-mixer-plugin-scanner PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-plugin-scanner PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-plugin-scanner-self-test COMMAND local-mixer-plugin-scanner --self-test)
 
 if(APPLE)
   target_sources(local-mixer-engine PRIVATE
@@ -299,6 +309,15 @@ target_link_libraries(local-mixer-channel-harmony-controller-tests PRIVATE local
 target_compile_features(local-mixer-channel-harmony-controller-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-channel-harmony-controller-tests COMMAND local-mixer-channel-harmony-controller-tests)
+
+add_executable(local-mixer-plugin-registry-tests
+  tests/PluginRegistryTest.cpp
+)
+
+target_link_libraries(local-mixer-plugin-registry-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-plugin-registry-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-plugin-registry-tests COMMAND local-mixer-plugin-registry-tests)
 
 add_executable(local-mixer-effect-registry-tests
   tests/fx/EffectRegistryTest.cpp

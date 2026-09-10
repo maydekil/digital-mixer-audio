@@ -48,6 +48,14 @@ struct SessionChannelHarmonyState {
   float harmonyLevelDb = 0.0f;
 };
 
+struct SessionPluginState {
+  std::string instanceId;
+  std::string identifier;
+  std::string version;
+  bool missing = false;
+  std::string stateBase64;
+};
+
 struct SessionDocument {
   std::uint32_t schemaVersion = kCurrentSessionSchemaVersion;
   std::string projectId;
@@ -55,6 +63,7 @@ struct SessionDocument {
   std::vector<SessionFxUnitState> fxUnits;
   std::vector<SessionFxSendAssignment> fxSends;
   std::vector<SessionChannelHarmonyState> channelHarmony;
+  std::vector<SessionPluginState> plugins;
 };
 
 enum class SessionError {

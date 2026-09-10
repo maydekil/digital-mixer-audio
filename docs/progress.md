@@ -1840,3 +1840,37 @@ Validation:
 Known limitations:
 - HARM-02 adds processor semantics and automation IDs, but full channel insert graph wiring, monitor-profile effective status, recording/offline graph snapshots, and undo/redo integration remain pending later integration/QA gates.
 - Auditory click testing and real vocal fixture acceptance are still NOT_RUN pending HARM-03/INT hardware QA.
+
+## Phase17 — Plugin Hosting/runtime Integration
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: HARM-02 IMPLEMENTED_UNVERIFIED
+
+### Phase17 Checkpoint — Out-of-process Scanner And Plugin State Contracts
+
+Changed files:
+- `native/engine/src/engine/PluginRegistry.hpp`, `native/engine/src/engine/PluginRegistry.cpp`: added plugin descriptor/cache contracts, AU/VST3 format classification, allowed-root validation, blacklist rejection, missing-plugin placeholder state, and deterministic scan-result handling.
+- `native/engine/src/plugin_scanner_main.cpp`: added a separate scanner executable with `--self-test` and single-path metadata scan commands.
+- `native/engine/tests/PluginRegistryTest.cpp`: verifies accepted plugins, unsupported formats, blacklisted IDs, disallowed roots, cache replacement, and missing placeholders.
+- `native/engine/src/engine/SessionDocument.hpp`, `native/engine/src/engine/SessionDocument.cpp`, `native/engine/tests/SessionDocumentTest.cpp`: added persisted plugin instance identifier/version/missing/state snapshot fields and roundtrip coverage.
+- `native/engine/CMakeLists.txt`: wires the registry, scanner executable, scanner self-test, and plugin registry native test into the CMake/CTest graph.
+
+Implemented behavior:
+- Plugin scans are represented by native registry data instead of UI-only placeholders.
+- AU `.component` and VST3 `.vst3` paths are classified, cached, and rejected when outside configured plugin roots.
+- Blacklisted plugin identifiers are blocked at registry ingestion time.
+- Sessions can retain plugin instance identity and opaque base64 state, including missing-plugin placeholders for later restore.
+- The scanner runs as a separate native process contract and reports JSON metadata for command integration.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-plugin-scanner local-mixer-plugin-registry-tests local-mixer-session-document-tests`
+- exit/result: `0`; scanner, registry tests, and session document tests built successfully.
+- command: `native/engine/build/native/engine/local-mixer-plugin-registry-tests`
+- exit/result: `0`; plugin registry tests passed.
+- command: `native/engine/build/native/engine/local-mixer-plugin-scanner --self-test`
+- exit/result: `0`; scanner reported `{"scanner":"ok","selfTest":true}`.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 35/35, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- This checkpoint is a safe plugin foundation only; actual AU/VST3 instantiation, realtime processing insertion, plugin editor windows, latency compensation, crash recovery, and broad third-party compatibility QA remain pending later integration work.
+- Scanner JSON is intentionally minimal and is not yet a full plugin metadata database.

@@ -100,6 +100,18 @@ std::string serializeSession(const SessionDocument& document) {
          << "\", \"harmonyLevelDb\": " << harmony.harmonyLevelDb << "}";
   }
   if (!document.channelHarmony.empty()) json << "\n  ";
+  json << "],\n";
+  json << "  \"plugins\": [";
+  for (std::size_t index = 0; index < document.plugins.size(); index += 1) {
+    const auto& plugin = document.plugins[index];
+    json << (index == 0 ? "\n" : ",\n");
+    json << "    {\"instanceId\": \"" << escapeJson(plugin.instanceId)
+         << "\", \"identifier\": \"" << escapeJson(plugin.identifier)
+         << "\", \"version\": \"" << escapeJson(plugin.version)
+         << "\", \"missing\": " << (plugin.missing ? "true" : "false")
+         << ", \"stateBase64\": \"" << escapeJson(plugin.stateBase64) << "\"}";
+  }
+  if (!document.plugins.empty()) json << "\n  ";
   json << "]\n}\n";
   return json.str();
 }
@@ -168,6 +180,19 @@ SessionLoadResult parseSession(std::string_view json) {
       .voice1 = (*it)[8].str(),
       .voice2 = (*it)[9].str(),
       .harmonyLevelDb = std::stof((*it)[10].str()),
+    });
+  }
+
+  const std::regex pluginPattern("\\{\"instanceId\"\\s*:\\s*\"([^\"]*)\",\\s*\"identifier\"\\s*:\\s*\"([^\"]*)\",\\s*\"version\"\\s*:\\s*\"([^\"]*)\",\\s*\"missing\"\\s*:\\s*(true|false),\\s*\"stateBase64\"\\s*:\\s*\"([^\"]*)\"\\}");
+  for (auto it = std::cregex_iterator(json.data(), json.data() + json.size(), pluginPattern);
+       it != std::cregex_iterator();
+       ++it) {
+    document.plugins.push_back(SessionPluginState{
+      .instanceId = (*it)[1].str(),
+      .identifier = (*it)[2].str(),
+      .version = (*it)[3].str(),
+      .missing = (*it)[4].str() == "true",
+      .stateBase64 = (*it)[5].str(),
     });
   }
   return {.document = document};

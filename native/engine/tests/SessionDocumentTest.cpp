@@ -12,6 +12,7 @@ using localmixer::engine::SessionChannelHarmonyState;
 using localmixer::engine::SessionFxSendAssignment;
 using localmixer::engine::SessionFxUnitState;
 using localmixer::engine::SessionMediaRef;
+using localmixer::engine::SessionPluginState;
 using localmixer::engine::autosavePathFor;
 using localmixer::engine::loadSession;
 using localmixer::engine::parseSession;
@@ -54,6 +55,13 @@ int main() {
     .voice2 = "+5th",
     .harmonyLevelDb = 0.0f,
   });
+  document.plugins.push_back(SessionPluginState{
+    .instanceId = "plugin-1",
+    .identifier = "com.example.TestPlugin",
+    .version = "1.0.0",
+    .missing = false,
+    .stateBase64 = "AQID",
+  });
   if (!saveSessionAtomic(sessionPath, document)) {
     std::cerr << "session save should succeed\n";
     return 1;
@@ -64,14 +72,15 @@ int main() {
       !loaded.document.media[1].missing || loaded.document.fxUnits.size() != 1 || loaded.document.fxSends.size() != 1 ||
       loaded.document.fxUnits[0].macro1Value != "2.2 s" || loaded.document.fxSends[0].gainDb != -18.0f ||
       loaded.document.channelHarmony.size() != 1 ||
-      loaded.document.channelHarmony[0].primaryHarmonyInstanceId != "harmony:voice:primary") {
+      loaded.document.channelHarmony[0].primaryHarmonyInstanceId != "harmony:voice:primary" ||
+      loaded.document.plugins.size() != 1 || loaded.document.plugins[0].stateBase64 != "AQID") {
     std::cerr << "session load roundtrip mismatch\n";
     return 1;
   }
 
   const auto legacy = parseSession("{\"schemaVersion\":1,\"projectId\":\"legacy\",\"media\":[]}");
   if (legacy.error != SessionError::none || !legacy.document.fxUnits.empty() || !legacy.document.fxSends.empty() ||
-      !legacy.document.channelHarmony.empty()) {
+      !legacy.document.channelHarmony.empty() || !legacy.document.plugins.empty()) {
     std::cerr << "legacy session without FX state should load with empty FX vectors\n";
     return 1;
   }
