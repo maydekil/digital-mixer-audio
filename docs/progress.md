@@ -999,3 +999,25 @@ Validation:
 Known limitations:
 - Automated test does not click the OS file picker.
 - Imported media still is not placed on a playable timeline track.
+
+### Phase06 Checkpoint — Native Timeline Scheduler
+
+Changed files:
+- `native/engine/src/engine/Timeline.hpp`, `native/engine/src/engine/Timeline.cpp`: added a sample-frame timeline scheduler for clip start, source offset, duration, gain, and stereo output rendering.
+- `native/engine/tests/TimelineTest.cpp`: verifies two impulse fixtures align at the same sample frame, source offset renders correctly, and silent areas do not leak stale samples.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired the timeline module and evidence.
+
+Implemented behavior:
+- Multiple clips are scheduled against one native timeline frame domain.
+- Mono sources are mapped to stereo output, and stereo sources preserve left/right samples.
+- Missing media causes render failure rather than silent fake success.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 8/8 including `local-mixer-timeline-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Scheduler currently renders in-memory fixture media, not imported file readers in the device callback.
+- Loop boundary fade and resampling are still not implemented.
