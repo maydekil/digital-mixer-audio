@@ -24,6 +24,10 @@ interface EngineResult {
   blackHoleAvailable?: boolean;
   blackHoleUid?: string;
   physicalOutputUid?: string;
+  state?: string;
+  ownsSystemRoute?: boolean;
+  recoveryMarkerPresent?: boolean;
+  recoveryOriginalOutputUid?: string;
   selectedInputStart?: number;
   selectedInputEnd?: number;
   selectedOutputStart?: number;
@@ -43,11 +47,18 @@ export function HardwareMonitorPanel({ open, onClose }: HardwareMonitorPanelProp
   const [outputUid, setOutputUid] = useState("");
   const [status, setStatus] = useState("Native engine required");
   const [routeStatus, setRouteStatus] = useState("System route not checked");
+  const [blackHoleUid, setBlackHoleUid] = useState("");
+  const [routeOwned, setRouteOwned] = useState(false);
+  const [recoveryMarker, setRecoveryMarker] = useState("");
   const [peak, setPeak] = useState(0);
   const [busy, setBusy] = useState(false);
 
   const inputs = useMemo(() => devices.filter((device) => (device.inputChannels ?? 0) > 0), [devices]);
   const outputs = useMemo(() => devices.filter((device) => (device.outputChannels ?? 0) > 0), [devices]);
+  const blackHoleOptions = useMemo(
+    () => devices.filter((device) => /blackhole/i.test(`${device.name} ${device.uid}`) && (device.inputChannels ?? 0) >= 2),
+    [devices]
+  );
 
   async function send(type: string, payload: Record<string, unknown> = {}) {
     if (!window.localMixer?.engineCommand) {
@@ -68,9 +79,12 @@ export function HardwareMonitorPanel({ open, onClose }: HardwareMonitorPanelProp
     setDevices(result.devices);
     const defaultInput = result.devices.find((device) => device.defaultInput && (device.inputChannels ?? 0) > 0) ?? result.devices.find((device) => (device.inputChannels ?? 0) > 0);
     const defaultOutput = result.devices.find((device) => device.defaultOutput && (device.outputChannels ?? 0) > 0) ?? result.devices.find((device) => (device.outputChannels ?? 0) > 0);
+    const detectedBlackHole = result.devices.find((device) => /blackhole/i.test(`${device.name} ${device.uid}`) && (device.inputChannels ?? 0) >= 2);
     setInputUid((current) => current || defaultInput?.uid || "");
     setOutputUid((current) => current || defaultOutput?.uid || "");
+    setBlackHoleUid((current) => current || detectedBlackHole?.uid || "");
     setStatus(`${result.devices.length} devices`);
+    void refreshRouteStatus();
   }
 
   async function meterInput() {
@@ -102,6 +116,7 @@ export function HardwareMonitorPanel({ open, onClose }: HardwareMonitorPanelProp
   async function checkSystemRoute() {
     setBusy(true);
     const result = await send("routing-system-diagnostics", {
+      blackHoleUid,
       physicalOutputUid: outputUid,
       sampleRate: 48000,
       blackHoleInputStartChannel: 0,
@@ -120,8 +135,49 @@ export function HardwareMonitorPanel({ open, onClose }: HardwareMonitorPanelProp
     }
   }
 
+  async function refreshRouteStatus() {
+    const result = await send("routing-system-status");
+    if (!result) return;
+    setRouteOwned(Boolean(result.ownsSystemRoute));
+    setRecoveryMarker(result.recoveryMarkerPresent ? String(result.recoveryOriginalOutputUid || "saved") : "");
+  }
+
+  async function enableSystemRoute() {
+    const confirmed = window.confirm("Switch macOS output to BlackHole for system audio capture?");
+    if (!confirmed) return;
+    setBusy(true);
+    const result = await send("routing-system-enable", {
+      blackHoleUid,
+      physicalOutputUid: outputUid,
+      sampleRate: 48000,
+      blackHoleInputStartChannel: 0,
+      physicalOutputStartChannel: 0,
+      allowOsRouteChange: true
+    });
+    setBusy(false);
+    if (!result) return;
+    setRouteOwned(Boolean(result.ownsSystemRoute));
+    setStatus(result.ok ? "System route enabled" : result.error ?? "System route failed");
+    setRouteStatus(result.ok ? `Active · ${result.blackHoleUid || blackHoleUid || "BlackHole"}` : result.error ?? "Route rejected");
+    await refreshRouteStatus();
+  }
+
+  async function disableSystemRoute() {
+    setBusy(true);
+    const result = await send("routing-system-disable");
+    setBusy(false);
+    if (!result) return;
+    setRouteOwned(Boolean(result.ownsSystemRoute));
+    setStatus(result.ok ? "System route disabled" : result.error ?? "Disable route failed");
+    setRouteStatus(result.ok ? "Idle · output restored" : result.error ?? "Route restore failed");
+    await refreshRouteStatus();
+  }
+
   useEffect(() => {
-    if (open) void refreshDevices();
+    if (open) {
+      void refreshDevices();
+      void refreshRouteStatus();
+    }
   }, [open]);
 
   if (!open) return null;
@@ -152,17 +208,30 @@ export function HardwareMonitorPanel({ open, onClose }: HardwareMonitorPanelProp
               {outputs.map((device) => <option key={device.uid} value={device.uid}>{device.name || device.uid}</option>)}
             </select>
           </label>
+          <label>
+            <span>Loopback</span>
+            <select value={blackHoleUid} onChange={(event) => setBlackHoleUid(event.target.value)}>
+              <option value="">Auto BlackHole</option>
+              {blackHoleOptions.map((device) => <option key={device.uid} value={device.uid}>{device.name || device.uid}</option>)}
+            </select>
+          </label>
         </div>
         <div className="hardware-monitor-actions">
           <Button tone="cyan" onClick={() => void meterInput()} disabled={busy}>Meter</Button>
           <Button tone="amber" onClick={() => void testTone()} disabled={busy}>Tone</Button>
           <Button tone="green" onClick={() => void monitor()} disabled={busy}>Monitor 3s</Button>
           <Button onClick={() => void checkSystemRoute()} disabled={busy}>Route Check</Button>
+          <Button tone="amber" onClick={() => void enableSystemRoute()} disabled={busy}>Enable Route</Button>
+          <Button tone="danger" onClick={() => void disableSystemRoute()} disabled={busy || (!routeOwned && !recoveryMarker)}>Disable</Button>
           <div className="hardware-peak"><span style={{ width: `${Math.min(100, peak * 100)}%` }} /></div>
         </div>
         <div className="hardware-route-status">
           <span>System</span>
           <strong>{routeStatus}</strong>
+        </div>
+        <div className="hardware-route-status">
+          <span>Recovery</span>
+          <strong>{recoveryMarker ? `Marker · ${recoveryMarker}` : "No marker"}</strong>
         </div>
       </div>
     </div>

@@ -700,6 +700,31 @@ Known limitations:
 - Manual crash/restart recovery flow is `NOT_RUN`.
 - Real `allowOsRouteChange: true` route apply/restore with BlackHole and physical hardware remains `NOT_RUN`.
 
+### Phase04 Checkpoint — Desktop System Route Controls
+
+Changed files:
+- `apps/desktop/src/features/hardware/components/HardwareMonitorPanel.tsx`: added Loopback selection, guarded Enable Route, Disable, owned-route status, and recovery marker status in the desktop hardware modal.
+- `apps/desktop/src/styles/app.css`: widened and compacted the hardware modal for three device selectors and route actions.
+- `tests/ui/visual.visual.ts`: added a Playwright assertion that the hardware modal exposes system routing controls.
+- `docs/progress.md`: recorded verification evidence for the checkpoint.
+
+Implemented behavior:
+- Opening the hardware modal still only refreshes devices and status; it does not change macOS routing.
+- `Enable Route` asks for explicit confirmation before sending `routing-system-enable` with `allowOsRouteChange: true`.
+- `Disable` calls `routing-system-disable` and is available when a route is owned or a recovery marker exists.
+- The modal displays recovery marker presence reported by native `routing-system-status`.
+
+Validation:
+- command: `npm run test:visual`
+- exit/result: `0`; 4 Playwright tests passed, including the hardware route controls assertion.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Real hardware route enable/disable was not clicked during automated verification; macOS default output was not changed by tests.
+- Manual crash/restart recovery flow remains `NOT_RUN`.
+- The desktop modal is a developer/control surface, not final first-run setup UX.
+
 ## Native Sound Pad Spike — Early User-Requested
 Status: IMPLEMENTED_UNVERIFIED_PLAYBACK
 Prerequisites: user explicitly requested this before UI-04

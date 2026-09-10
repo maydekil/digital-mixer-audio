@@ -57,3 +57,15 @@ test("preview controls mutate visible mixer state", async ({ page }) => {
   await page.locator(".compact-fx-row").first().getByRole("button", { name: "Edit" }).click();
   await expect(page.getByRole("dialog", { name: "FX A editor" })).toBeVisible();
 });
+
+test("hardware modal exposes guarded system routing controls", async ({ page }) => {
+  await page.setViewportSize({ width: 1680, height: 945 });
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "HW" }).click();
+  await expect(page.getByRole("dialog", { name: "Hardware monitor" })).toBeVisible();
+  await expect(page.getByText("Loopback")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Route Check" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Enable Route" })).toBeVisible();
+  await expect(page.getByText("Recovery")).toBeVisible();
+});
