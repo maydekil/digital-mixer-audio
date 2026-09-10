@@ -81,6 +81,31 @@ async function testEngineProtocol() {
       message.frameCount === 2
     )
   );
+  child.stdin.write(`${JSON.stringify({ id: "native-transport-play", type: "transport-play" })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-transport-play" &&
+      message.type === "transport-status" &&
+      message.state === "playing"
+    )
+  );
+  child.stdin.write(`${JSON.stringify({ id: "native-transport-seek", type: "transport-seek", positionFrame: 24000 })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-transport-seek" &&
+      message.type === "transport-status" &&
+      message.positionFrame === 24000
+    )
+  );
+  child.stdin.write(`${JSON.stringify({ id: "native-transport-stop", type: "transport-stop" })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-transport-stop" &&
+      message.type === "transport-status" &&
+      message.state === "stopped" &&
+      message.positionFrame === 0
+    )
+  );
   child.stdin.write(`${JSON.stringify({ id: "native-route-diagnostics", type: "routing-system-diagnostics", sampleRate: 48000 })}\n`);
   await waitFor(() =>
     messages.some((message) =>

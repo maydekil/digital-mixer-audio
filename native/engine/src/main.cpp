@@ -8,6 +8,7 @@
 #include "engine/SystemRouteRecovery.hpp"
 #include "engine/SystemRouting.hpp"
 #include "engine/SystemRoutingJson.hpp"
+#include "engine/Transport.hpp"
 #if defined(__APPLE__)
 #include "platform/macos/CoreAudioDevices.hpp"
 #include "platform/macos/CoreAudioInputMeter.hpp"
@@ -155,6 +156,15 @@ std::string mediaInfoJson(const std::string& path) {
     ",\"bitsPerSample\":" + std::to_string(info.bitsPerSample) +
     ",\"frameCount\":" + std::to_string(info.frameCount) +
     ",\"durationSeconds\":" + std::to_string(duration);
+}
+
+std::string transportJson(const localmixer::engine::TransportSnapshot& snapshot) {
+  return "\"state\":\"" + std::string(localmixer::engine::transportStateName(snapshot.state)) +
+    "\",\"positionFrame\":" + std::to_string(snapshot.positionFrame) +
+    ",\"startFrame\":" + std::to_string(snapshot.startFrame) +
+    ",\"loopEnabled\":" + std::string(snapshot.loop.enabled ? "true" : "false") +
+    ",\"loopStartFrame\":" + std::to_string(snapshot.loop.startFrame) +
+    ",\"loopEndFrame\":" + std::to_string(snapshot.loop.endFrame);
 }
 
 std::string microphonePermissionState() {
@@ -423,6 +433,7 @@ int runStdioProtocol() {
   localmixer::engine::MixerGraphController graphController;
   localmixer::engine::SystemRouteTransactionManager routeTransactionManager;
   localmixer::engine::SystemRouteRecoveryStore routeRecoveryStore(routeRecoveryMarkerPath());
+  localmixer::engine::TransportClock transportClock;
   SyncedMonitorSelection monitorSelection;
 #if defined(__APPLE__)
   localmixer::platform::macos::PersistentPassthroughMonitor persistentMonitor;
@@ -490,6 +501,21 @@ int runStdioProtocol() {
     } else if (type == "media-inspect") {
       const auto fields = mediaInfoJson(readJsonStringField(line, "path"));
       writeRawResponse(id, fields.find("\"imported\":true") != std::string::npos, "media-inspect", fields);
+    } else if (type == "transport-play") {
+      transportClock.play();
+      writeRawResponse(id, true, "transport-status", transportJson(transportClock.snapshot()));
+    } else if (type == "transport-pause") {
+      transportClock.pause();
+      writeRawResponse(id, true, "transport-status", transportJson(transportClock.snapshot()));
+    } else if (type == "transport-stop") {
+      transportClock.stop();
+      writeRawResponse(id, true, "transport-status", transportJson(transportClock.snapshot()));
+    } else if (type == "transport-seek") {
+      const auto frame = static_cast<std::uint64_t>(readJsonNumberField(line, "positionFrame").value_or(0.0));
+      transportClock.seek(frame);
+      writeRawResponse(id, true, "transport-status", transportJson(transportClock.snapshot()));
+    } else if (type == "transport-status") {
+      writeRawResponse(id, true, "transport-status", transportJson(transportClock.snapshot()));
     } else if (type == "routing-system-diagnostics") {
       runtime.refreshDevices(loadNativeDevices());
       const auto sampleRate = readJsonNumberField(line, "sampleRate").value_or(48000.0);

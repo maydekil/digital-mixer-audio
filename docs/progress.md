@@ -883,3 +883,29 @@ Validation:
 Known limitations:
 - Waveform pyramid is not yet exposed as a cancellable import job.
 - Timeline UI still uses fixture state; imported waveform display is not wired yet.
+
+### Phase06 Checkpoint — Native Transport Protocol
+
+Changed files:
+- `native/engine/src/main.cpp`: added `transport-play`, `transport-pause`, `transport-stop`, `transport-seek`, and `transport-status` protocol commands backed by the native `TransportClock`.
+- `apps/desktop/electron/main.ts`: whitelisted transport protocol commands.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: wired top-bar play/pause/stop buttons to native transport commands when the desktop engine bridge is available.
+- `scripts/test-native.mjs`: added protocol smoke coverage for play, seek, and stop.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Transport state changes are owned by the native engine protocol.
+- Stop returns native transport position to playback start frame `0`.
+- Browser preview does not create browser audio playback or fake native transport success.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`.
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 7/7, engine self-test, device enumeration smoke, and protocol smoke including transport passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Transport is not yet scheduling file audio into the device callback.
+- Pause/resume timing is stateful but not yet tied to a rendered timeline clock in the UI.

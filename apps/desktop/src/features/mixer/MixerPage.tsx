@@ -23,6 +23,7 @@ export function MixerPage() {
   const [hardwareOpen, setHardwareOpen] = useState(false);
   const [devices, setDevices] = useState<HardwareDevice[]>([]);
   const [outputUid, setOutputUid] = useState("");
+  const [transportState, setTransportState] = useState("stopped");
 
   function refresh(action: () => void) {
     action();
@@ -50,6 +51,12 @@ export function MixerPage() {
       sampleRate: 48000,
       monitorGainDb: -18
     });
+  }
+
+  async function sendTransport(type: "transport-play" | "transport-pause" | "transport-stop") {
+    if (!window.localMixer?.engineCommand) return;
+    const result = await window.localMixer.engineCommand(type);
+    if (typeof result?.state === "string") setTransportState(result.state);
   }
 
   useEffect(() => {
@@ -81,7 +88,16 @@ export function MixerPage() {
 
   return (
     <main className="mixer-app">
-      <TopBar projectName={snapshot.projectName} time={snapshot.transportTime} rate={snapshot.sampleRateLabel} status={snapshot.engineStatus} mode={snapshot.modeLabel} />
+      <TopBar
+        projectName={snapshot.projectName}
+        time={snapshot.transportTime}
+        rate={snapshot.sampleRateLabel}
+        status={snapshot.engineStatus}
+        mode={snapshot.modeLabel}
+        transportState={transportState}
+        onPlay={() => void sendTransport(transportState === "playing" ? "transport-pause" : "transport-play")}
+        onStop={() => void sendTransport("transport-stop")}
+      />
       <div className="fx-stack">
         <CompactFxRow unit={fxA} program={programA} programs={snapshot.programs} onProgramChange={(id) => refresh(() => adapter.setFxProgram("fx-a", id))} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-a", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-a", value))} onReset={() => refresh(() => adapter.resetFxProgram("fx-a"))} />
         <CompactFxRow unit={fxB} program={programB} programs={snapshot.programs} onProgramChange={(id) => refresh(() => adapter.setFxProgram("fx-b", id))} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-b", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-b", value))} onReset={() => refresh(() => adapter.resetFxProgram("fx-b"))} />
@@ -170,13 +186,28 @@ function channelColor(channel: ChannelState) {
   return "#6ed6e8";
 }
 
-function TopBar({ projectName, time, rate, status, mode }: { projectName: string; time: string; rate: string; status: string; mode: string }) {
+function TopBar({ projectName, time, rate, status, mode, transportState, onPlay, onStop }: {
+  projectName: string;
+  time: string;
+  rate: string;
+  status: string;
+  mode: string;
+  transportState: string;
+  onPlay(): void;
+  onStop(): void;
+}) {
   return (
     <header className="top-bar">
       <div className="window-dots"><span /><span /><span /></div>
       <h1>{projectName}</h1>
       <nav><button className="active">Mixer</button><button>Vocal FX</button><button>Timeline</button><button>Routing</button></nav>
-      <div className="transport"><button>■</button><button className="play">▶</button><button className="record">●</button></div>
+      <div className="transport">
+        <button aria-label="Stop" onClick={onStop}>■</button>
+        <button aria-label={transportState === "playing" ? "Pause" : "Play"} className="play" onClick={onPlay}>
+          {transportState === "playing" ? "II" : "▶"}
+        </button>
+        <button aria-label="Record" className="record">●</button>
+      </div>
       <div className="time-display">{time}</div>
       <div className="rate">{rate}</div>
       <div className="engine-status"><span />{status}</div>
