@@ -540,6 +540,25 @@ Known limitations:
 - Physical persistent monitoring is still limited to one active source device/channel until Phase04 aggregate/system routing work.
 - Manual audible desktop verification for graph-rendered persistent MON has not been run in this turn.
 
+### Phase05 Checkpoint — Exclusive Monitor Guard
+
+Changed files:
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: source MON is exclusive while persistent monitor is limited to one physical source.
+- `tests/ui/preview-adapter.test.ts`: verifies enabling MON on one source turns off source MON on the previous source.
+- `scripts/test-native.mjs`: verifies native `sync-mixer-graph` rejects multiple active monitor sources with `MULTIPLE_MONITOR_SOURCES_UNSUPPORTED`.
+
+Implemented behavior:
+- UI prevents accidental multi-monitor selection before aggregate/multi-device routing exists.
+- Native engine still validates and rejects invalid multi-monitor payloads even if bypassing the UI.
+
+Validation:
+- command: `npm run test:ui`
+- exit/result: `0`; 14 UI/Electron tests passed including exclusive source monitor coverage.
+- command: `npm run test:native`
+- exit/result: `0`; native protocol smoke verified multi-monitor rejection.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
 ## Native Sound Pad Spike — Early User-Requested
 Status: IMPLEMENTED_UNVERIFIED_PLAYBACK
 Prerequisites: user explicitly requested this before UI-04

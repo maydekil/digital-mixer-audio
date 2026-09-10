@@ -87,4 +87,15 @@ describe("PreviewAdapter", () => {
     expect(guitar?.processing.eq).toBe(false);
     expect(guitar?.eqBands.find((band) => band.id === "low")?.gain).toBe("+3.0 dB");
   });
+
+  it("keeps source monitoring exclusive until aggregate routing is available", () => {
+    const adapter = new PreviewAdapter();
+    adapter.setChannelMonitor("voice", true);
+    adapter.setChannelMonitor("guitar", true);
+
+    const snapshot = adapter.getSnapshot();
+    expect(snapshot.channels.find((channel) => channel.id === "voice")?.monitor).toBe(false);
+    expect(snapshot.channels.find((channel) => channel.id === "guitar")?.monitor).toBe(true);
+    expect(snapshot.channels.find((channel) => channel.id === "music")?.monitor).toBe(false);
+  });
 });

@@ -107,6 +107,31 @@ async function testEngineProtocol() {
       message.activeMonitorCount === 1
     )
   );
+  child.stdin.write(`${JSON.stringify({
+    id: "native-sync-multi-monitor",
+    type: "sync-mixer-graph",
+    channelCount: 2,
+    channel0Kind: "source",
+    channel0Name: "VOICE",
+    channel0SourceUid: "mic-a",
+    channel0Assignment: "mono",
+    channel0Enabled: true,
+    channel0Monitor: true,
+    channel1Kind: "source",
+    channel1Name: "GUITAR",
+    channel1SourceUid: "mic-b",
+    channel1Assignment: "mono",
+    channel1Enabled: true,
+    channel1Monitor: true
+  })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-sync-multi-monitor" &&
+      message.type === "sync-mixer-graph" &&
+      message.ok === false &&
+      message.error === "MULTIPLE_MONITOR_SOURCES_UNSUPPORTED"
+    )
+  );
   child.stdin.write(`${JSON.stringify({ id: "native-monitor-start", type: "start-mixer-monitor", sampleRate: 48000 })}\n`);
   await waitFor(() =>
     messages.some((message) =>

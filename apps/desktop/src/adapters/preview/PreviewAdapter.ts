@@ -54,7 +54,11 @@ export class PreviewAdapter implements MixerControlPort {
   }
 
   setChannelMonitor(channelId: string, monitor: boolean): void {
-    this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? { ...channel, monitor } : channel);
+    this.snapshot.channels = this.snapshot.channels.map((channel) => {
+      if (channel.id === channelId) return { ...channel, monitor };
+      if (monitor && channel.kind === "source") return { ...channel, monitor: false };
+      return channel;
+    });
   }
 
   setChannelRecordArm(channelId: string, armed: boolean): void {
