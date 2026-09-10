@@ -35,12 +35,26 @@ struct SessionFxSendAssignment {
   float gainDb = -90.0f;
 };
 
+struct SessionChannelHarmonyState {
+  std::string channelId;
+  std::string contentRole = "other";
+  std::string primaryHarmonyInstanceId;
+  bool harmonyEnabled = false;
+  std::string key = "C";
+  std::string scale = "Major";
+  std::string mode = "Diatonic";
+  std::string voice1 = "+3rd";
+  std::string voice2 = "+5th";
+  float harmonyLevelDb = 0.0f;
+};
+
 struct SessionDocument {
   std::uint32_t schemaVersion = kCurrentSessionSchemaVersion;
   std::string projectId;
   std::vector<SessionMediaRef> media;
   std::vector<SessionFxUnitState> fxUnits;
   std::vector<SessionFxSendAssignment> fxSends;
+  std::vector<SessionChannelHarmonyState> channelHarmony;
 };
 
 enum class SessionError {

@@ -1747,3 +1747,36 @@ Known limitations:
 - MIXFX-04 is persistence/automation/export contract foundation; actual realtime/offline FX return audio rendering remains pending integration with `MixerGraph` and final mixer FX QA.
 - Session JSON parsing is intentionally minimal for current internal schema fixtures; hardened migration tooling and richer Custom preset migration are still pending.
 - Full deterministic reopen-mix tolerance testing cannot pass until FX DSP graph rendering is wired end to end.
+
+## HARM-00 — Audit Instance Binding And State
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: MIXFX-04 IMPLEMENTED_UNVERIFIED
+
+### HARM-00 Checkpoint — Primary Harmony Binding Contract
+
+Changed files:
+- `native/engine/src/engine/ChannelHarmonyController.hpp`, `native/engine/src/engine/ChannelHarmonyController.cpp`: added primary harmony controller with content role, single primary instance ownership, desired/effective enabled state, revision ACKs, default quick parameters, 8-slot rack limit handling, multiple existing harmony candidate rejection, and unsupported-role rejection.
+- `native/engine/tests/ChannelHarmonyControllerTest.cpp`: verifies first ON creates/binds one primary instance for vocal, OFF keeps the instance while disabling voices, stale revisions reject, non-vocal channels reject, full rack rejects, multiple candidates require explicit primary choice, and configure updates the same state.
+- `native/engine/src/engine/SessionDocument.hpp`, `native/engine/src/engine/SessionDocument.cpp`, `native/engine/tests/SessionDocumentTest.cpp`: added persisted per-channel harmony role, primary instance ID, enabled state, key/scale/mode/voice intervals, and harmony level; legacy sessions without harmony state still load with empty vectors.
+- `native/engine/src/main.cpp`, `apps/desktop/electron/main.ts`: exposed `channel-harmony-set-enabled`, `channel-harmony-configure`, and `channel-harmony-snapshot` over the native JSONL IPC whitelist.
+
+Implemented behavior:
+- Harmony shortcut state is now represented as a native primary channel instance contract, separate from shared FX A/B programs and sends.
+- A vocal channel can bind one primary harmony instance with defaults `C`, `Major`, `Diatonic`, `+3rd`, `+5th`, `0.0 dB`.
+- MUSIC/non-vocal roles reject shortcut enable with `ROLE_UNSUPPORTED`; full racks reject with `FX_RACK_FULL`; multiple existing harmony instances reject with `MULTIPLE_HARMONY_CANDIDATES`.
+- OFF disables harmony voices while retaining the primary instance identity for fast re-enable.
+
+Validation:
+- command: `native/engine/build/native/engine/local-mixer-channel-harmony-controller-tests`
+- exit/result: `0`; controller binding and error-policy tests passed.
+- command: `native/engine/build/native/engine/local-mixer-session-document-tests`
+- exit/result: `0`; session roundtrip passed with channel harmony state.
+- command: `node -e "... channel-harmony-set-enabled ..."`
+- exit/result: `0`; VOICE enable returned primary instance `harmony:voice:primary`, revision 1, key C; MUSIC enable returned `ROLE_UNSUPPORTED`.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 33/33, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- HARM-00 is the native binding/state contract; Mixer UI reconciliation with these native ACKs, monitor-profile effective status, and advanced primary-selection UX remain pending HARM-01/HARM-02.
+- The primary harmony controller is not yet wired into realtime channel insert graph transitions.
+- Real microphone audition and latency-alignment evidence remain pending final harmony QA.

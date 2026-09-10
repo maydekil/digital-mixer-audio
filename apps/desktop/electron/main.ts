@@ -15,6 +15,9 @@ const requireEngine = process.env.LOCAL_MIXER_REQUIRE_ENGINE === "1";
 const supportedSoundPads = new Set(["applause", "laugh", "cheer", "drumroll", "ding", "whoosh"]);
 const supportedEngineCommands = new Set([
   "engine-status",
+  "channel-harmony-configure",
+  "channel-harmony-set-enabled",
+  "channel-harmony-snapshot",
   "fx-program-bank",
   "fx-unit-reset-macros",
   "fx-unit-select-program",

@@ -1,5 +1,6 @@
 #include "dsp/Gain.hpp"
 #include "dsp/OutputProtection.hpp"
+#include "engine/ChannelHarmonyController.hpp"
 #include "engine/EngineRuntime.hpp"
 #include "engine/FxProgramController.hpp"
 #include "engine/FxProgramRegistryJson.hpp"
@@ -293,6 +294,31 @@ std::optional<localmixer::engine::FxBusId> readFxUnitId(const std::string& line)
   return localmixer::engine::fxUnitFromName(readJsonStringField(line, "unitId"));
 }
 
+std::string harmonyStateJson(const localmixer::engine::ChannelHarmonyState& state) {
+  std::string json = "\"channelId\":\"" + escapeJson(state.channelId) + "\"";
+  json += ",\"contentRole\":\"" + std::string(localmixer::engine::channelContentRoleName(state.contentRole)) + "\"";
+  json += ",\"primaryHarmonyInstanceId\":\"" + escapeJson(state.primaryInstanceId) + "\"";
+  json += ",\"desiredEnabled\":" + std::string(state.desiredEnabled ? "true" : "false");
+  json += ",\"effectiveEnabled\":" + std::string(state.effectiveEnabled ? "true" : "false");
+  json += ",\"pending\":" + std::string(state.pending ? "true" : "false");
+  json += ",\"revision\":" + std::to_string(state.revision);
+  json += ",\"latencySamples\":" + std::to_string(state.latencySamples);
+  json += ",\"key\":\"" + escapeJson(state.params.key) + "\"";
+  json += ",\"scale\":\"" + escapeJson(state.params.scale) + "\"";
+  json += ",\"mode\":\"" + escapeJson(state.params.mode) + "\"";
+  json += ",\"voice1\":\"" + escapeJson(state.params.voice1) + "\"";
+  json += ",\"voice2\":\"" + escapeJson(state.params.voice2) + "\"";
+  json += ",\"levelDb\":" + std::to_string(state.params.levelDb);
+  return json;
+}
+
+std::string harmonyAckJson(const localmixer::engine::HarmonyCommandAck& ack) {
+  std::string json = "\"accepted\":" + std::string(ack.accepted ? "true" : "false");
+  json += ",\"error\":\"" + std::string(localmixer::engine::harmonyCommandErrorName(ack.error)) + "\"";
+  json += "," + harmonyStateJson(ack.state);
+  return json;
+}
+
 void printDevices() {
   const auto devices = loadNativeDevices();
   std::cout << "{\"devices\":[";
@@ -437,6 +463,7 @@ int runStdioProtocol() {
   localmixer::engine::MediaImportJobManager mediaImportJobs;
   localmixer::engine::MixerGraphController graphController;
   localmixer::engine::FxProgramController fxProgramController;
+  localmixer::engine::ChannelHarmonyController harmonyController;
   localmixer::engine::SystemRouteTransactionManager routeTransactionManager;
   localmixer::engine::SystemRouteRecoveryStore routeRecoveryStore(routeRecoveryMarkerPath());
   localmixer::engine::TransportClock transportClock;
@@ -445,6 +472,8 @@ int runStdioProtocol() {
   localmixer::platform::macos::PersistentPassthroughMonitor persistentMonitor;
 #endif
   runtime.refreshDevices(loadNativeDevices());
+  harmonyController.registerChannel("voice", localmixer::engine::ChannelContentRole::vocal);
+  harmonyController.registerChannel("music", localmixer::engine::ChannelContentRole::music);
 
   std::cout
     << "{\"type\":\"hello\","
@@ -533,6 +562,37 @@ int runStdioProtocol() {
       writeRawResponse(id, true, "fx-unit-snapshot",
         "\"unitId\":\"" + std::string(localmixer::engine::fxUnitName(*unit)) + "\"," +
         fxProgramSnapshotJson(fxProgramController.snapshot(*unit)));
+    } else if (type == "channel-harmony-set-enabled") {
+      const auto channelId = readJsonStringField(line, "channelId");
+      const auto enabled = readJsonBoolField(line, "enabled").value_or(false);
+      const auto expectedRevision = static_cast<std::uint64_t>(readJsonNumberField(line, "expectedRevision").value_or(0.0));
+      const auto ack = harmonyController.setEnabled(channelId, enabled, expectedRevision);
+      writeRawResponse(id, ack.accepted, "channel-harmony-set-enabled", harmonyAckJson(ack));
+    } else if (type == "channel-harmony-configure") {
+      const auto channelId = readJsonStringField(line, "channelId");
+      localmixer::engine::HarmonyQuickParams params{
+        .key = readJsonStringField(line, "key"),
+        .scale = readJsonStringField(line, "scale"),
+        .mode = readJsonStringField(line, "mode"),
+        .voice1 = readJsonStringField(line, "voice1"),
+        .voice2 = readJsonStringField(line, "voice2"),
+        .levelDb = static_cast<float>(readJsonNumberField(line, "levelDb").value_or(0.0)),
+      };
+      if (params.key.empty()) params.key = "C";
+      if (params.scale.empty()) params.scale = "Major";
+      if (params.mode.empty()) params.mode = "Diatonic";
+      if (params.voice1.empty()) params.voice1 = "+3rd";
+      if (params.voice2.empty()) params.voice2 = "+5th";
+      const auto expectedRevision = static_cast<std::uint64_t>(readJsonNumberField(line, "expectedRevision").value_or(0.0));
+      const auto ack = harmonyController.configure(channelId, params, expectedRevision);
+      writeRawResponse(id, ack.accepted, "channel-harmony-configure", harmonyAckJson(ack));
+    } else if (type == "channel-harmony-snapshot") {
+      const auto snapshot = harmonyController.snapshot(readJsonStringField(line, "channelId"));
+      if (!snapshot.has_value()) {
+        writeRawResponse(id, false, "channel-harmony-snapshot", "\"error\":\"CHANNEL_NOT_FOUND\"");
+        continue;
+      }
+      writeRawResponse(id, true, "channel-harmony-snapshot", harmonyStateJson(*snapshot));
     } else if (type == "prepare-passthrough") {
       const auto sampleRate = readJsonNumberField(line, "sampleRate").value_or(48000.0);
       const auto blockSize = static_cast<std::uint32_t>(readJsonNumberField(line, "blockSize").value_or(256.0));

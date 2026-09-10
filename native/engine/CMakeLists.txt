@@ -21,6 +21,7 @@ add_library(local_mixer_dsp STATIC
   src/dsp/fx/ReverbEffect.cpp
   src/dsp/fx/VocoderEffect.cpp
   src/engine/Automation.cpp
+  src/engine/ChannelHarmonyController.cpp
   src/engine/DeviceService.cpp
   src/engine/EngineRuntime.cpp
   src/engine/Export.cpp
@@ -289,6 +290,15 @@ target_link_libraries(local-mixer-automation-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-automation-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-automation-tests COMMAND local-mixer-automation-tests)
+
+add_executable(local-mixer-channel-harmony-controller-tests
+  tests/ChannelHarmonyControllerTest.cpp
+)
+
+target_link_libraries(local-mixer-channel-harmony-controller-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-channel-harmony-controller-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-channel-harmony-controller-tests COMMAND local-mixer-channel-harmony-controller-tests)
 
 add_executable(local-mixer-effect-registry-tests
   tests/fx/EffectRegistryTest.cpp

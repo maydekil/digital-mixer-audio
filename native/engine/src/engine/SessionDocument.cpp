@@ -84,6 +84,22 @@ std::string serializeSession(const SessionDocument& document) {
          << ", \"gainDb\": " << send.gainDb << "}";
   }
   if (!document.fxSends.empty()) json << "\n  ";
+  json << "],\n";
+  json << "  \"channelHarmony\": [";
+  for (std::size_t index = 0; index < document.channelHarmony.size(); index += 1) {
+    const auto& harmony = document.channelHarmony[index];
+    json << (index == 0 ? "\n" : ",\n");
+    json << "    {\"channelId\": \"" << escapeJson(harmony.channelId) << "\", \"contentRole\": \"" << escapeJson(harmony.contentRole)
+         << "\", \"primaryHarmonyInstanceId\": \"" << escapeJson(harmony.primaryHarmonyInstanceId)
+         << "\", \"harmonyEnabled\": " << (harmony.harmonyEnabled ? "true" : "false")
+         << ", \"key\": \"" << escapeJson(harmony.key)
+         << "\", \"scale\": \"" << escapeJson(harmony.scale)
+         << "\", \"mode\": \"" << escapeJson(harmony.mode)
+         << "\", \"voice1\": \"" << escapeJson(harmony.voice1)
+         << "\", \"voice2\": \"" << escapeJson(harmony.voice2)
+         << "\", \"harmonyLevelDb\": " << harmony.harmonyLevelDb << "}";
+  }
+  if (!document.channelHarmony.empty()) json << "\n  ";
   json << "]\n}\n";
   return json.str();
 }
@@ -134,6 +150,24 @@ SessionLoadResult parseSession(std::string_view json) {
       .unitId = (*it)[2].str(),
       .enabled = (*it)[3].str() == "true",
       .gainDb = std::stof((*it)[4].str()),
+    });
+  }
+
+  const std::regex harmonyPattern("\\{\"channelId\"\\s*:\\s*\"([^\"]*)\",\\s*\"contentRole\"\\s*:\\s*\"([^\"]*)\",\\s*\"primaryHarmonyInstanceId\"\\s*:\\s*\"([^\"]*)\",\\s*\"harmonyEnabled\"\\s*:\\s*(true|false),\\s*\"key\"\\s*:\\s*\"([^\"]*)\",\\s*\"scale\"\\s*:\\s*\"([^\"]*)\",\\s*\"mode\"\\s*:\\s*\"([^\"]*)\",\\s*\"voice1\"\\s*:\\s*\"([^\"]*)\",\\s*\"voice2\"\\s*:\\s*\"([^\"]*)\",\\s*\"harmonyLevelDb\"\\s*:\\s*(-?\\d+(?:\\.\\d+)?)\\}");
+  for (auto it = std::cregex_iterator(json.data(), json.data() + json.size(), harmonyPattern);
+       it != std::cregex_iterator();
+       ++it) {
+    document.channelHarmony.push_back(SessionChannelHarmonyState{
+      .channelId = (*it)[1].str(),
+      .contentRole = (*it)[2].str(),
+      .primaryHarmonyInstanceId = (*it)[3].str(),
+      .harmonyEnabled = (*it)[4].str() == "true",
+      .key = (*it)[5].str(),
+      .scale = (*it)[6].str(),
+      .mode = (*it)[7].str(),
+      .voice1 = (*it)[8].str(),
+      .voice2 = (*it)[9].str(),
+      .harmonyLevelDb = std::stof((*it)[10].str()),
     });
   }
   return {.document = document};

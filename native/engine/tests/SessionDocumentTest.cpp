@@ -8,6 +8,7 @@ namespace {
 
 using localmixer::engine::SessionDocument;
 using localmixer::engine::SessionError;
+using localmixer::engine::SessionChannelHarmonyState;
 using localmixer::engine::SessionFxSendAssignment;
 using localmixer::engine::SessionFxUnitState;
 using localmixer::engine::SessionMediaRef;
@@ -41,6 +42,18 @@ int main() {
     .macro2Value = "20 ms",
   });
   document.fxSends.push_back(SessionFxSendAssignment{.channelId = "voice", .unitId = "fx-a", .enabled = true, .gainDb = -18.0f});
+  document.channelHarmony.push_back(SessionChannelHarmonyState{
+    .channelId = "voice",
+    .contentRole = "vocal",
+    .primaryHarmonyInstanceId = "harmony:voice:primary",
+    .harmonyEnabled = true,
+    .key = "C",
+    .scale = "Major",
+    .mode = "Diatonic",
+    .voice1 = "+3rd",
+    .voice2 = "+5th",
+    .harmonyLevelDb = 0.0f,
+  });
   if (!saveSessionAtomic(sessionPath, document)) {
     std::cerr << "session save should succeed\n";
     return 1;
@@ -49,13 +62,16 @@ int main() {
   const auto loaded = loadSession(sessionPath);
   if (loaded.error != SessionError::none || loaded.document.projectId != "project-a" || loaded.document.media.size() != 2 ||
       !loaded.document.media[1].missing || loaded.document.fxUnits.size() != 1 || loaded.document.fxSends.size() != 1 ||
-      loaded.document.fxUnits[0].macro1Value != "2.2 s" || loaded.document.fxSends[0].gainDb != -18.0f) {
+      loaded.document.fxUnits[0].macro1Value != "2.2 s" || loaded.document.fxSends[0].gainDb != -18.0f ||
+      loaded.document.channelHarmony.size() != 1 ||
+      loaded.document.channelHarmony[0].primaryHarmonyInstanceId != "harmony:voice:primary") {
     std::cerr << "session load roundtrip mismatch\n";
     return 1;
   }
 
   const auto legacy = parseSession("{\"schemaVersion\":1,\"projectId\":\"legacy\",\"media\":[]}");
-  if (legacy.error != SessionError::none || !legacy.document.fxUnits.empty() || !legacy.document.fxSends.empty()) {
+  if (legacy.error != SessionError::none || !legacy.document.fxUnits.empty() || !legacy.document.fxSends.empty() ||
+      !legacy.document.channelHarmony.empty()) {
     std::cerr << "legacy session without FX state should load with empty FX vectors\n";
     return 1;
   }
