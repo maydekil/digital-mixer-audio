@@ -1989,3 +1989,28 @@ Validation:
 Known limitations:
 - Runtime GUI launch from the packaged `.app`, macOS microphone/capture permission prompt behavior, offline import/record/export from installed location, plugin editor opening, disconnect recovery, and clean-location manual acceptance are NOT_RUN in this command flow.
 - Package is unsigned and not notarized; public distribution remains conditional.
+
+## VFX-09 — Vocal FX Integration Release Gate
+Status: IMPLEMENTED_UNVERIFIED_QA_REPORT
+Prerequisites: INT-02 IMPLEMENTED_UNVERIFIED
+
+### VFX-09 Checkpoint — Quality And Latency Reports
+
+Changed files:
+- `docs/reports/vocal-fx-quality.md`: added VFX quality evidence matrix for all 12 native effect families plus required human/hardware QA gaps.
+- `docs/reports/vocal-fx-latency.md`: added latency model and open-measurement report for rack, pitch, harmony, vocoder, record/export alignment, and live monitoring.
+- `docs/task-plan.json`, `docs/progress.md`: updated VFX-09 status and evidence paths.
+
+Implemented behavior:
+- The VFX final gate now has the two required report files.
+- Reports distinguish portable native tests from missing vocal recordings, listening QA, persistent wet WAV renders, heavy-chain benchmark, and packaged permission/device evidence.
+- No report claims that labels, mockups, or unit tests alone complete final vocal FX release acceptance.
+
+Validation:
+- command: `ctest --test-dir native/engine/build -R 'local-mixer-(effect|time|character|pitch|harmony|vocoder)' --output-on-failure`
+- exit/result: `0`; 10/10 focused tests passed, including effect registry/rack/time/character/pitch/harmony/vocoder coverage.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 36/36, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- VFX-09 remains `IMPLEMENTED_UNVERIFIED_QA_REPORT`, not `VERIFIED`, because real vocal fixtures, listening rubric, persistent dry/wet render files, callback p99/xrun metrics, live monitoring comfort, and record/export graph comparisons are NOT_RUN or PARTIAL.
