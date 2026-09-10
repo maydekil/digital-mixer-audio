@@ -1355,3 +1355,31 @@ Validation:
 Known limitations:
 - Native MIDI device enumeration/input callbacks, timestamped realtime scheduling, write/touch/latch mode engine integration, mapping persistence in session JSON, and UI MIDI learn are not yet implemented.
 - Offline/realtime automation parity is covered only at value lookup level, not full graph rendering.
+
+## VFX-00 — Audit Gap, Catalog, Schema, And Design Contract
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: Phase16 IMPLEMENTED_UNVERIFIED
+
+### VFX-00 Checkpoint — Native Vocal FX Catalog Contract
+
+Changed files:
+- `native/engine/src/dsp/fx/EffectRegistry.hpp`, `native/engine/src/dsp/fx/EffectRegistry.cpp`: added the native Vocal FX catalog contract with 12 stable effect IDs, parameter descriptors, owner modules, implementation phases, format policies, availability flags, and stable FX error names.
+- `native/engine/tests/fx/EffectRegistryTest.cpp`: verifies all required effect IDs are present, each descriptor has owner/schema/test metadata, Phase11-backed reverb/delay are only `implemented_unverified`, pitch correction remains unavailable, and developer/error names are stable.
+- `docs/specs/vocal-fx.md`: split out the VFX contract, rack policy, format policy, availability semantics, and IPC error contract.
+- `docs/adr/0002-pitch-backend.md`: records pitch backend boundary and Rubber Band spike status without claiming integration.
+- `docs/reports/vocal-fx-catalog-vfx00.md`: records the VFX-00 catalog report and current availability summary.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired VFX-00 build/test/progress evidence.
+
+Implemented behavior:
+- The native registry exposes all 12 required Vocal FX effect IDs from section 8A.2.
+- Each effect has a native-owned parameter schema, owner module, implementation phase, and test plan.
+- Availability status is explicit and conservative; unavailable effects cannot be treated as implemented DSP.
+- Mono/stereo format policy and IPC/rack error names are defined for later rack runtime phases.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 21/21 including `local-mixer-effect-registry-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- VFX-00 is catalog/contract work only; it does not complete rack runtime or the remaining Vocal FX DSP.
+- Rubber Band/pitch backend build, license, latency, pitch detector, and audio quality gates remain pending in VFX-04 through VFX-06.
