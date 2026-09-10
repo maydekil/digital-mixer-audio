@@ -1,5 +1,7 @@
 #include "engine/SystemRouting.hpp"
+#include "engine/SystemRouteRecovery.hpp"
 
+#include <filesystem>
 #include <iostream>
 #include <vector>
 
@@ -8,6 +10,7 @@ namespace {
 using localmixer::engine::DeviceDescriptor;
 using localmixer::engine::ProjectAudioConfig;
 using localmixer::engine::SystemRouteError;
+using localmixer::engine::SystemRouteRecoveryStore;
 using localmixer::engine::SystemRouteSelection;
 using localmixer::engine::SystemRouteTransactionManager;
 using localmixer::engine::SystemRouteTransactionState;
@@ -120,6 +123,31 @@ int main() {
   const auto noOwned = manager.disable(true);
   if (noOwned.error != SystemRouteError::noOwnedRoute) {
     std::cerr << "system route transaction should not restore unowned route\n";
+    return 1;
+  }
+
+  const auto markerPath = std::filesystem::temp_directory_path() / "local-mixer-route-recovery-test.marker";
+  SystemRouteRecoveryStore store(markerPath);
+  store.clear();
+  if (store.save(noOwned)) {
+    std::cerr << "recovery store should not save unowned route\n";
+    return 1;
+  }
+
+  const auto owned = manager.requestEnable(valid, "speakers=main", true, true);
+  if (!store.save(owned)) {
+    std::cerr << "recovery store should save owned route\n";
+    return 1;
+  }
+  const auto loaded = store.load();
+  if (!loaded.has_value() || loaded->originalOutputUid != "speakers=main" ||
+      loaded->selection.blackHoleUid != "blackhole-2ch" ||
+      loaded->selection.physicalOutputUid != "phones") {
+    std::cerr << "recovery store should round-trip marker fields\n";
+    return 1;
+  }
+  if (!store.clear() || store.load().has_value()) {
+    std::cerr << "recovery store should clear marker\n";
     return 1;
   }
 

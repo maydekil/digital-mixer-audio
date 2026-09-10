@@ -4,6 +4,7 @@
 #include "engine/JsonProtocol.hpp"
 #include "engine/MixerGraph.hpp"
 #include "engine/MixerGraphController.hpp"
+#include "engine/SystemRouteRecovery.hpp"
 #include "engine/SystemRouting.hpp"
 #include "engine/SystemRoutingJson.hpp"
 #if defined(__APPLE__)
@@ -16,6 +17,8 @@
 
 #include <array>
 #include <cmath>
+#include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <optional>
 #include <span>
@@ -45,6 +48,14 @@ struct SyncedMonitorSelection {
   float channelFaderDb = 0.0f;
   float channelPan = 0.0f;
 };
+
+std::filesystem::path routeRecoveryMarkerPath() {
+  if (const auto* path = std::getenv("LOCAL_MIXER_ROUTE_RECOVERY_MARKER")) return path;
+  if (const auto* home = std::getenv("HOME")) {
+    return std::filesystem::path(home) / "Library" / "Application Support" / "Local Audio Mixer" / "route-recovery.marker";
+  }
+  return std::filesystem::temp_directory_path() / "local-mixer-route-recovery.marker";
+}
 
 std::string argumentValue(int argc, char** argv, const std::string& name, const std::string& fallback = "") {
   for (int index = 2; index + 1 < argc; index += 1) {
@@ -393,6 +404,7 @@ int runStdioProtocol() {
   localmixer::engine::EngineRuntime runtime;
   localmixer::engine::MixerGraphController graphController;
   localmixer::engine::SystemRouteTransactionManager routeTransactionManager;
+  localmixer::engine::SystemRouteRecoveryStore routeRecoveryStore(routeRecoveryMarkerPath());
   SyncedMonitorSelection monitorSelection;
 #if defined(__APPLE__)
   localmixer::platform::macos::PersistentPassthroughMonitor persistentMonitor;
@@ -503,6 +515,9 @@ int runStdioProtocol() {
         engineReady,
         routeApplied
       );
+      if (transaction.state == localmixer::engine::SystemRouteTransactionState::active) {
+        routeRecoveryStore.save(transaction);
+      }
       writeRawResponse(id, transaction.state == localmixer::engine::SystemRouteTransactionState::active,
         "routing-system-enable", systemRouteTransactionJson(transaction));
     } else if (type == "routing-system-disable") {
@@ -515,11 +530,15 @@ int runStdioProtocol() {
       }
 #endif
       const auto transaction = routeTransactionManager.disable(restored);
+      if (transaction.error == localmixer::engine::SystemRouteError::none) routeRecoveryStore.clear();
       writeRawResponse(id, transaction.error == localmixer::engine::SystemRouteError::none,
         "routing-system-disable", systemRouteTransactionJson(transaction));
     } else if (type == "routing-system-status") {
+      const auto marker = routeRecoveryStore.load();
       writeRawResponse(id, true, "routing-system-status",
-        systemRouteTransactionJson(routeTransactionManager.transaction()));
+        systemRouteTransactionJson(routeTransactionManager.transaction()) +
+        ",\"recoveryMarkerPresent\":" + std::string(marker.has_value() ? "true" : "false") +
+        ",\"recoveryOriginalOutputUid\":\"" + escapeJson(marker.has_value() ? marker->originalOutputUid : "") + "\"");
     } else if (type == "sync-mixer-graph") {
       const auto fields = syncMixerGraphResultJson(line, graphController, monitorSelection);
       writeRawResponse(id, fields.find("\"synced\":true") != std::string::npos, "sync-mixer-graph", fields);

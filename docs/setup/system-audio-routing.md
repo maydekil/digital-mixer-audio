@@ -34,7 +34,7 @@ It reports:
 - sample-rate mismatch.
 - rejected loopback output routes.
 
-Current foundation is read-only for OS routing. It does not install BlackHole, create aggregate devices, or change macOS default output.
+Current foundation does not install BlackHole or create aggregate devices. It can attempt a guarded macOS default-output switch only when the command explicitly sets `allowOsRouteChange: true`.
 
 The native engine also exposes guarded transaction commands:
 
@@ -43,5 +43,11 @@ The native engine also exposes guarded transaction commands:
 - `routing-system-status`
 
 By default, `routing-system-enable` does not change macOS output and returns `OS_APPLY_UNAVAILABLE`. The command must include `allowOsRouteChange: true` before the native CoreAudio adapter attempts to set the macOS default output to BlackHole and store the previous output UID for restore.
+
+When the native engine owns an active route, it writes a recovery marker containing the previous output UID and selected route. The default marker path is:
+
+`~/Library/Application Support/Local Audio Mixer/route-recovery.marker`
+
+Set `LOCAL_MIXER_ROUTE_RECOVERY_MARKER` to override the marker path for tests. `routing-system-status` reports `recoveryMarkerPresent` and `recoveryOriginalOutputUid`. A successful `routing-system-disable` clears the marker after restoring the previous output. The marker is not auto-restored without an explicit command.
 
 The desktop UI does not expose this enable action yet. Use route diagnostics first, and only run route apply manually when BlackHole and physical output validation are ready.

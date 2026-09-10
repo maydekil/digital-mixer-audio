@@ -6,6 +6,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/MixerControlQueue.cpp
   src/engine/MixerGraph.cpp
   src/engine/MixerGraphController.cpp
+  src/engine/SystemRouteRecovery.cpp
   src/engine/SystemRouting.cpp
 )
 

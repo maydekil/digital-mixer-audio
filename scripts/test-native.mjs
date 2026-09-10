@@ -91,7 +91,8 @@ async function testEngineProtocol() {
     messages.some((message) =>
       message.id === "native-route-status" &&
       message.type === "routing-system-status" &&
-      typeof message.ownsSystemRoute === "boolean"
+      typeof message.ownsSystemRoute === "boolean" &&
+      typeof message.recoveryMarkerPresent === "boolean"
     )
   );
   child.stdin.write(`${JSON.stringify({ id: "native-route-disable", type: "routing-system-disable" })}\n`);

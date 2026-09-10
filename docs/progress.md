@@ -674,6 +674,32 @@ Validation:
 - command: `npm run verify`
 - exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
 
+### Phase04 Checkpoint — Durable Route Recovery Marker
+
+Changed files:
+- `native/engine/src/engine/SystemRouteRecovery.hpp`, `native/engine/src/engine/SystemRouteRecovery.cpp`: added a small file-backed recovery marker store for owned system-route transactions.
+- `native/engine/src/main.cpp`: saves the marker after an active owned route, exposes marker state in `routing-system-status`, and clears the marker after successful disable/restore.
+- `native/engine/tests/SystemRoutingTest.cpp`: verifies marker save refusal for unowned routes, owned route round-trip, escaped UID handling, and clear behavior.
+- `native/engine/CMakeLists.txt`, `scripts/test-native.mjs`: compile the marker module and smoke-test the new protocol status field.
+- `docs/setup/system-audio-routing.md`, `docs/task-plan.json`, `docs/progress.md`: documented marker location, guarded behavior, and evidence paths.
+
+Implemented behavior:
+- Owned route transactions persist the original output UID and selected BlackHole/physical route to `~/Library/Application Support/Local Audio Mixer/route-recovery.marker`.
+- Tests can override the marker path with `LOCAL_MIXER_ROUTE_RECOVERY_MARKER`.
+- `routing-system-status` now reports `recoveryMarkerPresent` and `recoveryOriginalOutputUid`.
+- `routing-system-disable` clears the marker only after the transaction reports a successful restore.
+- Recovery marker metadata is passive; it does not auto-restore or change macOS output without an explicit route command.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 6/6, engine self-test, device enumeration smoke, and protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Manual crash/restart recovery flow is `NOT_RUN`.
+- Real `allowOsRouteChange: true` route apply/restore with BlackHole and physical hardware remains `NOT_RUN`.
+
 ## Native Sound Pad Spike — Early User-Requested
 Status: IMPLEMENTED_UNVERIFIED_PLAYBACK
 Prerequisites: user explicitly requested this before UI-04
