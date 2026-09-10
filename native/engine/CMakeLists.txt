@@ -1,4 +1,5 @@
 add_library(local_mixer_dsp STATIC
+  src/dsp/Dynamics.cpp
   src/dsp/Eq.cpp
   src/dsp/Gain.cpp
   src/dsp/Meter.cpp
@@ -68,6 +69,15 @@ target_link_libraries(local-mixer-eq-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-eq-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-eq-tests COMMAND local-mixer-eq-tests)
+
+add_executable(local-mixer-dynamics-tests
+  tests/DynamicsTest.cpp
+)
+
+target_link_libraries(local-mixer-dynamics-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-dynamics-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-dynamics-tests COMMAND local-mixer-dynamics-tests)
 
 add_executable(local-mixer-output-protection-tests
   tests/OutputProtectionTest.cpp

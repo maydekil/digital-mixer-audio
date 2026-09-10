@@ -1128,3 +1128,27 @@ Validation:
 Known limitations:
 - EQ bands are not yet wired into the realtime mixer graph or right-side channel strip controls.
 - Parameter smoothing/crossfade for audible EQ changes is still pending.
+
+## Phase08 — Gate, Expander, And Compressor
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: Phase07 IMPLEMENTED_UNVERIFIED
+
+### Phase08 Checkpoint — Native Dynamics Foundation
+
+Changed files:
+- `native/engine/src/dsp/Dynamics.hpp`, `native/engine/src/dsp/Dynamics.cpp`: added native compressor and noise gate/expander processors.
+- `native/engine/tests/DynamicsTest.cpp`: verifies compressor gain law, gain-reduction reading, bypass, linked stereo processing, silent gate stability, gate hold, and expander attenuation.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired dynamics build/test/progress evidence.
+
+Implemented behavior:
+- Compressor supports threshold, ratio, soft knee, attack, release, manual makeup, and linked stereo detector processing.
+- Noise control supports gate and expander modes with threshold, hysteresis, hold, range, attack, and release.
+- Phase08 acceptance fixture is covered: steady `-12 dBFS` into threshold `-24 dBFS` ratio `4:1` settles near `-21 dBFS` with makeup `0`.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 11/11 including `local-mixer-dynamics-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- Dynamics processors are not yet wired into the realtime channel strip graph or native parameter API.
+- Gain-reduction telemetry is local to the processor instance; UI subscriptions remain pending.
