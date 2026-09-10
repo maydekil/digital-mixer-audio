@@ -29,7 +29,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 | E2E-04 | Harmony ON/OFF/key/level | `PARTIAL` | Real vocal intervals, measured delay, and no-click audition not run. |
 | E2E-05 | Record dry/master then replay | `PARTIAL` | Native take metadata exists; live take replay and alignment not exposed end-to-end. |
 | E2E-06 | Processed vocal take replay | `PARTIAL` | Processed take metadata can request neutral insert replay and persists in session JSON; successful live processed recording flow not run. |
-| E2E-07 | Save/open/collect/relink | `PARTIAL` | Session contracts cover channel state, FX, harmony, plugin, and take metadata; desktop project path dialogs exist; full save/open/apply flow pending. |
+| E2E-07 | Save/open/collect/relink | `PARTIAL` | Session contracts cover channel state, FX, harmony, plugin, and take metadata; desktop project IPC reads/writes validated `.lam.json`; full snapshot apply flow pending. |
 | E2E-08 | Master + FX return stems | `PARTIAL` | Stem planning tests pass; rendered files not inspected. |
 | E2E-09 | Device unplug/sleep/crash/full kill | `PARTIAL` | Supervisor/recovery tests pass; device/sleep/manual kill pending. |
 | E2E-10 | Automation+MIDI+plugin state | `PARTIAL` | Automation/plugin state contracts pass; MIDI device and runtime plugin host pending. |

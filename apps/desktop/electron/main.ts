@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { EngineSupervisor } from "./EngineSupervisor.js";
-import { normalizeProjectSavePath, validateProjectOpenPath } from "./ProjectDialogs.js";
+import { normalizeProjectSavePath, readProjectFile, validateProjectOpenPath, writeProjectFile } from "./ProjectDialogs.js";
 
 const require = createRequire(import.meta.url);
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron") as typeof import("electron");
@@ -179,6 +179,22 @@ function registerProjectIpc() {
     });
     if (result.canceled || !result.filePath) return { ok: true, canceled: true };
     return { ok: true, path: normalizeProjectSavePath(result.filePath) };
+  });
+
+  ipcMain.handle("project:read", async (_event, path: unknown) => {
+    if (typeof path !== "string") return { ok: false, error: "Invalid project path" };
+    return readProjectFile(path);
+  });
+
+  ipcMain.handle("project:write", async (_event, payload: unknown) => {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return { ok: false, error: "Invalid project write payload" };
+    }
+    const { path, content } = payload as { path?: unknown; content?: unknown };
+    if (typeof path !== "string" || typeof content !== "string") {
+      return { ok: false, error: "Invalid project write payload" };
+    }
+    return writeProjectFile(path, content);
   });
 }
 

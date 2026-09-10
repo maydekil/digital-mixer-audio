@@ -2585,3 +2585,24 @@ Validation:
 
 Known limitations:
 - This does not yet serialize the live renderer snapshot to disk or apply a loaded session to the UI/engine graph.
+
+### Phase19 Hardening Checkpoint — Project File Read/write IPC
+
+Changed files:
+- `apps/desktop/electron/ProjectDialogs.ts`: added project JSON validation plus atomic `.lam.json` write and validated read helpers.
+- `apps/desktop/electron/main.ts`, `apps/desktop/electron/preload.ts`, `apps/desktop/src/types/localMixer.d.ts`: exposed `project:read` and `project:write` through the desktop preload boundary.
+- `tests/electron/project-dialogs.test.ts`: verifies project JSON validation, atomic write/read roundtrip, extension normalization, and invalid-file rejection.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated session/project evidence.
+
+Implemented behavior:
+- Desktop project IPC can now write validated Local Audio Mixer project JSON atomically and read it back through a validated `.lam.json` path.
+- Invalid JSON or empty/missing project IDs are rejected before writing.
+
+Validation:
+- command: `npm run typecheck && npm run test:ui && npm run build:desktop:main`
+- exit/result: `0`; TypeScript passed, Vitest 23/23 passed, and Electron main/preload build passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 23/23, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- The renderer still needs a real Project menu/action layer that serializes the live mixer snapshot and applies loaded project JSON back into UI/native graph state.
