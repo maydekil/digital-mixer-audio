@@ -15,7 +15,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 | Plan integrity | PASS | `npm run check:plan` covers 49 phases. |
 | File size | PASS | `npm run check:file-size` passes with all first-party code files under the 1,000-line hard limit. |
 | Architecture | PASS | `npm run check:architecture` rejects browser audio/Web Audio production paths. |
-| UI tests | PASS | Vitest 19/19 in `npm run verify`. |
+| UI tests | PASS | Vitest 28/28 in `npm run verify`. |
 | Native tests | PASS | CTest 43/43 in `npm run verify`. |
 | Dev package smoke | PASS_PARTIAL | `docs/reports/int02-package-smoke.md` proves unsigned `.app` resources/binaries, not GUI/TCC acceptance. |
 
@@ -29,7 +29,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 | E2E-04 | Harmony ON/OFF/key/level | `PARTIAL` | Real vocal intervals, measured delay, and no-click audition not run. |
 | E2E-05 | Record dry/master then replay | `PARTIAL` | Native take metadata exists; live take replay and alignment not exposed end-to-end. |
 | E2E-06 | Processed vocal take replay | `PARTIAL` | Processed take metadata can request neutral insert replay and persists in session JSON; successful live processed recording flow not run. |
-| E2E-07 | Save/open/collect/relink | `PARTIAL` | Session contracts cover channel state, FX, harmony, plugin, and take metadata; desktop Open/Save Project can roundtrip renderer snapshot `.lam.json`; collect/relink flow pending. |
+| E2E-07 | Save/open/collect/relink | `PARTIAL` | Session contracts cover channel state, FX, harmony, plugin, and take metadata; desktop Open/Save Project can roundtrip renderer snapshot `.lam.json`; collect/relink foundation detects missing media, copies present files, and updates channel source paths; packaged/manual relink dialog acceptance pending. |
 | E2E-08 | Master + FX return stems | `PARTIAL` | Stem planning tests pass; rendered files not inspected. |
 | E2E-09 | Device unplug/sleep/crash/full kill | `PARTIAL` | Supervisor/recovery tests pass; device/sleep/manual kill pending. |
 | E2E-10 | Automation+MIDI+plugin state | `PARTIAL` | Automation/plugin state contracts pass; MIDI device and runtime plugin host pending. |
@@ -52,6 +52,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 - AU/VST3 runtime hosting/editor/latency compensation is not complete; Phase17 is scanner/registry/state foundation.
 - Per-app Core Audio tap capture is not complete; Phase18 is capability/assignment foundation.
 - Live recording to timeline and replay through desktop workflow are not complete; native take metadata now marks replay insert behavior, partial/overrun state, and session roundtrip.
+- Project collect/relink has automated file-level coverage, but missing-media resolution UX and packaged manual acceptance remain pending.
 - Product-level 30/60-minute soak and 32-track stress are not run; monitor callback counters exist but do not replace acceptance soak evidence.
 - Packaged `.app` TCC permission prompt, clean-location launch, and offline workflow require manual target-Mac testing.
 

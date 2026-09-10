@@ -2649,3 +2649,32 @@ Validation:
 
 Known limitations:
 - Collect media, missing-file relink dialogs, undo/redo integration, and packaged manual open/save acceptance remain pending.
+
+### Phase19 Hardening Checkpoint — Project Collect And Relink Foundation
+
+Changed files:
+- `apps/desktop/electron/ProjectDialogs.ts`: added project media inspection, collect-to-project-folder copying, and relink helpers that keep session media references and matching channel sources aligned.
+- `apps/desktop/electron/main.ts`, `apps/desktop/electron/preload.ts`, `apps/desktop/src/types/localMixer.d.ts`: exposed `project:inspect-media`, `project:collect-media`, and `project:relink-media` through the desktop preload boundary with payload validation.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: added a compact top-bar Collect Media action that writes the collected project document and reapplies the updated snapshot.
+- `tests/electron/project-dialogs.test.ts`: verifies missing media detection, relink rejection for absent replacement files, relink channel-source updates, and collect behavior for present/missing media.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated project/session evidence.
+
+Implemented behavior:
+- Project files can now be inspected for missing media references without opening audio devices.
+- Existing media references can be copied next to the `.lam.json` project file and the project JSON updated to point at the collected files.
+- Relink foundation updates both the media reference and the matching channel source path, while rejecting missing replacement files.
+- Missing source files stay marked as missing and are not reported as collected.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 28/28 passed.
+- command: `npm run build:desktop:main`
+- exit/result: `0`; Electron main/preload build passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 28/28, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- This is a project-file foundation, not a full missing-file relink dialog. Manual packaged Open/Save/Collect/Relink acceptance remains NOT_RUN.
+- Collect/relink only moves project metadata and media file copies; it does not decode, play, process, record, or export audio.

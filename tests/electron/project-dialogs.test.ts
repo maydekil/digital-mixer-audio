@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
+  collectProjectMedia,
+  inspectProjectMedia,
   normalizeProjectSavePath,
   readProjectFile,
+  relinkProjectMedia,
   validateProjectJson,
   validateProjectOpenPath,
   writeProjectFile
@@ -46,4 +49,61 @@ describe("Project dialog path helpers", () => {
       await rm(directory, { recursive: true, force: true });
     }
   });
+
+  it("inspects and relinks media references in project JSON", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "local-mixer-relink-"));
+    try {
+      const missing = join(directory, "missing.wav");
+      const replacement = join(directory, "replacement.wav");
+      await writeFile(replacement, "wav");
+      const content = projectContent(missing);
+
+      expect(inspectProjectMedia(content).media?.[0]).toMatchObject({ id: "music", exists: false, missing: true });
+      expect(relinkProjectMedia(content, "music", join(directory, "none.wav"))).toMatchObject({ ok: false });
+
+      const relinked = relinkProjectMedia(content, "music", replacement);
+      expect(relinked.ok).toBe(true);
+      const parsed = JSON.parse(relinked.content ?? "") as { media: Array<{ path: string; missing: boolean }>; channels: Array<{ sourceUid: string }> };
+      expect(parsed.media[0]).toMatchObject({ path: replacement, missing: false });
+      expect(parsed.channels[0].sourceUid).toBe(replacement);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("collects existing media next to the project and leaves missing media marked", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "local-mixer-collect-"));
+    try {
+      const source = join(directory, "backing.wav");
+      const missing = join(directory, "gone.wav");
+      const project = join(directory, "session.lam.json");
+      await writeFile(source, "wav");
+
+      const result = await collectProjectMedia(projectContent(source, missing), project);
+      expect(result.ok).toBe(true);
+      expect(result.collected).toHaveLength(1);
+      expect(result.missing).toHaveLength(1);
+
+      const copiedPath = result.collected?.[0].to ?? "";
+      await expect(readFile(copiedPath, "utf8")).resolves.toBe("wav");
+      const parsed = JSON.parse(result.content ?? "") as { media: Array<{ id: string; path: string; missing: boolean }>; channels: Array<{ id: string; sourceUid: string }> };
+      expect(parsed.media.find((item) => item.id === "music")?.path).toBe(copiedPath);
+      expect(parsed.channels.find((item) => item.id === "music")?.sourceUid).toBe(copiedPath);
+      expect(parsed.media.find((item) => item.id === "missing")?.missing).toBe(true);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
 });
+
+function projectContent(mediaPath: string, missingPath?: string) {
+  const media = [
+    { id: "music", path: mediaPath, missing: false },
+    ...(missingPath ? [{ id: "missing", path: missingPath, missing: false }] : [])
+  ];
+  const channels = [
+    { id: "music", sourceUid: mediaPath },
+    ...(missingPath ? [{ id: "missing", sourceUid: missingPath }] : [])
+  ];
+  return JSON.stringify({ schemaVersion: 1, projectId: "project-a", media, channels });
+}

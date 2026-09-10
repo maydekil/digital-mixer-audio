@@ -4,7 +4,15 @@ import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { EngineSupervisor } from "./EngineSupervisor.js";
-import { normalizeProjectSavePath, readProjectFile, validateProjectOpenPath, writeProjectFile } from "./ProjectDialogs.js";
+import {
+  collectProjectMedia,
+  inspectProjectMedia,
+  normalizeProjectSavePath,
+  readProjectFile,
+  relinkProjectMedia,
+  validateProjectOpenPath,
+  writeProjectFile
+} from "./ProjectDialogs.js";
 
 const require = createRequire(import.meta.url);
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron") as typeof import("electron");
@@ -195,6 +203,33 @@ function registerProjectIpc() {
       return { ok: false, error: "Invalid project write payload" };
     }
     return writeProjectFile(path, content);
+  });
+
+  ipcMain.handle("project:inspect-media", async (_event, content: unknown) => {
+    if (typeof content !== "string") return { ok: false, error: "Invalid project content" };
+    return inspectProjectMedia(content);
+  });
+
+  ipcMain.handle("project:collect-media", async (_event, payload: unknown) => {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return { ok: false, error: "Invalid project collect payload" };
+    }
+    const { path, content } = payload as { path?: unknown; content?: unknown };
+    if (typeof path !== "string" || typeof content !== "string") {
+      return { ok: false, error: "Invalid project collect payload" };
+    }
+    return collectProjectMedia(content, path);
+  });
+
+  ipcMain.handle("project:relink-media", async (_event, payload: unknown) => {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return { ok: false, error: "Invalid project relink payload" };
+    }
+    const { content, mediaId, path } = payload as { content?: unknown; mediaId?: unknown; path?: unknown };
+    if (typeof content !== "string" || typeof mediaId !== "string" || typeof path !== "string") {
+      return { ok: false, error: "Invalid project relink payload" };
+    }
+    return relinkProjectMedia(content, mediaId, path);
   });
 }
 

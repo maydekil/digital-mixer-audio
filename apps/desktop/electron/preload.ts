@@ -10,5 +10,8 @@ contextBridge.exposeInMainWorld("localMixer", {
   chooseProjectSavePath: () => ipcRenderer.invoke("project:choose-save"),
   readProjectFile: (path: string) => ipcRenderer.invoke("project:read", path),
   writeProjectFile: (path: string, content: string) => ipcRenderer.invoke("project:write", { path, content }),
+  inspectProjectMedia: (content: string) => ipcRenderer.invoke("project:inspect-media", content),
+  collectProjectMedia: (path: string, content: string) => ipcRenderer.invoke("project:collect-media", { path, content }),
+  relinkProjectMedia: (content: string, mediaId: string, path: string) => ipcRenderer.invoke("project:relink-media", { content, mediaId, path }),
   engineCommand: (type: string, payload?: Record<string, unknown>) => ipcRenderer.invoke("engine:command", type, payload)
 });

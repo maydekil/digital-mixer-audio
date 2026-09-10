@@ -30,6 +30,7 @@ export function MixerPage() {
   const [devices, setDevices] = useState<HardwareDevice[]>([]);
   const [outputUid, setOutputUid] = useState("");
   const [transportState, setTransportState] = useState("stopped");
+  const [projectPath, setProjectPath] = useState("");
   const fxProgramInFlight = useRef<Record<"fx-a" | "fx-b", boolean>>({ "fx-a": false, "fx-b": false });
   const fxProgramDesired = useRef<Partial<Record<"fx-a" | "fx-b", number>>>({});
 
@@ -79,7 +80,8 @@ export function MixerPage() {
     if (!window.localMixer?.chooseProjectSavePath || !window.localMixer?.writeProjectFile) return;
     const target = await window.localMixer.chooseProjectSavePath();
     if (!target.ok || target.canceled || !target.path) return;
-    await window.localMixer.writeProjectFile(target.path, serializeProjectSession(adapter.getSnapshot()));
+    const written = await window.localMixer.writeProjectFile(target.path, serializeProjectSession(adapter.getSnapshot()));
+    if (written.ok && written.path) setProjectPath(written.path);
   }
 
   async function openProject() {
@@ -89,6 +91,24 @@ export function MixerPage() {
     const loaded = await window.localMixer.readProjectFile(target.path);
     if (!loaded.ok || !loaded.content) return;
     refresh(() => adapter.replaceSnapshot(projectSessionToSnapshot(loaded.content ?? "", adapter.getSnapshot())));
+    setProjectPath(loaded.path ?? target.path);
+  }
+
+  async function collectProject() {
+    if (!window.localMixer?.collectProjectMedia || !window.localMixer?.writeProjectFile) return;
+    let targetPath = projectPath;
+    if (!targetPath) {
+      if (!window.localMixer.chooseProjectSavePath) return;
+      const target = await window.localMixer.chooseProjectSavePath();
+      if (!target.ok || target.canceled || !target.path) return;
+      targetPath = target.path;
+    }
+    const collected = await window.localMixer.collectProjectMedia(targetPath, serializeProjectSession(adapter.getSnapshot()));
+    if (!collected.ok || !collected.content) return;
+    const written = await window.localMixer.writeProjectFile(targetPath, collected.content);
+    if (!written.ok) return;
+    refresh(() => adapter.replaceSnapshot(projectSessionToSnapshot(collected.content ?? "", adapter.getSnapshot())));
+    setProjectPath(written.path ?? targetPath);
   }
 
   async function selectFxProgram(unitId: "fx-a" | "fx-b", programId: number) {
@@ -263,6 +283,7 @@ export function MixerPage() {
         onStop={() => void sendTransport("transport-stop")}
         onOpen={() => void openProject()}
         onSave={() => void saveProject()}
+        onCollect={() => void collectProject()}
       />
       <div className="fx-stack">
         <CompactFxRow unit={fxA} program={programA} programs={snapshot.programs} onProgramChange={(id) => void selectFxProgram("fx-a", id)} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-a", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-a", value))} onMacro={(macro, value) => void setFxMacro("fx-a", macro, value)} onReset={() => void resetFxProgram("fx-a")} />
@@ -440,7 +461,7 @@ function parseFxPrograms(programs: unknown[]): FxProgram[] {
   });
 }
 
-function TopBar({ projectName, time, rate, status, mode, transportState, onVocalFx, onTimeline, onPlay, onStop, onOpen, onSave }: {
+function TopBar({ projectName, time, rate, status, mode, transportState, onVocalFx, onTimeline, onPlay, onStop, onOpen, onSave, onCollect }: {
   projectName: string;
   time: string;
   rate: string;
@@ -453,6 +474,7 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onVocal
   onStop(): void;
   onOpen(): void;
   onSave(): void;
+  onCollect(): void;
 }) {
   return (
     <header className="top-bar">
@@ -472,6 +494,7 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onVocal
       <div className="preview-banner">{mode}</div>
       <button className="settings" aria-label="Open Project" title="Open Project" onClick={onOpen}>□</button>
       <button className="settings" aria-label="Save Project" title="Save Project" onClick={onSave}>▣</button>
+      <button className="settings" aria-label="Collect Media" title="Collect Media" onClick={onCollect}>◇</button>
       <button className="settings">⚙</button>
     </header>
   );

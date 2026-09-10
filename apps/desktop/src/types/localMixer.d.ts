@@ -12,6 +12,15 @@ declare global {
       chooseProjectSavePath?: () => Promise<{ ok: boolean; path?: string; canceled?: boolean; error?: string }>;
       readProjectFile?: (path: string) => Promise<{ ok: boolean; path?: string; content?: string; error?: string }>;
       writeProjectFile?: (path: string, content: string) => Promise<{ ok: boolean; path?: string; error?: string }>;
+      inspectProjectMedia?: (content: string) => Promise<{ ok: boolean; media?: Array<{ id: string; path: string; exists: boolean; missing: boolean }>; error?: string }>;
+      collectProjectMedia?: (path: string, content: string) => Promise<{
+        ok: boolean;
+        content?: string;
+        collected?: Array<{ id: string; from: string; to: string }>;
+        missing?: Array<{ id: string; path: string; exists: boolean; missing: boolean }>;
+        error?: string;
+      }>;
+      relinkProjectMedia?: (content: string, mediaId: string, path: string) => Promise<{ ok: boolean; content?: string; error?: string }>;
       engineCommand?: (type: string, payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
     };
   }
