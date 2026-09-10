@@ -1,5 +1,7 @@
 #pragma once
 
+#include "engine/ChannelProcessorChain.hpp"
+
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -16,6 +18,7 @@ struct PassthroughMonitorRequest {
   std::uint32_t durationMs = 750;
   float monitorGainDb = -24.0f;
   float monitorPan = 0.0f;
+  localmixer::engine::ChannelProcessorConfig processors = localmixer::engine::defaultChannelProcessorConfig();
 };
 
 struct PassthroughMonitorResult {

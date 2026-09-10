@@ -32,6 +32,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/FxProgramRegistry.cpp
   src/engine/FxProgramRegistryJson.cpp
   src/engine/FxSendReturnBus.cpp
+  src/engine/JsonProtocol.cpp
   src/engine/Metronome.cpp
   src/engine/MediaFile.cpp
   src/engine/MediaImportJob.cpp
@@ -61,7 +62,6 @@ target_compile_features(local_mixer_dsp PUBLIC cxx_std_20)
 
 add_executable(local-mixer-engine
   src/main.cpp
-  src/engine/JsonProtocol.cpp
   src/engine/MediaTransportJson.cpp
   src/engine/SystemRoutingJson.cpp
 )
@@ -214,6 +214,15 @@ target_link_libraries(local-mixer-engine-runtime-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-engine-runtime-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-engine-runtime-tests COMMAND local-mixer-engine-runtime-tests)
+
+add_executable(local-mixer-engine-graph-sync-json-tests
+  tests/EngineGraphSyncJsonTest.cpp
+)
+
+target_link_libraries(local-mixer-engine-graph-sync-json-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-engine-graph-sync-json-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-engine-graph-sync-json-tests COMMAND local-mixer-engine-graph-sync-json-tests)
 
 add_executable(local-mixer-graph-tests
   tests/MixerGraphTest.cpp

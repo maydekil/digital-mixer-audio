@@ -257,6 +257,7 @@ void prepareMonitorGraph(PassthroughState& state, const PassthroughMonitorReques
   state.graph.setAssignment(created.id, localmixer::engine::SourceAssignment::mono, 0, false);
   state.graph.setLevel(created.id, 0.0f, request.monitorGainDb, request.monitorPan);
   state.graph.setInputMonitoring(created.id, true);
+  state.graph.setProcessors(created.id, request.processors);
   const auto scratchFrames = static_cast<std::size_t>(std::max<double>(request.projectSampleRate, 512.0));
   state.graphInput.assign(scratchFrames, 0.0f);
   state.graphLeft.assign(scratchFrames, 0.0f);

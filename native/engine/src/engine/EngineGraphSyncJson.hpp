@@ -1,5 +1,6 @@
 #pragma once
 
+#include "engine/ChannelProcessorChain.hpp"
 #include "engine/MixerGraphController.hpp"
 
 #include <cstdint>
@@ -15,6 +16,7 @@ struct SyncedMonitorSelection {
   float channelTrimDb = 0.0f;
   float channelFaderDb = 0.0f;
   float channelPan = 0.0f;
+  ChannelProcessorConfig processors = defaultChannelProcessorConfig();
 };
 
 std::string syncMixerGraphResultJson(

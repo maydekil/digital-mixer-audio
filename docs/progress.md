@@ -2225,3 +2225,24 @@ Validation:
 Known limitations:
 - Compressor parameters are still fixed starting values from UI/native defaults; editable compressor/noise/de-esser parameter state is not yet persisted or synced from dedicated controls.
 - Vocal FX rack insertion, FX A/B returns, Harmony insertion, export parity, live listening, and stress QA remain partial.
+
+### Phase19 Hardening Checkpoint — Monitor Processor Config Wiring
+
+Changed files:
+- `native/engine/src/engine/EngineGraphSyncJson.hpp`, `native/engine/src/engine/EngineGraphSyncJson.cpp`: retained the monitored channel's native `ChannelProcessorConfig` in `SyncedMonitorSelection`.
+- `native/engine/src/platform/macos/CoreAudioPassthrough.hpp`, `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: added processor config to the passthrough request and applied it to the preallocated monitor `MixerGraph` before callbacks start.
+- `native/engine/src/main.cpp`: passes monitored channel processor state to `PersistentPassthroughMonitor`.
+- `native/engine/tests/EngineGraphSyncJsonTest.cpp`: added parser coverage proving processor flags and EQ band values are preserved for the monitor path.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: wired the new test and updated evidence.
+
+Implemented behavior:
+- Starting desktop monitor after `sync-mixer-graph` can now use the same native channel processor config selected in the UI, instead of monitoring dry gain/pan only.
+- Processor config is applied before the Core Audio callback starts; the callback still uses preallocated buffers and existing `MixerGraph` processing.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-engine local-mixer-engine-graph-sync-json-tests && ctest --test-dir native/engine/build -R local-mixer-engine-graph-sync-json-tests --output-on-failure`
+- exit/result: `0`; native engine and graph-sync parser test built, and the focused parser test passed.
+
+Known limitations:
+- Hardware listening for processed monitoring is still NOT_RUN in this environment.
+- De-esser UI control, Vocal FX rack insertion, FX A/B returns, Harmony insertion, export parity, live callback timing metrics, and stress QA remain partial.

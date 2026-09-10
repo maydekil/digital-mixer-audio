@@ -64,6 +64,7 @@ std::string syncMixerGraphResultJson(
   float monitorTrimDb = 0.0f;
   float monitorFaderDb = 0.0f;
   float monitorPan = 0.0f;
+  auto monitorProcessors = defaultChannelProcessorConfig();
   const auto outputUid = readJsonStringField(line, "outputUid");
   const auto monitorGainDb = static_cast<float>(readJsonNumberField(line, "monitorGainDb").value_or(-18.0));
   for (std::uint32_t index = 0; index < channelCount; index += 1) {
@@ -107,6 +108,7 @@ std::string syncMixerGraphResultJson(
       monitorTrimDb = trimDb;
       monitorFaderDb = faderDb;
       monitorPan = pan;
+      monitorProcessors = processors;
     }
   }
 
@@ -126,6 +128,7 @@ std::string syncMixerGraphResultJson(
   monitorSelection.channelTrimDb = monitorTrimDb;
   monitorSelection.channelFaderDb = monitorFaderDb;
   monitorSelection.channelPan = monitorPan;
+  monitorSelection.processors = monitorProcessors;
   return "\"synced\":true,\"error\":\"\",\"stripCount\":" + std::to_string(stripCount) +
     ",\"activeMonitorCount\":" + std::to_string(monitorCount) +
     ",\"retiredGraphCount\":" + std::to_string(controller.retiredCount());

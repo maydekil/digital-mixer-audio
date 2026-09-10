@@ -48,7 +48,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 
 ## Critical Unresolved Work
 
-- Native realtime insert graph has initial channel processor wiring for EQ band values plus NOISE/COMP flags, but still needs de-esser control, Vocal FX, FX A/B, Harmony, export parity, and live callback QA.
+- Native realtime insert graph and monitor selection have initial channel processor wiring for EQ band values plus NOISE/COMP flags, but still need de-esser control, Vocal FX, FX A/B, Harmony, export parity, and live callback/listening QA.
 - AU/VST3 runtime hosting/editor/latency compensation is not complete; Phase17 is scanner/registry/state foundation.
 - Per-app Core Audio tap capture is not complete; Phase18 is capability/assignment foundation.
 - Live recording to timeline and replay through desktop workflow are not complete.

@@ -1,0 +1,68 @@
+#include "engine/EngineGraphSyncJson.hpp"
+
+#include <cmath>
+#include <iostream>
+#include <string>
+
+namespace {
+
+bool near(double actual, double expected) {
+  return std::fabs(actual - expected) < 0.0001;
+}
+
+bool contains(const std::string& haystack, const std::string& needle) {
+  return haystack.find(needle) != std::string::npos;
+}
+
+}  // namespace
+
+int main() {
+  localmixer::engine::MixerGraphController controller;
+  localmixer::engine::protocol::SyncedMonitorSelection selection;
+  const std::string payload =
+    "{\"channelCount\":1,"
+    "\"outputUid\":\"headphones\","
+    "\"monitorGainDb\":-18,"
+    "\"channel0Kind\":\"source\","
+    "\"channel0Name\":\"VOICE\","
+    "\"channel0Color\":\"#18d6e7\","
+    "\"channel0SourceUid\":\"mic\","
+    "\"channel0Assignment\":\"mono\","
+    "\"channel0Enabled\":true,"
+    "\"channel0Mute\":false,"
+    "\"channel0Solo\":false,"
+    "\"channel0Monitor\":true,"
+    "\"channel0ProcessorEq\":true,"
+    "\"channel0ProcessorComp\":true,"
+    "\"channel0ProcessorNoise\":true,"
+    "\"channel0Eq0FreqHz\":120,"
+    "\"channel0Eq0GainDb\":5,"
+    "\"channel0Eq0Q\":0.8,"
+    "\"channel0Eq0Type\":\"Low Shelf\","
+    "\"channel0TrimDb\":1,"
+    "\"channel0FaderDb\":-6,"
+    "\"channel0Pan\":0.25}";
+
+  const auto response = localmixer::engine::protocol::syncMixerGraphResultJson(payload, controller, selection);
+  if (!contains(response, "\"synced\":true") || selection.inputUid != "mic" || selection.outputUid != "headphones") {
+    std::cerr << "sync response should publish monitored source selection\n";
+    return 1;
+  }
+  if (!selection.processors.eqEnabled || !selection.processors.compressorEnabled || !selection.processors.noiseEnabled) {
+    std::cerr << "monitor selection should keep processor enable flags\n";
+    return 1;
+  }
+  if (!near(selection.processors.eqBands[0].frequencyHz, 120.0) ||
+      !near(selection.processors.eqBands[0].gainDb, 5.0) ||
+      !near(selection.processors.eqBands[0].q, 0.8)) {
+    std::cerr << "monitor selection should keep EQ band parameters\n";
+    return 1;
+  }
+  if (!near(selection.channelTrimDb, 1.0) || !near(selection.channelFaderDb, -6.0) || !near(selection.channelPan, 0.25)) {
+    std::cerr << "monitor selection should keep gain and pan\n";
+    return 1;
+  }
+
+  std::cout << "local-mixer-engine-graph-sync-json-tests ok\n";
+  return 0;
+}
