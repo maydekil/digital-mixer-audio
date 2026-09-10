@@ -1,6 +1,7 @@
 #include "dsp/Gain.hpp"
 #include "dsp/OutputProtection.hpp"
 #include "engine/EngineRuntime.hpp"
+#include "engine/FxProgramController.hpp"
 #include "engine/FxProgramRegistryJson.hpp"
 #include "engine/JsonProtocol.hpp"
 #include "engine/MediaTransportJson.hpp"
@@ -267,6 +268,31 @@ std::string statusJson(const localmixer::engine::RuntimeStatus& status) {
   return json;
 }
 
+std::string fxProgramSnapshotJson(const localmixer::engine::FxProgramUnitSnapshot& snapshot) {
+  std::string json = "\"programId\":" + std::to_string(snapshot.programId);
+  json += ",\"previousProgramId\":" + std::to_string(snapshot.previousProgramId);
+  json += ",\"revision\":" + std::to_string(snapshot.revision);
+  json += ",\"modified\":" + std::string(snapshot.modified ? "true" : "false");
+  json += ",\"pending\":" + std::string(snapshot.pending ? "true" : "false");
+  json += ",\"transitionActive\":" + std::string(snapshot.transitionActive ? "true" : "false");
+  json += ",\"crossfadeFramesRemaining\":" + std::to_string(snapshot.crossfadeFramesRemaining);
+  return json;
+}
+
+std::string fxProgramAckJson(const localmixer::engine::FxProgramAck& ack) {
+  std::string json = "\"accepted\":" + std::string(ack.accepted ? "true" : "false");
+  json += ",\"applied\":" + std::string(ack.applied ? "true" : "false");
+  json += ",\"error\":\"" + std::string(localmixer::engine::fxProgramErrorName(ack.error)) + "\"";
+  json += ",\"unitId\":\"" + std::string(localmixer::engine::fxUnitName(ack.unit)) + "\"";
+  json += ",\"requestedProgramId\":" + std::to_string(ack.requestedProgramId);
+  json += "," + fxProgramSnapshotJson(ack.snapshot);
+  return json;
+}
+
+std::optional<localmixer::engine::FxBusId> readFxUnitId(const std::string& line) {
+  return localmixer::engine::fxUnitFromName(readJsonStringField(line, "unitId"));
+}
+
 void printDevices() {
   const auto devices = loadNativeDevices();
   std::cout << "{\"devices\":[";
@@ -410,6 +436,7 @@ int runStdioProtocol() {
   localmixer::engine::EngineRuntime runtime;
   localmixer::engine::MediaImportJobManager mediaImportJobs;
   localmixer::engine::MixerGraphController graphController;
+  localmixer::engine::FxProgramController fxProgramController;
   localmixer::engine::SystemRouteTransactionManager routeTransactionManager;
   localmixer::engine::SystemRouteRecoveryStore routeRecoveryStore(routeRecoveryMarkerPath());
   localmixer::engine::TransportClock transportClock;
@@ -461,6 +488,51 @@ int runStdioProtocol() {
         ",\"micPermission\":\"" + microphonePermissionState() + "\"");
     } else if (type == "fx-program-bank") {
       writeRawResponse(id, true, "fx-program-bank", localmixer::engine::protocol::fxProgramBankJsonFields());
+    } else if (type == "fx-unit-select-program") {
+      const auto unit = readFxUnitId(line);
+      if (!unit.has_value()) {
+        writeRawResponse(id, false, "fx-unit-select-program",
+          "\"accepted\":false,\"applied\":false,\"error\":\"INVALID_UNIT\"");
+        continue;
+      }
+      const auto programId = static_cast<std::uint32_t>(readJsonNumberField(line, "programId").value_or(0.0));
+      const auto expectedRevision = static_cast<std::uint64_t>(readJsonNumberField(line, "expectedRevision").value_or(0.0));
+      auto ack = fxProgramController.requestProgram(*unit, programId, expectedRevision);
+      if (ack.accepted) {
+        ack = fxProgramController.processPending(*unit, [](const auto&) {
+          return true;
+        });
+      }
+      writeRawResponse(id, ack.accepted, "fx-unit-select-program", fxProgramAckJson(ack));
+    } else if (type == "fx-unit-set-macro") {
+      const auto unit = readFxUnitId(line);
+      if (!unit.has_value()) {
+        writeRawResponse(id, false, "fx-unit-set-macro",
+          "\"accepted\":false,\"applied\":false,\"error\":\"INVALID_UNIT\"");
+        continue;
+      }
+      const auto expectedRevision = static_cast<std::uint64_t>(readJsonNumberField(line, "expectedRevision").value_or(0.0));
+      const auto ack = fxProgramController.setMacroOverride(*unit, expectedRevision);
+      writeRawResponse(id, ack.accepted, "fx-unit-set-macro", fxProgramAckJson(ack));
+    } else if (type == "fx-unit-reset-macros") {
+      const auto unit = readFxUnitId(line);
+      if (!unit.has_value()) {
+        writeRawResponse(id, false, "fx-unit-reset-macros",
+          "\"accepted\":false,\"applied\":false,\"error\":\"INVALID_UNIT\"");
+        continue;
+      }
+      const auto expectedRevision = static_cast<std::uint64_t>(readJsonNumberField(line, "expectedRevision").value_or(0.0));
+      const auto ack = fxProgramController.resetMacros(*unit, expectedRevision);
+      writeRawResponse(id, ack.accepted, "fx-unit-reset-macros", fxProgramAckJson(ack));
+    } else if (type == "fx-unit-snapshot") {
+      const auto unit = readFxUnitId(line);
+      if (!unit.has_value()) {
+        writeRawResponse(id, false, "fx-unit-snapshot", "\"error\":\"INVALID_UNIT\"");
+        continue;
+      }
+      writeRawResponse(id, true, "fx-unit-snapshot",
+        "\"unitId\":\"" + std::string(localmixer::engine::fxUnitName(*unit)) + "\"," +
+        fxProgramSnapshotJson(fxProgramController.snapshot(*unit)));
     } else if (type == "prepare-passthrough") {
       const auto sampleRate = readJsonNumberField(line, "sampleRate").value_or(48000.0);
       const auto blockSize = static_cast<std::uint32_t>(readJsonNumberField(line, "blockSize").value_or(256.0));

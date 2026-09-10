@@ -30,7 +30,10 @@ export function CompactFxRow({ unit, program, programs, onProgramChange, onToggl
         {unit.enabled ? "ON" : "OFF"}
       </Button>
       <ProgramPicker programs={programs} selectedId={unit.programId} onChange={onProgramChange} />
-      {unit.modified ? <button className="modified-badge" onClick={onReset}>Modified</button> : <span className="preset-count">99 presets</span>}
+      {unit.pending ? <span className="modified-badge">Pending</span> : null}
+      {!unit.pending && unit.error ? <span className="modified-badge fx-error">Error</span> : null}
+      {!unit.pending && !unit.error && unit.modified ? <button className="modified-badge" onClick={onReset}>Modified</button> : null}
+      {!unit.pending && !unit.error && !unit.modified ? <span className="preset-count">99 presets</span> : null}
       <EditableMacro label={program.macro1.label} value={program.macro1.value} tone={unit.accent} onCommit={(value) => onMacro("macro1", value)} />
       <EditableMacro label={program.macro2.label} value={program.macro2.value} tone={unit.accent} onCommit={(value) => onMacro("macro2", value)} />
       <div className="fx-return">

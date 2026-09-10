@@ -82,7 +82,33 @@ export class PreviewAdapter implements MixerControlPort {
   }
 
   setFxProgram(unitId: FxUnitId, programId: number): void {
-    this.snapshot.fxUnits = this.snapshot.fxUnits.map((unit) => unit.id === unitId ? { ...unit, programId, modified: false } : unit);
+    this.snapshot.fxUnits = this.snapshot.fxUnits.map((unit) => unit.id === unitId ? {
+      ...unit,
+      programId,
+      revision: unit.revision + 1,
+      pending: false,
+      error: "",
+      modified: false
+    } : unit);
+  }
+
+  setFxProgramPending(unitId: FxUnitId, pending: boolean): void {
+    this.snapshot.fxUnits = this.snapshot.fxUnits.map((unit) => unit.id === unitId ? { ...unit, pending, error: "" } : unit);
+  }
+
+  ackFxProgram(unitId: FxUnitId, programId: number, revision: number, modified = false): void {
+    this.snapshot.fxUnits = this.snapshot.fxUnits.map((unit) => unit.id === unitId ? {
+      ...unit,
+      programId,
+      revision,
+      pending: false,
+      error: "",
+      modified
+    } : unit);
+  }
+
+  setFxError(unitId: FxUnitId, error: string): void {
+    this.snapshot.fxUnits = this.snapshot.fxUnits.map((unit) => unit.id === unitId ? { ...unit, pending: false, error } : unit);
   }
 
   setFxEnabled(unitId: FxUnitId, enabled: boolean): void {
@@ -100,7 +126,7 @@ export class PreviewAdapter implements MixerControlPort {
       ...program,
       [macro]: { ...program[macro], value: value.trim() || program[macro].value }
     } : program);
-    this.snapshot.fxUnits = this.snapshot.fxUnits.map((item) => item.id === unitId ? { ...item, modified: true } : item);
+    this.snapshot.fxUnits = this.snapshot.fxUnits.map((item) => item.id === unitId ? { ...item, modified: true, revision: item.revision + 1, error: "" } : item);
   }
 
   updateEqBand(bandId: EqBandState["id"], field: "freqHz" | "gainDb" | "qValue" | "type", value: number | string): void {
@@ -122,7 +148,7 @@ export class PreviewAdapter implements MixerControlPort {
   }
 
   resetFxProgram(unitId: FxUnitId): void {
-    this.snapshot.fxUnits = this.snapshot.fxUnits.map((unit) => unit.id === unitId ? { ...unit, modified: false } : unit);
+    this.snapshot.fxUnits = this.snapshot.fxUnits.map((unit) => unit.id === unitId ? { ...unit, modified: false, revision: unit.revision + 1, error: "" } : unit);
   }
 
   setHarmonyEnabled(enabled: boolean): void {

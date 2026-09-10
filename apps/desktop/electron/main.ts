@@ -16,6 +16,10 @@ const supportedSoundPads = new Set(["applause", "laugh", "cheer", "drumroll", "d
 const supportedEngineCommands = new Set([
   "engine-status",
   "fx-program-bank",
+  "fx-unit-reset-macros",
+  "fx-unit-select-program",
+  "fx-unit-set-macro",
+  "fx-unit-snapshot",
   "list-devices",
   "meter-input",
   "play-test-tone",

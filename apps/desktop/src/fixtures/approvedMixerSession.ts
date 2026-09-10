@@ -17,8 +17,8 @@ export const approvedMixerSession: MixerSnapshot = {
   selectedChannelId: "voice",
   programs: fxPrograms,
   fxUnits: [
-    { id: "fx-a", label: "FX A", accent: "amber", enabled: true, programId: 12, modified: true, returnDb: -6, meter: { left: -9, right: -10, clip: false } },
-    { id: "fx-b", label: "FX B", accent: "cyan", enabled: true, programId: 50, modified: false, returnDb: -12, meter: { left: -12, right: -13, clip: false } }
+    { id: "fx-a", label: "FX A", accent: "amber", enabled: true, programId: 12, revision: 0, pending: false, error: "", modified: true, returnDb: -6, meter: { left: -9, right: -10, clip: false } },
+    { id: "fx-b", label: "FX B", accent: "cyan", enabled: true, programId: 50, revision: 0, pending: false, error: "", modified: false, returnDb: -12, meter: { left: -12, right: -13, clip: false } }
   ],
   channels: [
     channel("system", "SYSTEM", "BlackHole 1-2", "system", -6, -12, -12, false, false),

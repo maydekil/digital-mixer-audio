@@ -47,6 +47,9 @@ export interface FxUnitState {
   accent: "amber" | "cyan";
   enabled: boolean;
   programId: number;
+  revision: number;
+  pending: boolean;
+  error: string;
   modified: boolean;
   returnDb: number;
   meter: MeterLevel;
@@ -123,6 +126,9 @@ export interface MixerControlPort {
   setChannelRecordArm(channelId: string, armed: boolean): void;
   setChannelProcessor(channelId: string, processorId: ProcessorId, enabled: boolean): void;
   setFxProgram(unitId: FxUnitId, programId: number): void;
+  setFxProgramPending(unitId: FxUnitId, pending: boolean): void;
+  ackFxProgram(unitId: FxUnitId, programId: number, revision: number, modified?: boolean): void;
+  setFxError(unitId: FxUnitId, error: string): void;
   setFxEnabled(unitId: FxUnitId, enabled: boolean): void;
   setFxReturn(unitId: FxUnitId, valueDb: number): void;
   setFxProgramMacro(unitId: FxUnitId, macro: "macro1" | "macro2", value: string): void;

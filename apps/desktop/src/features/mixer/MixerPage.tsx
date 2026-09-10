@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PreviewAdapter } from "../../adapters/preview/PreviewAdapter";
 import { CompactFxRow } from "../fx/components/CompactFxRow";
 import { HarmonyQuickPanel } from "../harmony/components/HarmonyQuickPanel";
@@ -28,6 +28,8 @@ export function MixerPage() {
   const [devices, setDevices] = useState<HardwareDevice[]>([]);
   const [outputUid, setOutputUid] = useState("");
   const [transportState, setTransportState] = useState("stopped");
+  const fxProgramInFlight = useRef<Record<"fx-a" | "fx-b", boolean>>({ "fx-a": false, "fx-b": false });
+  const fxProgramDesired = useRef<Partial<Record<"fx-a" | "fx-b", number>>>({});
 
   function refresh(action: () => void) {
     action();
@@ -69,6 +71,81 @@ export function MixerPage() {
     if (!window.localMixer?.engineCommand) return;
     const result = await window.localMixer.engineCommand(type);
     if (typeof result?.state === "string") setTransportState(result.state);
+  }
+
+  async function selectFxProgram(unitId: "fx-a" | "fx-b", programId: number) {
+    fxProgramDesired.current[unitId] = programId;
+    if (!window.localMixer?.engineCommand) {
+      refresh(() => adapter.setFxProgram(unitId, programId));
+      delete fxProgramDesired.current[unitId];
+      return;
+    }
+    if (fxProgramInFlight.current[unitId]) {
+      refresh(() => adapter.setFxProgramPending(unitId, true));
+      return;
+    }
+
+    fxProgramInFlight.current[unitId] = true;
+    try {
+      while (fxProgramDesired.current[unitId] !== undefined) {
+        const desiredProgramId = fxProgramDesired.current[unitId] ?? programId;
+        delete fxProgramDesired.current[unitId];
+        await sendFxProgramRequest(unitId, desiredProgramId);
+      }
+    } finally {
+      fxProgramInFlight.current[unitId] = false;
+    }
+  }
+
+  async function sendFxProgramRequest(unitId: "fx-a" | "fx-b", programId: number) {
+    const engineCommand = window.localMixer?.engineCommand;
+    if (!engineCommand) return;
+    const unit = adapter.getSnapshot().fxUnits.find((item) => item.id === unitId);
+    refresh(() => adapter.setFxProgramPending(unitId, true));
+    const result = await engineCommand("fx-unit-select-program", {
+      unitId,
+      programId,
+      expectedRevision: unit?.revision ?? 0
+    });
+    if (result?.ok === false || result?.accepted === false || typeof result?.programId !== "number") {
+      refresh(() => adapter.setFxError(unitId, String(result?.error ?? "FX_PROGRAM_REJECTED")));
+      return;
+    }
+    refresh(() => adapter.ackFxProgram(unitId, result.programId as number, Number(result.revision ?? 0)));
+  }
+
+  async function setFxMacro(unitId: "fx-a" | "fx-b", macro: "macro1" | "macro2", value: string) {
+    const unit = adapter.getSnapshot().fxUnits.find((item) => item.id === unitId);
+    refresh(() => adapter.setFxProgramMacro(unitId, macro, value));
+    if (!window.localMixer?.engineCommand || !unit) return;
+    const result = await window.localMixer.engineCommand("fx-unit-set-macro", {
+      unitId,
+      macro,
+      value,
+      expectedRevision: unit.revision
+    });
+    if (result?.ok === false || result?.accepted === false) {
+      refresh(() => adapter.setFxError(unitId, String(result?.error ?? "FX_MACRO_REJECTED")));
+      return;
+    }
+    refresh(() => adapter.ackFxProgram(unitId, Number(result.programId ?? unit.programId), Number(result.revision ?? unit.revision), true));
+  }
+
+  async function resetFxProgram(unitId: "fx-a" | "fx-b") {
+    const unit = adapter.getSnapshot().fxUnits.find((item) => item.id === unitId);
+    if (!window.localMixer?.engineCommand || !unit) {
+      refresh(() => adapter.resetFxProgram(unitId));
+      return;
+    }
+    const result = await window.localMixer.engineCommand("fx-unit-reset-macros", {
+      unitId,
+      expectedRevision: unit.revision
+    });
+    if (result?.ok === false || result?.accepted === false) {
+      refresh(() => adapter.setFxError(unitId, String(result?.error ?? "FX_RESET_REJECTED")));
+      return;
+    }
+    refresh(() => adapter.ackFxProgram(unitId, Number(result.programId ?? unit.programId), Number(result.revision ?? unit.revision)));
   }
 
   useEffect(() => {
@@ -114,8 +191,8 @@ export function MixerPage() {
         onStop={() => void sendTransport("transport-stop")}
       />
       <div className="fx-stack">
-        <CompactFxRow unit={fxA} program={programA} programs={snapshot.programs} onProgramChange={(id) => refresh(() => adapter.setFxProgram("fx-a", id))} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-a", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-a", value))} onMacro={(macro, value) => refresh(() => adapter.setFxProgramMacro("fx-a", macro, value))} onReset={() => refresh(() => adapter.resetFxProgram("fx-a"))} />
-        <CompactFxRow unit={fxB} program={programB} programs={snapshot.programs} onProgramChange={(id) => refresh(() => adapter.setFxProgram("fx-b", id))} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-b", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-b", value))} onMacro={(macro, value) => refresh(() => adapter.setFxProgramMacro("fx-b", macro, value))} onReset={() => refresh(() => adapter.resetFxProgram("fx-b"))} />
+        <CompactFxRow unit={fxA} program={programA} programs={snapshot.programs} onProgramChange={(id) => void selectFxProgram("fx-a", id)} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-a", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-a", value))} onMacro={(macro, value) => void setFxMacro("fx-a", macro, value)} onReset={() => void resetFxProgram("fx-a")} />
+        <CompactFxRow unit={fxB} program={programB} programs={snapshot.programs} onProgramChange={(id) => void selectFxProgram("fx-b", id)} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-b", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-b", value))} onMacro={(macro, value) => void setFxMacro("fx-b", macro, value)} onReset={() => void resetFxProgram("fx-b")} />
       </div>
       <section className="workspace">
         <div className="left-zone">

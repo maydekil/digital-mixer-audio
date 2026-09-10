@@ -1681,3 +1681,34 @@ Known limitations:
 - MIXFX-02 binds compact UI metadata and shared state only; native ACK/crossfade transitions are intentionally deferred to MIXFX-03.
 - The send/return bus is still not integrated into `MixerGraph` realtime processing or export stems.
 - Keyboard and 1280x800 acceptance remain covered by existing UI gate/visual tests; no new full desktop screenshot was recorded in this checkpoint.
+
+## MIXFX-03 — Switching, Macro Overrides, And Preset Recall
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: MIXFX-02 IMPLEMENTED_UNVERIFIED
+
+### MIXFX-03 Checkpoint — Program ACK And Coalesced Transition Contract
+
+Changed files:
+- `native/engine/src/engine/FxProgramController.hpp`, `native/engine/src/engine/FxProgramController.cpp`: added native FX A/B program transition state with exact revision validation, one pending desired program per unit, modified/reset macro state, bounded crossfade frame accounting, and old-program retention on failed prepare.
+- `native/engine/src/main.cpp`, `apps/desktop/electron/main.ts`: exposed `fx-unit-select-program`, `fx-unit-set-macro`, `fx-unit-reset-macros`, and `fx-unit-snapshot` over the existing JSONL IPC whitelist.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`, `apps/desktop/src/features/fx/components/CompactFxRow.tsx`, `apps/desktop/src/adapters/MixerControlPort.ts`, `apps/desktop/src/adapters/preview/PreviewAdapter.ts`, `apps/desktop/src/fixtures/approvedMixerSession.ts`, `apps/desktop/src/styles/app.css`: added FX unit revision/pending/error metadata, ACK-based program selection when the native engine is running, coalesced latest-desired UI sends while one request is in flight, and compact Pending/Error row badges.
+- `native/engine/tests/FxProgramControllerTest.cpp`, `native/engine/CMakeLists.txt`: added native coverage for 100 rapid program requests coalescing to one pending request, exact revision conflict rejection, bounded transition countdown, macro modified/reset, invalid program rejection, and failed prepare retaining the old program.
+
+Implemented behavior:
+- Program changes preserve FX sends, return level, enable state, and route state because the controller only owns program/revision/modified transition metadata.
+- Native ACKs include actual unit, requested program, active program, revision, modified state, pending state, and crossfade frames.
+- Stale UI revisions are rejected with `REVISION_CONFLICT`; failed prepare reports `PREPARE_FAILED` and leaves the previous program active.
+- UI does not pretend a native program switch has applied while one is in flight; rapid changes coalesce to the latest desired program and reconcile after ACK.
+
+Validation:
+- command: `native/engine/build/native/engine/local-mixer-fx-program-controller-tests`
+- exit/result: `0`; controller unit test passed.
+- command: `node -e "... fx-unit-select-program ..."`
+- exit/result: `0`; first select returned program 22 revision 1 with 960 crossfade frames, stale revision 0 follow-up returned `REVISION_CONFLICT` with active program 22 revision 1.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 32/32, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- MIXFX-03 implements transition/ACK contracts and bounded crossfade state, but the controller is not yet wired to actual FX DSP graph replacement inside realtime `MixerGraph`.
+- Undo/redo and Custom preset migration are not fully persisted until MIXFX-04 save/open integration.
+- Auditory click testing with real FX program swaps remains pending final mixer FX QA.

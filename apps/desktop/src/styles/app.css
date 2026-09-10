@@ -56,6 +56,7 @@
 .accent-cyan .fx-power, .tone-cyan, .accent-cyan .power-icon { color: var(--cyan); }
 .program-picker { width: 214px; color: var(--text); background: #102b34; border: 1px solid #30606c; border-radius: 5px; min-height: 30px; padding: 0 9px; font-weight: 400; }
 .modified-badge, .badge { color: var(--amber); border: 1px solid currentColor; background: transparent; border-radius: 10px; padding: 2px 7px; font-weight: 420; }
+.modified-badge.fx-error { color: var(--danger); }
 .preset-count { color: #a8c8d1; width: 82px; }
 .fx-return { width: 330px; max-width: 100%; justify-self: end; display: grid; grid-template-columns: 52px minmax(120px, 1fr) 62px; align-items: center; gap: 7px; min-width: 0; }
 .fx-return input, .horizontal-slider input, .harmony-level input, .footer-bar input { accent-color: var(--cyan); }
