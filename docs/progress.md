@@ -2904,3 +2904,28 @@ Validation:
 
 Known limitations:
 - This checkpoint is structural hardening only. It does not add new live capture, live recording, packaged export, or hardware verification coverage.
+
+### Phase19 Hardening Checkpoint — Project Missing Media Relink Flow
+
+Changed files:
+- `apps/desktop/src/features/project/projectMediaWorkflow.ts`: added a renderer-side workflow that inspects project media references, asks for replacement files through an injected native file picker, relinks missing IDs, and re-inspects the updated project content.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: Open Project and Collect Media now run the missing-media relink workflow and write updated `.lam.json` content back when replacements are chosen.
+- `tests/ui/project-media-workflow.test.ts`: verifies relink success, picker cancel behavior, and relink failure handling.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/task-plan.json`, `docs/progress.md`: updated Project/Relink evidence and acceptance status.
+
+Implemented behavior:
+- Desktop Open Project can inspect missing media references before applying the snapshot, ask the user to choose replacement audio via the native file dialog, relink the matching media/channel source path, and save the repaired project file.
+- Desktop Collect Media can copy present media, then run the same missing-reference relink path before applying and writing the collected project.
+- The workflow only passes project JSON and paths through Electron IPC; no PCM or browser audio path is introduced.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 42/42 passed, including `project-media-workflow.test.ts`.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 42/42, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Packaged manual Open/Collect/Relink acceptance remains NOT_RUN.
+- This checkpoint does not implement undo/autosave/recent-project menus.

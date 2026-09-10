@@ -29,7 +29,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 | E2E-04 | Harmony ON/OFF/key/level | `PARTIAL` | Real vocal intervals, measured delay, and no-click audition not run. |
 | E2E-05 | Record dry/master then replay | `PARTIAL` | Native take metadata and desktop recording preflight/start/stop foundation exist; live PCM writing, replay insertion, and alignment not exposed end-to-end. |
 | E2E-06 | Processed vocal take replay | `PARTIAL` | Processed take metadata can request neutral insert replay and persists in session JSON; desktop preflight/start/stop can create take container metadata; successful live processed recording flow not run. |
-| E2E-07 | Save/open/collect/relink | `PARTIAL` | Session contracts cover channel state, FX, harmony, plugin, and take metadata; desktop Open/Save Project can roundtrip renderer snapshot `.lam.json`; collect/relink foundation detects missing media, copies present files, and updates channel source paths; packaged/manual relink dialog acceptance pending. |
+| E2E-07 | Save/open/collect/relink | `PARTIAL` | Session contracts cover channel state, FX, harmony, plugin, and take metadata; desktop Open/Save Project can roundtrip renderer snapshot `.lam.json`; Collect copies present media and Open/Collect can prompt for missing replacements through native file dialogs and write back updated session JSON; packaged/manual relink dialog acceptance pending. |
 | E2E-08 | Master + FX return stems | `PARTIAL` | Stem planning tests and desktop/native export preflight pass; native WAV render smoke exists for the master path; rendered FX return stem files not inspected. |
 | E2E-09 | Device unplug/sleep/crash/full kill | `PARTIAL` | Supervisor/recovery tests pass; device/sleep/manual kill pending. |
 | E2E-10 | Automation+MIDI+plugin state | `PARTIAL` | Automation/plugin state contracts pass; MIDI device and runtime plugin host pending. |
@@ -53,7 +53,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 - Per-app Core Audio tap capture is not complete; Phase18 is capability/assignment foundation.
 - Live recording to timeline and replay through desktop workflow are not complete; native take metadata now marks replay insert behavior, partial/overrun state, and session roundtrip.
 - Desktop recording preflight/start/stop can choose a take folder, ask native for take metadata, create/finalize a WAV take container, and persist takes, but callback-driven live PCM writing and replay insertion remain pending.
-- Project collect/relink has automated file-level coverage, but missing-media resolution UX and packaged manual acceptance remain pending.
+- Project collect/relink has automated file-level and renderer workflow coverage, but packaged manual acceptance remains pending.
 - Add/rename/remove source channel has preview and session roundtrip coverage, but packaged manual UX acceptance remains pending.
 - Product-level 30/60-minute soak and 32-track stress are not run; monitor callback counters exist but do not replace acceptance soak evidence.
 - Packaged `.app` TCC permission prompt, clean-location launch, and offline workflow require manual target-Mac testing.

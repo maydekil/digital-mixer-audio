@@ -11,6 +11,8 @@ import { VocalFxPanel } from "../vocal-fx/components/VocalFxPanel";
 import { plannedTakeFromResponse, snapshotToRecordingPlan } from "../recording/recordingDocument";
 import { ChannelBank } from "./components/ChannelBank";
 import type { ChannelState, FxProgram, MixerSnapshot } from "../../adapters/MixerControlPort";
+import type { ProjectMediaStatus } from "../project/projectMediaWorkflow";
+import { relinkMissingProjectMedia } from "../project/projectMediaWorkflow";
 import { projectSessionToSnapshot, serializeProjectSession } from "../project/sessionDocument";
 
 interface HardwareDevice {
@@ -92,7 +94,8 @@ export function MixerPage() {
     if (!target.ok || target.canceled || !target.path) return;
     const loaded = await window.localMixer.readProjectFile(target.path);
     if (!loaded.ok || !loaded.content) return;
-    refresh(() => adapter.replaceSnapshot(projectSessionToSnapshot(loaded.content ?? "", adapter.getSnapshot())));
+    const resolved = await resolveProjectMedia(loaded.content, target.path);
+    refresh(() => adapter.replaceSnapshot(projectSessionToSnapshot(resolved, adapter.getSnapshot())));
     setProjectPath(loaded.path ?? target.path);
   }
 
@@ -107,10 +110,29 @@ export function MixerPage() {
     }
     const collected = await window.localMixer.collectProjectMedia(targetPath, serializeProjectSession(adapter.getSnapshot()));
     if (!collected.ok || !collected.content) return;
-    const written = await window.localMixer.writeProjectFile(targetPath, collected.content);
+    const resolved = await resolveProjectMedia(collected.content, targetPath);
+    const written = await window.localMixer.writeProjectFile(targetPath, resolved);
     if (!written.ok) return;
-    refresh(() => adapter.replaceSnapshot(projectSessionToSnapshot(collected.content ?? "", adapter.getSnapshot())));
+    refresh(() => adapter.replaceSnapshot(projectSessionToSnapshot(resolved, adapter.getSnapshot())));
     setProjectPath(written.path ?? targetPath);
+  }
+
+  async function resolveProjectMedia(content: string, path: string) {
+    if (!window.localMixer?.inspectProjectMedia || !window.localMixer?.relinkProjectMedia || !window.localMixer?.chooseMediaFile) {
+      return content;
+    }
+    const result = await relinkMissingProjectMedia(content, {
+      inspectProjectMedia: window.localMixer.inspectProjectMedia,
+      relinkProjectMedia: window.localMixer.relinkProjectMedia,
+      chooseReplacement: async (media: ProjectMediaStatus) => {
+        if (!window.confirm(`Relink missing media ${media.id}?`)) return { ok: true, canceled: true };
+        return window.localMixer?.chooseMediaFile?.() ?? { ok: false, error: "Media picker unavailable" };
+      }
+    });
+    if (result.ok && result.relinked > 0 && window.localMixer?.writeProjectFile) {
+      await window.localMixer.writeProjectFile(path, result.content);
+    }
+    return result.ok ? result.content : content;
   }
 
   async function exportProject() {
