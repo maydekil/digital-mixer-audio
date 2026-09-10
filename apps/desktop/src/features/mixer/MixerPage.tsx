@@ -9,7 +9,7 @@ import { SoundPadPanel } from "../sound-pads/components/SoundPadPanel";
 import { VocalFxPanel } from "../vocal-fx/components/VocalFxPanel";
 import { ChannelBank } from "./components/ChannelBank";
 import type { ChannelState, FxProgram, MixerSnapshot } from "../../adapters/MixerControlPort";
-import { serializeProjectSession } from "../project/sessionDocument";
+import { projectSessionToSnapshot, serializeProjectSession } from "../project/sessionDocument";
 
 interface HardwareDevice {
   uid: string;
@@ -80,6 +80,15 @@ export function MixerPage() {
     const target = await window.localMixer.chooseProjectSavePath();
     if (!target.ok || target.canceled || !target.path) return;
     await window.localMixer.writeProjectFile(target.path, serializeProjectSession(adapter.getSnapshot()));
+  }
+
+  async function openProject() {
+    if (!window.localMixer?.chooseProjectOpenPath || !window.localMixer?.readProjectFile) return;
+    const target = await window.localMixer.chooseProjectOpenPath();
+    if (!target.ok || target.canceled || !target.path) return;
+    const loaded = await window.localMixer.readProjectFile(target.path);
+    if (!loaded.ok || !loaded.content) return;
+    refresh(() => adapter.replaceSnapshot(projectSessionToSnapshot(loaded.content ?? "", adapter.getSnapshot())));
   }
 
   async function selectFxProgram(unitId: "fx-a" | "fx-b", programId: number) {
@@ -252,6 +261,7 @@ export function MixerPage() {
         onTimeline={() => setMediaImportOpen(true)}
         onPlay={() => void sendTransport(transportState === "playing" ? "transport-pause" : "transport-play")}
         onStop={() => void sendTransport("transport-stop")}
+        onOpen={() => void openProject()}
         onSave={() => void saveProject()}
       />
       <div className="fx-stack">
@@ -430,7 +440,7 @@ function parseFxPrograms(programs: unknown[]): FxProgram[] {
   });
 }
 
-function TopBar({ projectName, time, rate, status, mode, transportState, onVocalFx, onTimeline, onPlay, onStop, onSave }: {
+function TopBar({ projectName, time, rate, status, mode, transportState, onVocalFx, onTimeline, onPlay, onStop, onOpen, onSave }: {
   projectName: string;
   time: string;
   rate: string;
@@ -441,6 +451,7 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onVocal
   onTimeline(): void;
   onPlay(): void;
   onStop(): void;
+  onOpen(): void;
   onSave(): void;
 }) {
   return (
@@ -459,6 +470,7 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onVocal
       <div className="rate">{rate}</div>
       <div className="engine-status"><span />{status}</div>
       <div className="preview-banner">{mode}</div>
+      <button className="settings" aria-label="Open Project" title="Open Project" onClick={onOpen}>□</button>
       <button className="settings" aria-label="Save Project" title="Save Project" onClick={onSave}>▣</button>
       <button className="settings">⚙</button>
     </header>

@@ -2627,3 +2627,25 @@ Validation:
 
 Known limitations:
 - Open/apply is still pending: loaded project JSON is not yet converted back into `MixerSnapshot` or synchronized to the native graph.
+
+### Phase19 Hardening Checkpoint — Open Project Snapshot Apply
+
+Changed files:
+- `apps/desktop/src/features/project/sessionDocument.ts`: added session JSON to `MixerSnapshot` apply logic for channel strip state, FX units, sends, and harmony state.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: added `replaceSnapshot` for controlled snapshot replacement and selected-EQ synchronization.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: wired a compact Open Project top-bar action to choose/read `.lam.json`, apply the loaded snapshot, and let existing graph sync publish the updated mixer state.
+- `tests/ui/project-session.test.ts`: verifies saved project state can apply back to a mixer snapshot.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated session evidence.
+
+Implemented behavior:
+- Desktop Open Project can now read validated Local Audio Mixer project JSON and apply channel, FX, send, and harmony state to the renderer mixer snapshot.
+- Applying a project uses existing native graph synchronization from the mixer page state effect; it does not introduce browser audio processing.
+
+Validation:
+- command: `npm run typecheck && npm run test:ui && npm run build:ui`
+- exit/result: `0`; TypeScript passed, Vitest 26/26 passed, and UI/Electron desktop build passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 26/26, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- Collect media, missing-file relink dialogs, undo/redo integration, and packaged manual open/save acceptance remain pending.

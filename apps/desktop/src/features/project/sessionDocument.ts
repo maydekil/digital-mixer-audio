@@ -97,6 +97,58 @@ export function serializeProjectSession(snapshot: MixerSnapshot): string {
   return `${JSON.stringify(snapshotToProjectSession(snapshot), null, 2)}\n`;
 }
 
+export function projectSessionToSnapshot(content: string, baseSnapshot: MixerSnapshot): MixerSnapshot {
+  const document = JSON.parse(content) as Partial<ProjectSessionDocument>;
+  if (document.schemaVersion !== 1 || typeof document.projectId !== "string" || !Array.isArray(document.channels)) {
+    throw new Error("Invalid Local Audio Mixer project document");
+  }
+
+  const snapshot = structuredClone(baseSnapshot);
+  snapshot.projectName = document.projectId || snapshot.projectName;
+  snapshot.channels = snapshot.channels.map((channel) => {
+    const saved = document.channels?.find((item) => item.id === channel.id);
+    return saved ? applyChannelSession(channel, saved) : channel;
+  });
+  snapshot.fxUnits = snapshot.fxUnits.map((unit) => {
+    const saved = document.fxUnits?.find((item) => item.unitId === unit.id);
+    return saved ? applyFxUnitSession(unit, saved) : unit;
+  });
+  snapshot.channels = snapshot.channels.map((channel) => ({
+    ...channel,
+    sends: Object.fromEntries(Object.entries(channel.sends).map(([unitId, send]) => {
+      const saved = document.fxSends?.find((item) => item.channelId === channel.id && item.unitId === unitId);
+      return [unitId, saved ? { enabled: Boolean(saved.enabled), gainDb: Number(saved.gainDb) } : send];
+    })) as ChannelState["sends"]
+  }));
+  const savedHarmony = document.channelHarmony?.find((item) => item.channelId === "voice") ?? document.channelHarmony?.[0];
+  if (savedHarmony) {
+    snapshot.harmony = {
+      ...snapshot.harmony,
+      enabled: Boolean(savedHarmony.harmonyEnabled),
+      effectiveEnabled: Boolean(savedHarmony.harmonyEnabled),
+      primaryInstanceId: savedHarmony.primaryHarmonyInstanceId,
+      key: savedHarmony.key,
+      scale: savedHarmony.scale,
+      mode: savedHarmony.mode,
+      voice1: savedHarmony.voice1,
+      voice2: savedHarmony.voice2,
+      levelDb: Number(savedHarmony.harmonyLevelDb),
+      pending: false,
+      error: ""
+    };
+  }
+  snapshot.selectedChannelId = snapshot.channels.some((channel) => channel.id === snapshot.selectedChannelId)
+    ? snapshot.selectedChannelId
+    : snapshot.channels[0]?.id ?? "";
+  snapshot.channels = snapshot.channels.map((channel) => ({
+    ...channel,
+    selected: channel.id === snapshot.selectedChannelId,
+    harmonyEnabled: channel.role === "vocal" ? snapshot.harmony.enabled : channel.harmonyEnabled
+  }));
+  snapshot.eqBands = structuredClone(snapshot.channels.find((channel) => channel.id === snapshot.selectedChannelId)?.eqBands ?? snapshot.eqBands);
+  return snapshot;
+}
+
 function channelToSession(channel: ChannelState): ProjectSessionChannel {
   return {
     id: channel.id,
@@ -120,6 +172,55 @@ function channelToSession(channel: ChannelState): ProjectSessionChannel {
     noiseRangeDb: channel.dynamics.noise.rangeDb,
     compThresholdDb: channel.dynamics.compressor.thresholdDb,
     compRatio: channel.dynamics.compressor.ratio
+  };
+}
+
+function applyChannelSession(channel: ChannelState, saved: ProjectSessionChannel): ChannelState {
+  return {
+    ...channel,
+    name: saved.name || channel.name,
+    source: saved.sourceUid || channel.source,
+    enabled: Boolean(saved.enabled),
+    mute: Boolean(saved.muted),
+    solo: Boolean(saved.solo),
+    monitor: Boolean(saved.monitor),
+    recordArm: Boolean(saved.recordArm),
+    trimDb: Number(saved.gainDb),
+    faderDb: Number(saved.faderDb),
+    pan: Number(saved.pan) * 100,
+    processing: {
+      ...channel.processing,
+      eq: Boolean(saved.eqEnabled),
+      noise: Boolean(saved.noiseEnabled),
+      comp: Boolean(saved.compEnabled),
+      insertFx: Boolean(saved.insertFxEnabled)
+    },
+    dynamics: {
+      ...channel.dynamics,
+      noise: {
+        ...channel.dynamics.noise,
+        thresholdDb: Number(saved.noiseThresholdDb),
+        rangeDb: Number(saved.noiseRangeDb)
+      },
+      compressor: {
+        ...channel.dynamics.compressor,
+        thresholdDb: Number(saved.compThresholdDb),
+        ratio: Number(saved.compRatio)
+      }
+    }
+  };
+}
+
+function applyFxUnitSession(unit: FxUnitState, saved: ProjectSessionFxUnit): FxUnitState {
+  return {
+    ...unit,
+    programId: Number(saved.programId),
+    revision: Number(saved.revision),
+    enabled: Boolean(saved.enabled),
+    modified: Boolean(saved.modified),
+    returnDb: Number(saved.returnDb),
+    pending: false,
+    error: ""
   };
 }
 

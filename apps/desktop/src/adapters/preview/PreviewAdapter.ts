@@ -8,6 +8,11 @@ export class PreviewAdapter implements MixerControlPort {
     return this.snapshot;
   }
 
+  replaceSnapshot(snapshot: MixerSnapshot): void {
+    this.snapshot = structuredClone(snapshot);
+    this.syncSelectedEqBands();
+  }
+
   setPrograms(programs: FxProgram[]): void {
     if (programs.length === 0) return;
     const programIds = new Set(programs.map((program) => program.id));
