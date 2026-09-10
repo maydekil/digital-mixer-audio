@@ -909,3 +909,16 @@ Validation:
 Known limitations:
 - Transport is not yet scheduling file audio into the device callback.
 - Pause/resume timing is stateful but not yet tied to a rendered timeline clock in the UI.
+
+### Phase06 Maintenance — Media Transport JSON Split
+
+Changed files:
+- `native/engine/src/engine/MediaTransportJson.hpp`, `native/engine/src/engine/MediaTransportJson.cpp`: extracted media inspect and transport JSON serialization helpers from `main.cpp`.
+- `native/engine/src/main.cpp`: reduced protocol entry-point size before adding more Phase06 commands.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: added helper module evidence and build wiring.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 7/7, engine self-test, device enumeration smoke, and protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.

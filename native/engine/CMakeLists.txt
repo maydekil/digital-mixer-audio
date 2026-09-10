@@ -19,6 +19,7 @@ target_compile_features(local_mixer_dsp PUBLIC cxx_std_20)
 add_executable(local-mixer-engine
   src/main.cpp
   src/engine/JsonProtocol.cpp
+  src/engine/MediaTransportJson.cpp
   src/engine/SystemRoutingJson.cpp
 )
 

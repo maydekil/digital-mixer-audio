@@ -2,7 +2,7 @@
 #include "dsp/OutputProtection.hpp"
 #include "engine/EngineRuntime.hpp"
 #include "engine/JsonProtocol.hpp"
-#include "engine/MediaFile.hpp"
+#include "engine/MediaTransportJson.hpp"
 #include "engine/MixerGraph.hpp"
 #include "engine/MixerGraphController.hpp"
 #include "engine/SystemRouteRecovery.hpp"
@@ -33,11 +33,13 @@ constexpr int kProtocolVersion = 1;
 constexpr std::size_t kMaxMessageBytes = 8192;
 
 using localmixer::engine::protocol::escapeJson;
+using localmixer::engine::protocol::mediaInfoJson;
 using localmixer::engine::protocol::readJsonBoolField;
 using localmixer::engine::protocol::readJsonNumberField;
 using localmixer::engine::protocol::readJsonStringField;
 using localmixer::engine::protocol::systemRouteDiagnosticsJson;
 using localmixer::engine::protocol::systemRouteTransactionJson;
+using localmixer::engine::protocol::transportJson;
 using localmixer::engine::protocol::writeRawResponse;
 using localmixer::engine::protocol::writeResponse;
 
@@ -139,32 +141,6 @@ std::vector<localmixer::engine::DeviceDescriptor> loadNativeDevices() {
   }
 #endif
   return devices;
-}
-
-std::string mediaInfoJson(const std::string& path) {
-  if (path.empty()) return "\"imported\":false,\"error\":\"MISSING_PATH\"";
-  localmixer::engine::WavStreamReader reader;
-  const auto error = reader.open(path);
-  if (error != localmixer::engine::MediaFileError::none) {
-    return "\"imported\":false,\"error\":\"" + std::string(localmixer::engine::mediaFileErrorName(error)) + "\"";
-  }
-  const auto& info = reader.info();
-  const auto duration = info.sampleRate == 0 ? 0.0 : static_cast<double>(info.frameCount) / info.sampleRate;
-  return "\"imported\":true,\"error\":\"\",\"container\":\"wav\",\"path\":\"" + escapeJson(path) +
-    "\",\"channels\":" + std::to_string(info.channels) +
-    ",\"sampleRate\":" + std::to_string(info.sampleRate) +
-    ",\"bitsPerSample\":" + std::to_string(info.bitsPerSample) +
-    ",\"frameCount\":" + std::to_string(info.frameCount) +
-    ",\"durationSeconds\":" + std::to_string(duration);
-}
-
-std::string transportJson(const localmixer::engine::TransportSnapshot& snapshot) {
-  return "\"state\":\"" + std::string(localmixer::engine::transportStateName(snapshot.state)) +
-    "\",\"positionFrame\":" + std::to_string(snapshot.positionFrame) +
-    ",\"startFrame\":" + std::to_string(snapshot.startFrame) +
-    ",\"loopEnabled\":" + std::string(snapshot.loop.enabled ? "true" : "false") +
-    ",\"loopStartFrame\":" + std::to_string(snapshot.loop.startFrame) +
-    ",\"loopEndFrame\":" + std::to_string(snapshot.loop.endFrame);
 }
 
 std::string microphonePermissionState() {
