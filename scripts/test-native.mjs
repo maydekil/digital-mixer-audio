@@ -81,6 +81,46 @@ async function testEngineProtocol() {
       message.frameCount === 2
     )
   );
+  child.stdin.write(`${JSON.stringify({
+    id: "native-media-import-start",
+    type: "media-import-start",
+    path: mediaFixture.path,
+    framesPerPoint: 1
+  })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-media-import-start" &&
+      message.type === "media-import-status" &&
+      message.state === "queued" &&
+      typeof message.jobId === "string"
+    )
+  );
+  const importJobId = messages.find((message) => message.id === "native-media-import-start")?.jobId;
+  child.stdin.write(`${JSON.stringify({ id: "native-media-import-status", type: "media-import-status", jobId: importJobId })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-media-import-status" &&
+      message.type === "media-import-status" &&
+      message.state === "completed" &&
+      message.waveformPoints === 2
+    )
+  );
+  child.stdin.write(`${JSON.stringify({
+    id: "native-media-import-start-cancel",
+    type: "media-import-start",
+    path: mediaFixture.path,
+    framesPerPoint: 1
+  })}\n`);
+  await waitFor(() => messages.some((message) => message.id === "native-media-import-start-cancel" && typeof message.jobId === "string"));
+  const cancelJobId = messages.find((message) => message.id === "native-media-import-start-cancel")?.jobId;
+  child.stdin.write(`${JSON.stringify({ id: "native-media-import-cancel", type: "media-import-cancel", jobId: cancelJobId })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-media-import-cancel" &&
+      message.type === "media-import-status" &&
+      message.state === "canceled"
+    )
+  );
   child.stdin.write(`${JSON.stringify({ id: "native-transport-play", type: "transport-play" })}\n`);
   await waitFor(() =>
     messages.some((message) =>

@@ -922,3 +922,30 @@ Validation:
 - exit/result: `0`; native build, CTest 7/7, engine self-test, device enumeration smoke, and protocol smoke passed.
 - command: `npm run verify`
 - exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+### Phase06 Checkpoint — Pollable Native Import Jobs
+
+Changed files:
+- `native/engine/src/engine/MediaImportJob.hpp`, `native/engine/src/engine/MediaImportJob.cpp`: added native import job manager with queued/running/completed/canceled/error states, bounded status-poll processing, and waveform point counting.
+- `native/engine/src/main.cpp`: added `media-import-start`, `media-import-status`, and `media-import-cancel` protocol commands.
+- `native/engine/src/engine/MediaTransportJson.cpp`: added import job status JSON without PCM payloads.
+- `apps/desktop/electron/main.ts`: whitelisted import job commands for desktop IPC.
+- `native/engine/tests/MediaTransportTest.cpp`, `scripts/test-native.mjs`: added CTest and protocol smoke coverage for import completion and cancellation.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired build and evidence.
+
+Implemented behavior:
+- Import jobs expose progress and cancellation through native protocol.
+- Status polling processes bounded chunks from the stream reader and counts waveform points.
+- Canceled jobs do not report completed media references.
+- PCM remains inside native code; IPC carries metadata/progress only.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 7/7, engine self-test, device enumeration smoke, and protocol smoke including import job start/status/cancel passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Import processing is currently poll-driven rather than a separate background thread.
+- Import jobs support WAV through the current native reader; AIFF/FLAC/MP3/M4A remain not implemented.
+- Imported media is not yet placed on a playable timeline track.

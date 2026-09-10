@@ -1,4 +1,5 @@
 #include "engine/MediaFile.hpp"
+#include "engine/MediaImportJob.hpp"
 #include "engine/Transport.hpp"
 #include "engine/WaveformPyramid.hpp"
 
@@ -10,6 +11,8 @@
 namespace {
 
 using localmixer::engine::MediaFileError;
+using localmixer::engine::MediaImportJobManager;
+using localmixer::engine::MediaImportState;
 using localmixer::engine::TransportClock;
 using localmixer::engine::TransportLoop;
 using localmixer::engine::TransportState;
@@ -88,6 +91,24 @@ int main() {
       !near(pyramid.points[0].min, -0.25f) || !near(pyramid.points[0].max, 0.5f) ||
       !near(pyramid.points[1].min, 0.0f) || !near(pyramid.points[1].max, 0.0f)) {
     std::cerr << "waveform pyramid should stream min/max points\n";
+    return 1;
+  }
+  MediaImportJobManager imports;
+  const auto started = imports.start(fixture, 2);
+  if (started.state != MediaImportState::queued || started.totalFrames != 4) {
+    std::cerr << "media import job should queue fixture\n";
+    return 1;
+  }
+  auto imported = imports.status(started.jobId);
+  if (!imported.has_value() || imported->state != MediaImportState::completed ||
+      imported->processedFrames != 4 || imported->waveformPoints != 2) {
+    std::cerr << "media import job should complete through bounded status polling\n";
+    return 1;
+  }
+  const auto cancelStarted = imports.start(fixture, 2);
+  const auto canceled = imports.cancel(cancelStarted.jobId);
+  if (!canceled.has_value() || canceled->state != MediaImportState::canceled) {
+    std::cerr << "media import job should cancel without a valid media reference\n";
     return 1;
   }
 

@@ -22,6 +22,19 @@ std::string mediaInfoJson(const std::string& path) {
     ",\"durationSeconds\":" + std::to_string(duration);
 }
 
+std::string mediaImportStatusJson(const localmixer::engine::MediaImportStatus& status) {
+  return "\"jobId\":\"" + escapeJson(status.jobId) +
+    "\",\"state\":\"" + std::string(localmixer::engine::mediaImportStateName(status.state)) +
+    "\",\"error\":\"" + std::string(localmixer::engine::mediaFileErrorName(status.error)) +
+    "\",\"channels\":" + std::to_string(status.info.channels) +
+    ",\"sampleRate\":" + std::to_string(status.info.sampleRate) +
+    ",\"bitsPerSample\":" + std::to_string(status.info.bitsPerSample) +
+    ",\"processedFrames\":" + std::to_string(status.processedFrames) +
+    ",\"totalFrames\":" + std::to_string(status.totalFrames) +
+    ",\"waveformPoints\":" + std::to_string(status.waveformPoints) +
+    ",\"progress\":" + std::to_string(status.progress);
+}
+
 std::string transportJson(const localmixer::engine::TransportSnapshot& snapshot) {
   return "\"state\":\"" + std::string(localmixer::engine::transportStateName(snapshot.state)) +
     "\",\"positionFrame\":" + std::to_string(snapshot.positionFrame) +

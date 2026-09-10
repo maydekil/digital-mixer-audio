@@ -34,6 +34,7 @@ constexpr std::size_t kMaxMessageBytes = 8192;
 
 using localmixer::engine::protocol::escapeJson;
 using localmixer::engine::protocol::mediaInfoJson;
+using localmixer::engine::protocol::mediaImportStatusJson;
 using localmixer::engine::protocol::readJsonBoolField;
 using localmixer::engine::protocol::readJsonNumberField;
 using localmixer::engine::protocol::readJsonStringField;
@@ -406,6 +407,7 @@ std::string syncMixerGraphResultJson(
 
 int runStdioProtocol() {
   localmixer::engine::EngineRuntime runtime;
+  localmixer::engine::MediaImportJobManager mediaImportJobs;
   localmixer::engine::MixerGraphController graphController;
   localmixer::engine::SystemRouteTransactionManager routeTransactionManager;
   localmixer::engine::SystemRouteRecoveryStore routeRecoveryStore(routeRecoveryMarkerPath());
@@ -477,6 +479,25 @@ int runStdioProtocol() {
     } else if (type == "media-inspect") {
       const auto fields = mediaInfoJson(readJsonStringField(line, "path"));
       writeRawResponse(id, fields.find("\"imported\":true") != std::string::npos, "media-inspect", fields);
+    } else if (type == "media-import-start") {
+      const auto framesPerPoint = static_cast<std::uint32_t>(readJsonNumberField(line, "framesPerPoint").value_or(512.0));
+      const auto status = mediaImportJobs.start(readJsonStringField(line, "path"), framesPerPoint);
+      writeRawResponse(id, status.state != localmixer::engine::MediaImportState::error,
+        "media-import-status", mediaImportStatusJson(status));
+    } else if (type == "media-import-status") {
+      const auto status = mediaImportJobs.status(readJsonStringField(line, "jobId"));
+      if (!status.has_value()) {
+        writeRawResponse(id, false, "media-import-status", "\"error\":\"UNKNOWN_JOB\"");
+      } else {
+        writeRawResponse(id, true, "media-import-status", mediaImportStatusJson(*status));
+      }
+    } else if (type == "media-import-cancel") {
+      const auto status = mediaImportJobs.cancel(readJsonStringField(line, "jobId"));
+      if (!status.has_value()) {
+        writeRawResponse(id, false, "media-import-status", "\"error\":\"UNKNOWN_JOB\"");
+      } else {
+        writeRawResponse(id, true, "media-import-status", mediaImportStatusJson(*status));
+      }
     } else if (type == "transport-play") {
       transportClock.play();
       writeRawResponse(id, true, "transport-status", transportJson(transportClock.snapshot()));
