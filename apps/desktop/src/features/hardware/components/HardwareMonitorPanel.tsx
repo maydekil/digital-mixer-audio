@@ -164,11 +164,13 @@ export function HardwareMonitorPanel({ open, onClose }: HardwareMonitorPanelProp
 
   async function disableSystemRoute() {
     setBusy(true);
-    const result = await send("routing-system-disable");
+    const result = routeOwned
+      ? await send("routing-system-disable")
+      : await send("routing-system-recover");
     setBusy(false);
     if (!result) return;
     setRouteOwned(Boolean(result.ownsSystemRoute));
-    setStatus(result.ok ? "System route disabled" : result.error ?? "Disable route failed");
+    setStatus(result.ok ? "System route restored" : result.error ?? "Route restore failed");
     setRouteStatus(result.ok ? "Idle · output restored" : result.error ?? "Route restore failed");
     await refreshRouteStatus();
   }
@@ -222,7 +224,9 @@ export function HardwareMonitorPanel({ open, onClose }: HardwareMonitorPanelProp
           <Button tone="green" onClick={() => void monitor()} disabled={busy}>Monitor 3s</Button>
           <Button onClick={() => void checkSystemRoute()} disabled={busy}>Route Check</Button>
           <Button tone="amber" onClick={() => void enableSystemRoute()} disabled={busy}>Enable Route</Button>
-          <Button tone="danger" onClick={() => void disableSystemRoute()} disabled={busy || (!routeOwned && !recoveryMarker)}>Disable</Button>
+          <Button tone="danger" onClick={() => void disableSystemRoute()} disabled={busy || (!routeOwned && !recoveryMarker)}>
+            {routeOwned ? "Disable" : "Recover"}
+          </Button>
           <div className="hardware-peak"><span style={{ width: `${Math.min(100, peak * 100)}%` }} /></div>
         </div>
         <div className="hardware-route-status">

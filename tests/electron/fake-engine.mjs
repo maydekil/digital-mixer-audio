@@ -1,6 +1,15 @@
 import { createInterface } from "node:readline";
+import { appendFileSync } from "node:fs";
 
 const mode = process.argv[2] ?? "normal";
+const routeEvents = [];
+
+function recordRouteEvent(event) {
+  routeEvents.push(event);
+  if (process.env.LOCAL_MIXER_FAKE_ROUTE_EVENTS) {
+    appendFileSync(process.env.LOCAL_MIXER_FAKE_ROUTE_EVENTS, `${event}\n`);
+  }
+}
 
 if (mode === "malformed") {
   console.log("not-json");
@@ -32,6 +41,35 @@ input.on("line", (line) => {
   }
 
   if (message.type === "never") return;
+
+  if (message.type === "routing-system-status") {
+    console.log(JSON.stringify({
+      id: message.id,
+      type: "routing-system-status",
+      ok: true,
+      ownsSystemRoute: mode === "route-owned",
+      recoveryMarkerPresent: mode === "route-marker",
+      recoveryOriginalOutputUid: mode === "route-marker" ? "speaker-main" : ""
+    }));
+    return;
+  }
+
+  if (message.type === "routing-system-disable") {
+    recordRouteEvent("disable");
+    console.log(JSON.stringify({ id: message.id, type: "routing-system-disable", ok: true, state: "idle" }));
+    return;
+  }
+
+  if (message.type === "routing-system-recover") {
+    recordRouteEvent("recover");
+    console.log(JSON.stringify({ id: message.id, type: "routing-system-recover", ok: true, recovered: true }));
+    return;
+  }
+
+  if (message.type === "route-events") {
+    console.log(JSON.stringify({ id: message.id, type: "route-events", ok: true, events: routeEvents }));
+    return;
+  }
 
   if (message.type === "crash") {
     console.error("fake crash");

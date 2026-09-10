@@ -24,6 +24,7 @@ const supportedEngineCommands = new Set([
   "routing-system-enable",
   "routing-system-disable",
   "routing-system-status",
+  "routing-system-recover",
   "sync-mixer-graph",
   "start-mixer-monitor",
   "stop-mixer-monitor",
@@ -63,7 +64,12 @@ function validateRequiredEngine() {
 
 async function startEngineIfRequired() {
   if (!requireEngine) return;
-  engineSupervisor = new EngineSupervisor({ enginePath: nativeEnginePath(), commandTimeoutMs: 60_000 });
+  engineSupervisor = new EngineSupervisor({
+    enginePath: nativeEnginePath(),
+    commandTimeoutMs: 60_000,
+    restoreSystemRouteOnStop: true,
+    recoverSystemRouteOnStart: true
+  });
   await engineSupervisor.start();
   await engineSupervisor.send("request-mic-permission");
 }

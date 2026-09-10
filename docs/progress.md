@@ -725,6 +725,33 @@ Known limitations:
 - Manual crash/restart recovery flow remains `NOT_RUN`.
 - The desktop modal is a developer/control surface, not final first-run setup UX.
 
+### Phase04 Checkpoint — Supervisor Route Restore And Startup Recovery
+
+Changed files:
+- `native/engine/src/main.cpp`: added `routing-system-recover`, which reads the durable marker, restores the marked original output through the native CoreAudio adapter, and clears the marker after success.
+- `apps/desktop/electron/EngineSupervisor.ts`: added optional normal-stop route restore and startup marker recovery flows.
+- `apps/desktop/electron/main.ts`: enabled supervisor route restore/recovery for desktop engine mode and whitelisted `routing-system-recover`.
+- `apps/desktop/src/features/hardware/components/HardwareMonitorPanel.tsx`: uses `routing-system-recover` when only a marker remains after restart.
+- `tests/electron/fake-engine.mjs`, `tests/electron/engine-supervisor.test.ts`, `scripts/test-native.mjs`: added fake-engine and protocol coverage for restore/recovery commands.
+- `docs/setup/system-audio-routing.md`, `docs/progress.md`: documented the explicit recovery command and current behavior.
+
+Implemented behavior:
+- Normal desktop engine shutdown tries `routing-system-status` and `routing-system-disable` before engine shutdown when an owned route or marker is present.
+- Desktop engine startup checks for a durable route marker and runs `routing-system-recover` when no live transaction owns the route.
+- Recovery remains best-effort; manual macOS output recovery remains documented.
+
+Validation:
+- command: `npm run test:ui`
+- exit/result: `0`; 16 tests passed, including supervisor stop/recover route cleanup cases.
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 6/6, engine self-test, device enumeration smoke, and protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Real crash recovery with BlackHole/default-output switching remains `NOT_RUN` on hardware.
+- The recovery command does not promise fail-open behavior after whole-app SIGKILL or power loss; it restores only when a later native engine process can run.
+
 ## Native Sound Pad Spike — Early User-Requested
 Status: IMPLEMENTED_UNVERIFIED_PLAYBACK
 Prerequisites: user explicitly requested this before UI-04

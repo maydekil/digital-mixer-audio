@@ -539,6 +539,23 @@ int runStdioProtocol() {
         systemRouteTransactionJson(routeTransactionManager.transaction()) +
         ",\"recoveryMarkerPresent\":" + std::string(marker.has_value() ? "true" : "false") +
         ",\"recoveryOriginalOutputUid\":\"" + escapeJson(marker.has_value() ? marker->originalOutputUid : "") + "\"");
+    } else if (type == "routing-system-recover") {
+      const auto marker = routeRecoveryStore.load();
+      if (!marker.has_value()) {
+        writeRawResponse(id, false, "routing-system-recover",
+          "\"recovered\":false,\"error\":\"NO_RECOVERY_MARKER\"");
+        continue;
+      }
+      bool recovered = false;
+#if defined(__APPLE__)
+      const auto restore = localmixer::platform::macos::setDefaultOutputUid(marker->originalOutputUid);
+      recovered = restore.ok;
+#endif
+      if (recovered) routeRecoveryStore.clear();
+      writeRawResponse(id, recovered, "routing-system-recover",
+        "\"recovered\":" + std::string(recovered ? "true" : "false") +
+        ",\"error\":\"" + std::string(recovered ? "" : "RECOVERY_APPLY_FAILED") +
+        "\",\"recoveryOriginalOutputUid\":\"" + escapeJson(marker->originalOutputUid) + "\"");
     } else if (type == "sync-mixer-graph") {
       const auto fields = syncMixerGraphResultJson(line, graphController, monitorSelection);
       writeRawResponse(id, fields.find("\"synced\":true") != std::string::npos, "sync-mixer-graph", fields);

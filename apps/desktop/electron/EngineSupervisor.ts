@@ -8,6 +8,8 @@ export interface EngineSupervisorOptions {
   startupTimeoutMs?: number;
   commandTimeoutMs?: number;
   maxRestartsPerMinute?: number;
+  restoreSystemRouteOnStop?: boolean;
+  recoverSystemRouteOnStart?: boolean;
 }
 
 export class EngineSupervisor extends EventEmitter {
@@ -40,6 +42,7 @@ export class EngineSupervisor extends EventEmitter {
     this.attachChild(child);
 
     await this.waitForHandshake(this.options.startupTimeoutMs ?? 2000);
+    if (this.options.recoverSystemRouteOnStart) await this.recoverSystemRoute();
   }
 
   send(type: string, payload: Record<string, unknown> = {}) {
@@ -78,9 +81,24 @@ export class EngineSupervisor extends EventEmitter {
     const child = this.child;
     if (!child) return;
     try {
+      if (this.stateValue === "RUNNING" && this.options.restoreSystemRouteOnStop) await this.restoreSystemRoute();
       if (this.stateValue === "RUNNING") await this.send("shutdown");
     } catch {
       child.kill("SIGTERM");
+    }
+  }
+
+  private async restoreSystemRoute() {
+    const status = await this.send("routing-system-status");
+    if (status.ownsSystemRoute || status.recoveryMarkerPresent) await this.send("routing-system-disable");
+  }
+
+  private async recoverSystemRoute() {
+    try {
+      const status = await this.send("routing-system-status");
+      if (status.recoveryMarkerPresent && !status.ownsSystemRoute) await this.send("routing-system-recover");
+    } catch {
+      // Recovery is best-effort; manual route recovery remains documented.
     }
   }
 

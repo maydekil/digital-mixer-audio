@@ -48,6 +48,6 @@ When the native engine owns an active route, it writes a recovery marker contain
 
 `~/Library/Application Support/Local Audio Mixer/route-recovery.marker`
 
-Set `LOCAL_MIXER_ROUTE_RECOVERY_MARKER` to override the marker path for tests. `routing-system-status` reports `recoveryMarkerPresent` and `recoveryOriginalOutputUid`. A successful `routing-system-disable` clears the marker after restoring the previous output. The marker is not auto-restored without an explicit command.
+Set `LOCAL_MIXER_ROUTE_RECOVERY_MARKER` to override the marker path for tests. `routing-system-status` reports `recoveryMarkerPresent` and `recoveryOriginalOutputUid`. A successful `routing-system-disable` clears the marker after restoring the previous output. If the engine restarts and only the durable marker remains, `routing-system-recover` restores the marked original output and clears the marker after success.
 
-The desktop UI does not expose this enable action yet. Use route diagnostics first, and only run route apply manually when BlackHole and physical output validation are ready.
+The desktop UI exposes this behind the Hardware Monitor modal. Use route diagnostics first, and only enable route apply when BlackHole and physical output validation are ready.
