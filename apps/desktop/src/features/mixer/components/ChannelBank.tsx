@@ -3,7 +3,10 @@ import { ChannelStrip } from "./ChannelStrip";
 
 interface ChannelBankProps {
   channels: ChannelState[];
+  sourceOptions: Record<string, Array<{ value: string; label: string }>>;
   onSelect(channelId: string): void;
+  onEnabled(channelId: string, enabled: boolean): void;
+  onSource(channelId: string, source: string): void;
   onTrim(channelId: string, value: number): void;
   onPan(channelId: string, value: number): void;
   onFader(channelId: string, value: number): void;
@@ -17,14 +20,17 @@ interface ChannelBankProps {
   onHarmonyToggle(): void;
 }
 
-export function ChannelBank({ channels, onSelect, onTrim, onPan, onFader, onSend, onMute, onSolo, onMonitor, onRecordArm, onProcessor, onClipReset, onHarmonyToggle }: ChannelBankProps) {
+export function ChannelBank({ channels, sourceOptions, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onSend, onMute, onSolo, onMonitor, onRecordArm, onProcessor, onClipReset, onHarmonyToggle }: ChannelBankProps) {
   return (
     <section className="channel-bank">
       {channels.map((channel) => (
         <ChannelStrip
           key={channel.id}
           channel={channel}
+          sourceOptions={sourceOptions[channel.id] ?? []}
           onSelect={() => onSelect(channel.id)}
+          onEnabled={(enabled) => onEnabled(channel.id, enabled)}
+          onSource={(source) => onSource(channel.id, source)}
           onTrim={(value) => onTrim(channel.id, value)}
           onPan={(value) => onPan(channel.id, value)}
           onFader={(value) => onFader(channel.id, value)}

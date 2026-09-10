@@ -1,25 +1,76 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PreviewAdapter } from "../../adapters/preview/PreviewAdapter";
 import { CompactFxRow } from "../fx/components/CompactFxRow";
 import { HarmonyQuickPanel } from "../harmony/components/HarmonyQuickPanel";
+import { HardwareMonitorPanel } from "../hardware/components/HardwareMonitorPanel";
 import { ChannelProcessingPanel } from "../processing/components/ChannelProcessingPanel";
 import { SoundPadPanel } from "../sound-pads/components/SoundPadPanel";
 import { ChannelBank } from "./components/ChannelBank";
 
+interface HardwareDevice {
+  uid: string;
+  name: string;
+  defaultInput?: boolean;
+  defaultOutput?: boolean;
+  inputChannels?: number;
+  outputChannels?: number;
+}
+
 export function MixerPage() {
   const adapter = useMemo(() => new PreviewAdapter(), []);
   const [snapshot, setSnapshot] = useState(adapter.getSnapshot());
+  const [hardwareOpen, setHardwareOpen] = useState(false);
+  const [devices, setDevices] = useState<HardwareDevice[]>([]);
+  const [outputUid, setOutputUid] = useState("");
 
   function refresh(action: () => void) {
     action();
     setSnapshot(structuredClone(adapter.getSnapshot()));
   }
 
+  async function refreshDevices() {
+    const result = await window.localMixer?.engineCommand?.("list-devices");
+    const nextDevices = Array.isArray(result?.devices) ? result.devices as HardwareDevice[] : [];
+    setDevices(nextDevices);
+    const defaultOutput = nextDevices.find((device) => device.defaultOutput && (device.outputChannels ?? 0) > 0) ?? nextDevices.find((device) => (device.outputChannels ?? 0) > 0);
+    setOutputUid((current) => current || defaultOutput?.uid || "");
+  }
+
+  async function runChannelMonitor(channelId: string, monitor: boolean) {
+    if (!monitor || !window.localMixer?.engineCommand) return;
+    const channel = adapter.getSnapshot().channels.find((item) => item.id === channelId);
+    if (!channel || channel.kind !== "source" || !channel.enabled || !channel.source) return;
+    await window.localMixer.engineCommand("monitor-passthrough", {
+      inputUid: channel.source,
+      outputUid,
+      sampleRate: 48000,
+      durationMs: 3000,
+      monitorGainDb: -18
+    });
+  }
+
+  useEffect(() => {
+    void refreshDevices();
+  }, []);
+
   const selected = snapshot.channels.find((channel) => channel.id === snapshot.selectedChannelId) ?? snapshot.channels[0];
   const fxA = snapshot.fxUnits[0];
   const fxB = snapshot.fxUnits[1];
   const programA = snapshot.programs.find((program) => program.id === fxA.programId) ?? snapshot.programs[0];
   const programB = snapshot.programs.find((program) => program.id === fxB.programId) ?? snapshot.programs[0];
+  const inputOptions = devices
+    .filter((device) => (device.inputChannels ?? 0) > 0)
+    .map((device) => ({ value: device.uid, label: device.name || device.uid }));
+  const outputOptions = devices
+    .filter((device) => (device.outputChannels ?? 0) > 0)
+    .map((device) => ({ value: device.uid, label: device.name || device.uid }));
+  const sourceOptions = Object.fromEntries(snapshot.channels.map((channel) => {
+    if (!["system", "vocal", "instrument"].includes(channel.role)) return [channel.id, []];
+    const options = inputOptions.some((option) => option.value === channel.source)
+      ? inputOptions
+      : [{ value: channel.source, label: channel.source }, ...inputOptions];
+    return [channel.id, options];
+  }));
 
   return (
     <main className="mixer-app">
@@ -32,14 +83,20 @@ export function MixerPage() {
         <div className="left-zone">
           <ChannelBank
             channels={snapshot.channels}
+            sourceOptions={sourceOptions}
             onSelect={(id) => refresh(() => adapter.selectChannel(id))}
+            onEnabled={(id, enabled) => refresh(() => adapter.setChannelEnabled(id, enabled))}
+            onSource={(id, source) => refresh(() => adapter.setChannelSource(id, source))}
             onTrim={(id, value) => refresh(() => adapter.setChannelTrim(id, value))}
             onPan={(id, value) => refresh(() => adapter.setChannelPan(id, value))}
             onFader={(id, value) => refresh(() => adapter.setChannelFader(id, value))}
             onSend={(id, unitId, value) => refresh(() => adapter.setChannelSend(id, unitId, value))}
             onMute={(id, muted) => refresh(() => adapter.setChannelMute(id, muted))}
             onSolo={(id, solo) => refresh(() => adapter.setChannelSolo(id, solo))}
-            onMonitor={(id, monitor) => refresh(() => adapter.setChannelMonitor(id, monitor))}
+            onMonitor={(id, monitor) => {
+              refresh(() => adapter.setChannelMonitor(id, monitor));
+              void runChannelMonitor(id, monitor);
+            }}
             onRecordArm={(id, armed) => refresh(() => adapter.setChannelRecordArm(id, armed))}
             onProcessor={(id, processorId, enabled) => refresh(() => adapter.setChannelProcessor(id, processorId, enabled))}
             onClipReset={(id) => refresh(() => adapter.resetClip(id))}
@@ -62,7 +119,8 @@ export function MixerPage() {
           <SoundPadPanel />
         </div>
       </section>
-      <Footer />
+      <Footer outputUid={outputUid} outputOptions={outputOptions} onOutput={setOutputUid} onHardware={() => setHardwareOpen(true)} />
+      <HardwareMonitorPanel open={hardwareOpen} onClose={() => setHardwareOpen(false)} />
     </main>
   );
 }
@@ -83,11 +141,16 @@ function TopBar({ projectName, time, rate, status, mode }: { projectName: string
   );
 }
 
-function Footer() {
+function Footer({ outputUid, outputOptions, onOutput, onHardware }: { outputUid: string; outputOptions: Array<{ value: string; label: string }>; onOutput(value: string): void; onHardware(): void }) {
   return (
     <footer className="footer-bar">
-      <label>Output:<select><option>Headphones</option><option>Output 1-2</option></select></label>
+      <label>Output:<select value={outputUid} onChange={(event) => onOutput(event.target.value)}>
+        <option value="">Default Output</option>
+        {outputOptions.length === 0 ? <option value="preview-output">Headphones</option> : null}
+        {outputOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select></label>
       <div className="monitor-volume"><span>Monitor Volume</span><b>🔊</b><input type="range" value="55" readOnly /></div>
+      <button onClick={onHardware}>HW</button>
       <button>DIM</button>
       <button>MUTE</button>
     </footer>

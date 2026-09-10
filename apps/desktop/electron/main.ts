@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
+import { EngineSupervisor } from "./EngineSupervisor.js";
 
 const require = createRequire(import.meta.url);
 const { app, BrowserWindow, ipcMain, shell } = require("electron") as typeof import("electron");
@@ -10,18 +11,53 @@ const { app, BrowserWindow, ipcMain, shell } = require("electron") as typeof imp
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDev = process.env.LOCAL_MIXER_DEV_SERVER === "1";
 const devUrl = process.env.LOCAL_MIXER_DEV_URL ?? "http://127.0.0.1:5173";
+const requireEngine = process.env.LOCAL_MIXER_REQUIRE_ENGINE === "1";
 const supportedSoundPads = new Set(["applause", "laugh", "cheer", "drumroll", "ding", "whoosh"]);
+const supportedEngineCommands = new Set([
+  "engine-status",
+  "list-devices",
+  "meter-input",
+  "play-test-tone",
+  "monitor-passthrough",
+  "prepare-passthrough"
+]);
 const soundPadMaxMs = 6000;
 let activeSoundPad: { child: ReturnType<typeof spawn>; timeout: ReturnType<typeof setTimeout> } | null = null;
+let engineSupervisor: EngineSupervisor | null = null;
 
 function soundPadHelperPath() {
   if (process.env.LOCAL_MIXER_SOUND_PAD_HELPER) return process.env.LOCAL_MIXER_SOUND_PAD_HELPER;
+  if (app.isPackaged) return join(process.resourcesPath, "native", "sound-pad", "sound-pad-helper");
   return join(process.cwd(), "native", "sound-pad", "build", "sound-pad-helper");
 }
 
 function soundPadAssetDir() {
   if (process.env.LOCAL_MIXER_SOUND_PAD_ASSETS) return process.env.LOCAL_MIXER_SOUND_PAD_ASSETS;
-  return join(process.cwd(), "assets", "sound-pads");
+  return resourcePath("assets", "sound-pads");
+}
+
+function nativeEnginePath() {
+  if (process.env.LOCAL_MIXER_ENGINE_PATH) return process.env.LOCAL_MIXER_ENGINE_PATH;
+  if (app.isPackaged) return join(process.resourcesPath, "native", "engine", "local-mixer-engine");
+  return join(process.cwd(), "native", "engine", "build", "native", "engine", "local-mixer-engine");
+}
+
+function resourcePath(...parts: string[]) {
+  if (app.isPackaged) return join(process.resourcesPath, ...parts);
+  return join(process.cwd(), ...parts);
+}
+
+function validateRequiredEngine() {
+  if (!requireEngine) return;
+  const engine = nativeEnginePath();
+  if (!existsSync(engine)) throw new Error(`Native engine required but missing: ${engine}`);
+}
+
+async function startEngineIfRequired() {
+  if (!requireEngine) return;
+  engineSupervisor = new EngineSupervisor({ enginePath: nativeEnginePath(), commandTimeoutMs: 60_000 });
+  await engineSupervisor.start();
+  await engineSupervisor.send("request-mic-permission");
 }
 
 function registerSoundPadIpc() {
@@ -75,6 +111,26 @@ function registerSoundPadIpc() {
   ipcMain.handle("sound-pad:stop", async () => ({ ok: true, stopped: stopActiveSoundPad() }));
 }
 
+function registerEngineIpc() {
+  ipcMain.handle("engine:command", async (_event, type: unknown, payload: unknown) => {
+    if (typeof type !== "string" || !supportedEngineCommands.has(type)) {
+      return { ok: false, error: "Unsupported engine command" };
+    }
+    if (!engineSupervisor || engineSupervisor.state !== "RUNNING") {
+      return { ok: false, error: "Native engine is not running. Start with npm run dev:engine." };
+    }
+    if (payload !== undefined && (payload === null || typeof payload !== "object" || Array.isArray(payload))) {
+      return { ok: false, error: "Invalid engine command payload" };
+    }
+
+    try {
+      return await engineSupervisor.send(type, payload as Record<string, unknown> | undefined);
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+}
+
 async function createWindow() {
   const window = new BrowserWindow({
     width: 1500,
@@ -114,7 +170,10 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  validateRequiredEngine();
+  await startEngineIfRequired();
   registerSoundPadIpc();
+  registerEngineIpc();
   await createWindow();
   app.on("activate", async () => {
     if (BrowserWindow.getAllWindows().length === 0) await createWindow();
@@ -122,5 +181,9 @@ app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
+  app.quit();
+});
+
+app.on("before-quit", () => {
+  void engineSupervisor?.stop();
 });

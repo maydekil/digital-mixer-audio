@@ -4,9 +4,9 @@ Specification: `docs/specs/AUDIO-MIXER-AI-IMPLEMENTATION.md` revision 1.7.
 
 ## Project Status
 
-- Current gate: UI-first implementation.
+- Current gate: Phase05 multi-source engine/channel strip foundation.
 - Reference image: `docs/design/Digital Mixer Audio.png`; visual target is available and inspected.
-- Native audio engine: `PARTIAL_SOUND_PAD_SPIKE`; user explicitly requested early native sound-pad verification before UI-04.
+- Native audio engine: `PHASE03_FOUNDATION_IMPLEMENTED_UNVERIFIED`; native sound-pad spike remains separate early user-requested work.
 - Product completion: `NOT_STARTED`; UI work is not DSP, hardware, or package acceptance.
 
 ## UI-00 — Audit Frontend And Design Contract
@@ -253,6 +253,202 @@ Known limitations:
 
 Next exact action:
 - Start Phase01 native executable scaffolding with CMake + Ninja + Apple Clang.
+
+## Phase01 — Native Executable Connected To Desktop Shell
+Status: VERIFIED
+Prerequisites: Phase00 VERIFIED
+
+Changed files:
+- `CMakeLists.txt`, `native/engine/CMakeLists.txt`: CMake/Ninja native engine project scaffold.
+- `native/engine/src/main.cpp`: `local-mixer-engine` Phase01 executable with `--version` and `--self-test`.
+- `native/engine/src/dsp/Gain.hpp`, `native/engine/src/dsp/Gain.cpp`: tiny portable DSP utility used only for native test scaffolding.
+- `native/engine/tests/GainTest.cpp`: portable native DSP test target.
+- `scripts/build-native.mjs`, `scripts/test-native.mjs`, `scripts/dev-engine.mjs`, `scripts/package-mac-unsigned.mjs`: root native build/test/dev scaffolding.
+- `package.json`: added root `dev`, `dev:engine`, `build:native`, `build`, `test:native`, `test:e2e`, and `package:mac:unsigned` scripts; `verify` now includes native tests.
+- `apps/desktop/electron/main.ts`: native resource path helpers and explicit `LOCAL_MIXER_REQUIRE_ENGINE=1` validation for engine-mode launches.
+- `apps/desktop/electron/main.ts`: closing the last desktop window now quits Electron in dev/package flow so launcher scripts can stop child processes.
+- `docs/task-plan.json`: Phase01 moved to `IMPLEMENTED_UNVERIFIED`.
+
+Implemented behavior:
+- `dev` remains an alias for `dev:ui`; engine mode is explicit through `dev:engine`.
+- `dev:engine` builds native targets first, builds Electron main/preload, requires the native engine binary, and passes an explicit engine path to Electron.
+- Native engine executable is separate from the earlier sound-pad helper.
+- Native build uses CMake + Ninja + Apple Clang with `CMAKE_OSX_DEPLOYMENT_TARGET=14.0`.
+- Portable native tests run through CTest and do not depend on Electron, Core Audio, hardware, or browser APIs.
+- Electron packaged/dev resource path helpers avoid assuming `cwd` for packaged resource lookup.
+- Closing the desktop window now requests app quit instead of leaving the macOS app process alive with no window.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; CMake configured/generated, Ninja built `local-mixer-engine` and `local-mixer-dsp-tests`, CTest passed `1/1`, engine `--self-test` passed, engine `--version` printed Phase01 JSON.
+- command: `file native/engine/build/native/engine/local-mixer-engine native/engine/build/native/engine/local-mixer-dsp-tests`
+- exit/result: `0`; both binaries are `Mach-O 64-bit executable arm64`.
+- command: `native/engine/build/native/engine/local-mixer-engine --version`
+- exit/result: `0`; `{"name":"local-mixer-engine","version":"0.1.0-phase01","protocol":1,"audio":"not-started","juce":"pinned-8.0.15-not-linked"}`.
+- command: `ctest --test-dir native/engine/build --output-on-failure`
+- exit/result: `0`; `100% tests passed, 0 tests failed out of 1`.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, UI tests, native tests, UI build, and Electron main build passed.
+- command: `npm run build:desktop:main`
+- exit/result: `0`; Electron main/preload rebuilt after quit lifecycle change.
+- manual: `npm run dev:engine`
+- result: PASSED_BY_USER; desktop app opened, closing the desktop window returned the terminal to prompt after the Electron quit lifecycle fix.
+
+Known limitations:
+- JUCE is pinned but not downloaded or linked yet; `local-mixer-engine` is a C++20 Phase01 scaffold, not the full JUCE/Core Audio engine.
+- No capture, playback, device enumeration, routing, recording, export, plugin hosting, or native DSP feature is implemented by Phase01.
+- `package:mac:unsigned` is a reserved script that intentionally fails until the packaging phase.
+
+Next exact action:
+- Proceed to Phase02 protocol/supervisor engine: JSONL parser, handshake, bounded messages, child lifecycle, error states, and crash handling.
+
+## Phase02 — Protocol And Engine Supervisor
+Status: VERIFIED
+Prerequisites: Phase01 VERIFIED
+
+Changed files:
+- `apps/desktop/electron/EngineProtocol.ts`: shared protocol constants, engine states, bounded message size, and message types.
+- `apps/desktop/electron/EngineSupervisor.ts`: JSONL engine supervisor with spawn, handshake, bounded parsing, command timeout, stderr tail, EOF/crash handling, and restart-rate guard.
+- `apps/desktop/electron/main.ts`: `dev:engine` path starts the supervisor when `LOCAL_MIXER_REQUIRE_ENGINE=1` and stops it during app quit.
+- `native/engine/src/main.cpp`: added `--stdio` JSONL protocol mode with hello, ping, shutdown, malformed/invalid command errors, and test crash command.
+- `tests/electron/fake-engine.mjs`, `tests/electron/engine-supervisor.test.ts`: fake-engine tests for handshake, command timeout, malformed output, oversized output, unexpected EOF, and restart limiting.
+- `scripts/test-native.mjs`: native engine protocol smoke test added to CMake/CTest/native self-test flow.
+- `docs/task-plan.json`: Phase02 moved to `VERIFIED`.
+
+Implemented behavior:
+- Engine process is launched via `spawn` argument array with `shell:false`.
+- `dev:engine` no longer only validates the file path; it starts the native engine stdio protocol and waits for a matching protocol handshake before showing the desktop window.
+- Supervisor states include `STOPPED`, `STARTING`, `RUNNING`, `RECONFIGURING`, `RECOVERING`, and `ERROR`.
+- JSONL stdout messages are bounded to 8192 bytes; malformed and oversized messages move supervisor state to `ERROR`.
+- Commands carry ids and are rejected on timeout instead of hanging UI/control code.
+- Unexpected EOF before handshake is reported as an error.
+- Fake engine is used only in tests; production/dev engine mode uses the native executable path.
+
+Validation:
+- command: `npm run test:ui`
+- exit/result: `0`; 2 files, 12 tests passed including 6 EngineSupervisor tests.
+- command: `npm run test:native`
+- exit/result: `0`; CMake/Ninja build passed, CTest passed, engine self-test passed, engine JSONL protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, UI/supervisor tests, native tests, UI build, and Electron main build passed.
+
+Known limitations:
+- Phase02 does not implement audio devices, Core Audio callbacks, passthrough, DSP processing, meters, recording, export, or plugin hosting.
+- Engine crash/error is surfaced through supervisor state and rejected commands; broader in-renderer user-facing error panels are deferred until the native engine state is connected to runtime UI flows.
+- Auto-restart policy is guarded by rate limit but not yet used for real restart loops; recovery behavior belongs to later engine lifecycle phases.
+
+Next exact action:
+- Continue Phase03 toward real device open, no-monitor default, and explicit passthrough mapping.
+
+## Phase03 — Audio Device And Passthrough Foundation
+Status: VERIFIED
+Prerequisites: Phase02 VERIFIED
+
+Changed files:
+- `CMakeLists.txt`, `native/engine/CMakeLists.txt`: native engine build now enables Objective-C++ on Apple and links AVFoundation/Core Audio/Core Foundation for permission status, device enumeration, and output callback.
+- `native/engine/src/platform/macos/CoreAudioDevices.hpp`, `native/engine/src/platform/macos/CoreAudioDevices.mm`: Core Audio hardware device enumeration with UID, name, default input/output flags, input/output channel counts, and nominal sample rate.
+- `native/engine/src/platform/macos/CoreAudioInputMeter.hpp`, `native/engine/src/platform/macos/CoreAudioInputMeter.mm`: Core Audio HAL input callback for short peak measurement from default or explicit input UID.
+- `native/engine/src/platform/macos/CoreAudioOutputStream.hpp`, `native/engine/src/platform/macos/CoreAudioOutputStream.mm`: Core Audio HAL output callback for protected test tone playback, with explicit output UID selection and default-output fallback.
+- `native/engine/src/platform/macos/CoreAudioPassthrough.hpp`, `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: short native input-to-output monitor path using preallocated ring buffer, explicit input/output UIDs, explicit channels, conservative monitor gain, zeroed output buffers, and output limiting.
+- `native/engine/src/platform/macos/CoreAudioDevices.hpp`, `native/engine/src/platform/macos/CoreAudioDevices.mm`: added native microphone permission request path in addition to permission status query.
+- `native/engine/src/dsp/OutputProtection.hpp`, `native/engine/src/dsp/OutputProtection.cpp`: native master gain, mute, ceiling limiter, and -30 dBFS test-tone utility.
+- `native/engine/src/engine/DeviceService.hpp`, `native/engine/src/engine/DeviceService.cpp`: native device catalog/UID lookup/channel labels, project rate/block validation, explicit one-channel passthrough mapping, monitoring-off zero output, and bounded chunk rendering.
+- `native/engine/src/engine/EngineRuntime.hpp`, `native/engine/src/engine/EngineRuntime.cpp`: native runtime status, default device selection, prepared passthrough lifecycle, and explicit error-state reporting.
+- `native/engine/tests/OutputProtectionTest.cpp`: native tests for limiter ceiling, mute, and test tone level.
+- `native/engine/tests/DeviceServiceTest.cpp`: native tests for UID lookup, channel labels, sample-rate mismatch rejection, oversized block rejection, monitoring-off silence, explicit channel passthrough, and limiter-protected render output.
+- `native/engine/tests/EngineRuntimeTest.cpp`: native tests for no-device error state, default input/output selection, monitoring-off prepared state, and sample-rate mismatch error propagation.
+- `native/engine/src/main.cpp`: added `--list-devices`, `--test-tone`, `--meter-input`, and `--monitor-passthrough`; stdio protocol now handles `engine-status`, `list-devices`, `prepare-passthrough`, `play-test-tone`, `meter-input`, and `monitor-passthrough`; self-test now includes output protection.
+- `native/engine/src/main.cpp`: `--meter-input` now accepts `--input-uid`, `--sample-rate`, and `--duration-ms`; `--test-tone` accepts `--output-uid`, `--sample-rate`, `--duration-ms`, and `--monitor-gain-db` for explicit device testing.
+- `apps/desktop/electron/main.ts`, `apps/desktop/electron/preload.ts`, `apps/desktop/electron/preload.cjs`: desktop engine IPC bridge exposes a whitelist for `engine-status`, `list-devices`, `meter-input`, `play-test-tone`, `monitor-passthrough`, and `prepare-passthrough`.
+- `apps/desktop/src/features/hardware/components/HardwareMonitorPanel.tsx`, `apps/desktop/src/features/mixer/MixerPage.tsx`, `apps/desktop/src/styles/app.css`, `apps/desktop/src/types/localMixer.d.ts`: desktop app now exposes Hardware Monitor as a modal opened from a small footer `HW` button, with device refresh, input/output selectors, input meter, output tone, and 3-second monitor command.
+- `apps/desktop/src/adapters/MixerControlPort.ts`, `apps/desktop/src/adapters/preview/PreviewAdapter.ts`, `apps/desktop/src/fixtures/approvedMixerSession.ts`, `apps/desktop/src/features/mixer/components/ChannelBank.tsx`, `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`, `apps/desktop/src/styles/app.css`: each mixer channel now has an independent ON/OFF state and compact header button; disabled channels dim and show silent preview meters.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`, `apps/desktop/src/features/mixer/components/ChannelBank.tsx`, `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`, `apps/desktop/src/adapters/MixerControlPort.ts`, `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: source channels now support compact input-device selectors from native `list-devices`; footer output selector now uses native output devices as the global monitor/master output.
+- `native/engine/src/main.cpp`: added `--request-mic-permission` and stdio `request-mic-permission`.
+- `apps/desktop/electron/main.ts`: `dev:engine` now requests native microphone permission after engine handshake.
+- `apps/desktop/electron/EngineSupervisor.ts`, `tests/electron/fake-engine.mjs`, `tests/electron/engine-supervisor.test.ts`: guarded closed engine stdin writes so closing the app or a dead engine no longer raises uncaught `EPIPE`.
+- `scripts/test-native.mjs`: native verification now includes JSON smoke checks for `--list-devices`, protocol `list-devices`, protocol `prepare-passthrough`, zero-duration protocol `play-test-tone`, zero-duration protocol `meter-input`, and zero-duration protocol `monitor-passthrough`.
+- `docs/task-plan.json`: Phase03 moved to `VERIFIED` after hardware evidence was supplied from the user's desktop session.
+
+Implemented behavior:
+- Device enumeration is native-only through Core Audio on macOS.
+- Device list output is JSON and bounded to native executable commands, not browser audio APIs.
+- Output protection primitives exist before any future physical output callback: mute, master gain, sample clamp limiter, and conservative test tone generation.
+- DeviceService now rejects missing devices, invalid channel mapping, sample-rate mismatches, and oversized project blocks before rendering.
+- Passthrough rendering is explicit and starts silent because input monitoring defaults off.
+- Engine stdio exposes device/status commands for the desktop shell without involving renderer-side audio APIs.
+- Microphone permission state is reported natively as `AUTHORIZED`, `DENIED`, `RESTRICTED`, `NOT_DETERMINED`, `UNAVAILABLE`, or `UNSUPPORTED_PLATFORM`.
+- Native microphone permission can now be requested by the engine; if macOS already records `DENIED`, the command reports `DENIED` without prompting until the user resets TCC permission.
+- Protected test tone is implemented in a native Core Audio output callback; automated tests use zero-duration command smoke only so verification does not unexpectedly play audio.
+- Input signal presence can now be tested from native code with `--meter-input`; it returns a peak value without routing mic audio to speakers.
+- Input/output hardware checks can target explicit device UIDs instead of only macOS defaults.
+- Short passthrough monitoring is explicit-only through `--monitor-passthrough`; it defaults to `-24 dB` monitor gain and never starts automatically.
+- Passthrough CLI now mirrors mono mic monitoring to all output channels by default so headset tests are audible on left/right; `--single-output-channel` keeps explicit one-channel output checks.
+- Desktop app hardware testing is available only in `dev:engine` mode through the native engine bridge; browser UI preview remains silent. Hardware Monitor is a debug modal, not a permanent right-panel production surface.
+- Channel ON/OFF is represented in app state separately from mute/solo so later native routing can exclude disabled sources without conflating that with mix mute.
+- Channel MON in the desktop app can trigger the current short native monitor command using that channel's selected input and the footer's selected output; persistent graph monitoring remains a later engine-routing step.
+- Engine shutdown/write races are handled by supervisor rejection paths instead of uncaught `EPIPE` errors.
+- No Web Audio, browser capture, or renderer-side DSP was introduced.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; CMake/Ninja build passed including Core Audio input/output/passthrough stream files, CTest passed 4/4 including output protection, DeviceService, and EngineRuntime, engine self-test passed, device enumeration smoke passed, JSONL protocol smoke passed including zero-duration `play-test-tone`, `meter-input`, and `monitor-passthrough`.
+- command: `native/engine/build/native/engine/local-mixer-engine --list-devices`
+- exit/result: `0`; returned valid JSON with `devices: []` and `micPermission: DENIED` in this command environment.
+- command: `native/engine/build/native/engine/local-mixer-engine --request-mic-permission`
+- exit/result: `0`; returned `{"micPermission":"DENIED"}`, confirming the environment is already denied and will not show a prompt until reset.
+- command: `native/engine/build/native/engine/local-mixer-engine --meter-input`
+- exit/result: `0`; returned `{"measured":false,"error":"NO_INPUT_DEVICE","inputChannels":0,"actualSampleRate":0.000000,"peak":0.000000}` in this command environment.
+- command: `native/engine/build/native/engine/local-mixer-engine --monitor-passthrough --input-uid BuiltInHeadphoneInputDevice --duration-ms 0`
+- exit/result: `0`; returned `{"monitored":false,"error":"NO_INPUT_DEVICE","inputChannels":0,"outputChannels":0,"inputSampleRate":0.000000,"outputSampleRate":0.000000,"inputPeak":0.000000}` in this command environment.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, UI/supervisor tests, native tests, UI build, and Electron main build passed.
+- command: `npm run typecheck`
+- exit/result: `0`; Hardware Monitor panel and bridge types passed.
+- command: `npm run build:desktop:main`
+- exit/result: `0`; Electron main/preload rebuilt after engine bridge changes.
+- manual/user: `native/engine/build/native/engine/local-mixer-engine --meter-input --input-uid "BuiltInHeadphoneInputDevice"`
+- result: PASSED_BY_USER; returned `{"measured":true,"error":"","inputChannels":1,"actualSampleRate":48000.000000,"peak":1.000000}`. Mic input was detected, but peak showed clipping.
+- manual/user: `native/engine/build/native/engine/local-mixer-engine --monitor-passthrough ...`
+- result: PASSED_BY_USER; returned `{"monitored":true,"error":"","inputChannels":1,"outputChannels":2,"inputSampleRate":48000.000000,"outputSampleRate":48000.000000,"inputPeak":1.000000}` and user confirmed passthrough was audible after mono input was mirrored to both output channels.
+
+Known limitations:
+- Physical evidence is user-run from the normal desktop session because this command environment returned zero Core Audio devices and microphone permission was `DENIED`.
+- Input peak reached `1.000000`; mic gain calibration/clip handling must be handled in later mixer gain stages.
+- Passthrough is a short explicit monitor command, not the final persistent mixer graph monitoring path.
+
+Next exact action:
+- Continue to Phase05 multi-source engine/channel strip foundation.
+
+## Phase05 — Multi-Source Engine And Basic Channel Strips
+Status: IMPLEMENTED_UNVERIFIED
+Prerequisites: Phase03 VERIFIED
+
+Changed files:
+- `native/engine/src/engine/MixerGraph.hpp`, `native/engine/src/engine/MixerGraph.cpp`: native 32-strip mixer graph foundation with create/remove/rename/color, mono/stereo assignment, trim, fader, pan, mute, solo, enabled state, input monitoring flag, stale ID rejection, and separate input/output strip meters.
+- `native/engine/tests/MixerGraphTest.cpp`: native fixture tests for known-amplitude summing, mute isolation, solo isolation, disabled channel silence, stale ID rejection, 32-strip capacity, and 32 silent strip processing.
+- `native/engine/CMakeLists.txt`: added `MixerGraph` to native library and `local-mixer-graph-tests` to CTest.
+- `native/engine/src/main.cpp`: engine self-test now includes a minimal mixer graph sum; version now reports `0.1.0-phase05-foundation`.
+- `docs/task-plan.json`: Phase03 moved to `VERIFIED`; Phase05 moved to `IMPLEMENTED_UNVERIFIED`.
+
+Implemented behavior:
+- Native mixer graph can sum multiple source buffers into stereo output.
+- Source A changes do not alter source B state; mute/solo/disable logic is per-strip.
+- 32 strip pool limit is enforced and the 33rd strip is rejected.
+- Stale strip IDs are rejected during remove/process instead of being ignored.
+- Output buffers are cleared before each process call.
+- Input and output peak meters are tracked separately per strip.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; CMake/Ninja build passed, CTest passed 5/5 including `local-mixer-graph-tests`, engine self-test passed, engine version reported `0.1.0-phase05-foundation`, device/protocol smoke passed.
+
+Known limitations:
+- Phase05 is not fully acceptance-verified yet: graph update prepare/publish/reclaim and bounded parameter queue are not implemented.
+- Ramp smoothing is not implemented yet; current fader/trim/pan changes are immediate in the fixture graph.
+- The graph is not yet the persistent realtime callback owner used by the desktop MON button; short Phase03 monitor command remains in use for hardware checks.
+
+Next exact action:
+- Continue Phase05 with graph snapshot prepare/publish/reclaim and bounded control queue/ramp parameter changes, then wire the desktop channel state to the native graph.
 
 ## Native Sound Pad Spike — Early User-Requested
 Status: IMPLEMENTED_UNVERIFIED_PLAYBACK

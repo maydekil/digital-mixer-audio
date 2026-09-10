@@ -35,6 +35,8 @@ describe("PreviewAdapter", () => {
     adapter.setChannelTrim("voice", 4.5);
     adapter.setChannelPan("voice", -35);
     adapter.setChannelFader("voice", -11);
+    adapter.setChannelEnabled("voice", false);
+    adapter.setChannelSource("voice", "BuiltInHeadphoneInputDevice");
     adapter.setChannelMute("voice", true);
     adapter.setChannelSolo("voice", true);
     adapter.setChannelMonitor("voice", false);
@@ -44,6 +46,9 @@ describe("PreviewAdapter", () => {
     expect(voice?.trimDb).toBe(4.5);
     expect(voice?.pan).toBe(-35);
     expect(voice?.faderDb).toBe(-11);
+    expect(voice?.enabled).toBe(false);
+    expect(voice?.source).toBe("BuiltInHeadphoneInputDevice");
+    expect(voice?.meter.left).toBe(-60);
     expect(voice?.mute).toBe(true);
     expect(voice?.solo).toBe(true);
     expect(voice?.monitor).toBe(false);

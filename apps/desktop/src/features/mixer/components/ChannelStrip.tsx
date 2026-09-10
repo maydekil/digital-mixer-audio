@@ -7,7 +7,10 @@ import { Button } from "../../../components/ui/Button";
 
 interface ChannelStripProps {
   channel: ChannelState;
+  sourceOptions: Array<{ value: string; label: string }>;
   onSelect(): void;
+  onEnabled(enabled: boolean): void;
+  onSource(source: string): void;
   onTrim(value: number): void;
   onPan(value: number): void;
   onFader(value: number): void;
@@ -21,15 +24,23 @@ interface ChannelStripProps {
   onHarmonyToggle?(): void;
 }
 
-export function ChannelStrip({ channel, onSelect, onTrim, onPan, onFader, onSend, onMute, onSolo, onMonitor, onRecordArm, onProcessor, onClipReset, onHarmonyToggle }: ChannelStripProps) {
+export function ChannelStrip({ channel, sourceOptions, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onSend, onMute, onSolo, onMonitor, onRecordArm, onProcessor, onClipReset, onHarmonyToggle }: ChannelStripProps) {
   const isMaster = channel.kind === "master";
   const isGroup = channel.kind === "group";
+  const meter = channel.enabled ? channel.meter : { left: -60, right: -60, clip: false };
 
   return (
-    <article className={`channel-strip ${channel.selected ? "is-selected" : ""} ${isMaster ? "is-master" : ""}`} onClick={onSelect}>
+    <article className={`channel-strip ${channel.selected ? "is-selected" : ""} ${isMaster ? "is-master" : ""} ${!channel.enabled ? "is-disabled" : ""}`} onClick={onSelect}>
       <header>
-        <strong>{channel.name}</strong>
-        <span>{channel.source}</span>
+        <div className="channel-title-row">
+          <strong>{channel.name}</strong>
+          <Button tone={channel.enabled ? "green" : "neutral"} active={channel.enabled} onClick={() => onEnabled(!channel.enabled)}>{channel.enabled ? "ON" : "OFF"}</Button>
+        </div>
+        {sourceOptions.length > 0 ? (
+          <select className="channel-source-select" value={channel.source} onChange={(event) => onSource(event.target.value)} onClick={(event) => event.stopPropagation()}>
+            {sourceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+        ) : <span>{channel.source}</span>}
       </header>
       <RotaryKnob label="Gain" value={`${channel.trimDb.toFixed(1)} dB`} numericValue={channel.trimDb} min={-24} max={24} step={0.5} onChange={onTrim} />
       {isMaster ? <MasterUpperControls /> : <ProcessingButtons processing={channel.processing} onProcessor={onProcessor} />}
@@ -45,8 +56,8 @@ export function ChannelStrip({ channel, onSelect, onTrim, onPan, onFader, onSend
       <div className="fader-meter-row">
         <VerticalFader valueDb={channel.faderDb} onChange={onFader} label={`${channel.name} fader`} />
         <div className="strip-meter-stack">
-          <ClipIndicator active={channel.meter.clip} onReset={onClipReset} />
-          <LevelMeter level={channel.meter} vertical />
+          <ClipIndicator active={meter.clip} onReset={onClipReset} />
+          <LevelMeter level={meter} vertical />
         </div>
       </div>
       <div className="strip-actions">

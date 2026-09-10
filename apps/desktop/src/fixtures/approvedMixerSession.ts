@@ -28,7 +28,7 @@ export const approvedMixerSession: MixerSnapshot = {
     channel("group1", "GROUP 1", "Music Bus", "group", -4, -6, -6, false, false),
     {
       id: "master", name: "MASTER", source: "Output 1-2", kind: "master", role: "master",
-      trimDb: 0, pan: 0, faderDb: -1, mute: false, solo: false,
+      enabled: true, trimDb: 0, pan: 0, faderDb: -1, mute: false, solo: false,
       processing: { eq: true, comp: false, noise: false, insertFx: false },
       sends: { "fx-a": { enabled: false, gainDb: 0 }, "fx-b": { enabled: false, gainDb: 0 } },
       eqBands: cloneEqBands(),
@@ -42,7 +42,7 @@ export const approvedMixerSession: MixerSnapshot = {
 function channel(id: string, name: string, source: string, role: "system" | "vocal" | "instrument" | "music" | "group", faderDb: number, sendA: number, sendB: number, mon: boolean, rec: boolean) {
   return {
     id, name, source, kind: role === "group" ? "group" as const : "source" as const, role,
-    selected: id === "voice", trimDb: 0, pan: 0, faderDb, mute: false, solo: false,
+    selected: id === "voice", enabled: true, trimDb: 0, pan: 0, faderDb, mute: false, solo: false,
     monitor: mon, recordArm: rec, harmonyVisible: role === "vocal", harmonyEnabled: role === "vocal",
     processing: { eq: true, comp: role === "vocal", noise: role === "vocal", insertFx: role === "vocal" },
     sends: {

@@ -14,6 +14,18 @@ export class PreviewAdapter implements MixerControlPort {
     this.syncSelectedEqBands();
   }
 
+  setChannelEnabled(channelId: string, enabled: boolean): void {
+    this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? {
+      ...channel,
+      enabled,
+      meter: enabled ? channel.meter : { left: -60, right: -60, clip: false }
+    } : channel);
+  }
+
+  setChannelSource(channelId: string, source: string): void {
+    this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? { ...channel, source } : channel);
+  }
+
   setChannelTrim(channelId: string, valueDb: number): void {
     this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? { ...channel, trimDb: clamp(valueDb, -24, 24) } : channel);
   }

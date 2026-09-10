@@ -17,6 +17,7 @@ export interface ChannelState {
   kind: ChannelKind;
   role: ChannelRole;
   selected?: boolean;
+  enabled: boolean;
   trimDb: number;
   pan: number;
   faderDb: number;
@@ -79,6 +80,8 @@ export interface MixerSnapshot {
 export interface MixerControlPort {
   getSnapshot(): MixerSnapshot;
   selectChannel(channelId: string): void;
+  setChannelEnabled(channelId: string, enabled: boolean): void;
+  setChannelSource(channelId: string, source: string): void;
   setChannelTrim(channelId: string, valueDb: number): void;
   setChannelPan(channelId: string, value: number): void;
   setChannelFader(channelId: string, valueDb: number): void;

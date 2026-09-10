@@ -4,19 +4,26 @@
   "version": "0.0.0-ui-preview",
   "type": "module",
   "scripts": {
+    "dev": "npm run dev:ui",
     "dev:ui": "vite --host 127.0.0.1",
     "dev:desktop:ui": "node scripts/dev-desktop-ui.mjs",
+    "dev:engine": "node scripts/dev-engine.mjs",
     "build:desktop:main": "node scripts/build-desktop-main.mjs",
+    "build:native": "node scripts/build-native.mjs",
     "build:native:sound-pad": "node scripts/build-native-sound-pad.mjs",
+    "build": "npm run build:native && npm run build:ui",
     "doctor": "node scripts/doctor.mjs",
     "typecheck": "tsc --noEmit",
     "test:ui": "vitest run",
+    "test:native": "node scripts/test-native.mjs",
     "build:ui": "tsc --noEmit && vite build && npm run build:desktop:main",
+    "test:e2e": "npm run test:visual",
     "test:visual": "playwright test tests/ui/visual.visual.ts --reporter=line",
+    "package:mac:unsigned": "node scripts/package-mac-unsigned.mjs",
     "check:file-size": "node scripts/check-file-size.mjs",
     "check:architecture": "node scripts/check-architecture.mjs",
     "check:plan": "node scripts/check-plan.mjs",
-    "verify": "npm run check:plan && npm run check:file-size && npm run check:architecture && npm run typecheck && npm run test:ui && npm run build:native:sound-pad && npm run build:ui"
+    "verify": "npm run check:plan && npm run check:file-size && npm run check:architecture && npm run typecheck && npm run test:ui && npm run test:native && npm run build:ui"
   },
   "dependencies": {
     "@vitejs/plugin-react": "5.0.2",
