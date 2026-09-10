@@ -2606,3 +2606,24 @@ Validation:
 
 Known limitations:
 - The renderer still needs a real Project menu/action layer that serializes the live mixer snapshot and applies loaded project JSON back into UI/native graph state.
+
+### Phase19 Hardening Checkpoint — Save Project Snapshot Serialization
+
+Changed files:
+- `apps/desktop/src/features/project/sessionDocument.ts`: added renderer-side snapshot-to-session serialization for channels, FX units, FX sends, harmony state, and media references.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: wired a compact Save Project top-bar action to choose a `.lam.json` path and write the serialized mixer snapshot through desktop IPC.
+- `tests/ui/project-session.test.ts`: verifies the approved mixer snapshot serializes into the native session-shaped document with channel, FX, send, and harmony fields.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/task-plan.json`, `docs/progress.md`: updated save/open traceability and evidence paths.
+
+Implemented behavior:
+- The renderer can now produce valid Local Audio Mixer project JSON from the current mixer snapshot and write it through the native desktop project file IPC.
+- Save Project covers stateful mixer surface data without introducing Web Audio, browser media capture, renderer PCM, or browser-side DSP.
+
+Validation:
+- command: `npm run typecheck && npm run test:ui && npm run build:ui`
+- exit/result: `0`; TypeScript passed, Vitest 25/25 passed, and UI/Electron desktop build passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 25/25, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- Open/apply is still pending: loaded project JSON is not yet converted back into `MixerSnapshot` or synchronized to the native graph.

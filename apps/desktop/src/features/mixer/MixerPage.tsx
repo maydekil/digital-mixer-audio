@@ -9,6 +9,7 @@ import { SoundPadPanel } from "../sound-pads/components/SoundPadPanel";
 import { VocalFxPanel } from "../vocal-fx/components/VocalFxPanel";
 import { ChannelBank } from "./components/ChannelBank";
 import type { ChannelState, FxProgram, MixerSnapshot } from "../../adapters/MixerControlPort";
+import { serializeProjectSession } from "../project/sessionDocument";
 
 interface HardwareDevice {
   uid: string;
@@ -72,6 +73,13 @@ export function MixerPage() {
     if (!window.localMixer?.engineCommand) return;
     const result = await window.localMixer.engineCommand(type);
     if (typeof result?.state === "string") setTransportState(result.state);
+  }
+
+  async function saveProject() {
+    if (!window.localMixer?.chooseProjectSavePath || !window.localMixer?.writeProjectFile) return;
+    const target = await window.localMixer.chooseProjectSavePath();
+    if (!target.ok || target.canceled || !target.path) return;
+    await window.localMixer.writeProjectFile(target.path, serializeProjectSession(adapter.getSnapshot()));
   }
 
   async function selectFxProgram(unitId: "fx-a" | "fx-b", programId: number) {
@@ -244,6 +252,7 @@ export function MixerPage() {
         onTimeline={() => setMediaImportOpen(true)}
         onPlay={() => void sendTransport(transportState === "playing" ? "transport-pause" : "transport-play")}
         onStop={() => void sendTransport("transport-stop")}
+        onSave={() => void saveProject()}
       />
       <div className="fx-stack">
         <CompactFxRow unit={fxA} program={programA} programs={snapshot.programs} onProgramChange={(id) => void selectFxProgram("fx-a", id)} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-a", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-a", value))} onMacro={(macro, value) => void setFxMacro("fx-a", macro, value)} onReset={() => void resetFxProgram("fx-a")} />
@@ -421,7 +430,7 @@ function parseFxPrograms(programs: unknown[]): FxProgram[] {
   });
 }
 
-function TopBar({ projectName, time, rate, status, mode, transportState, onVocalFx, onTimeline, onPlay, onStop }: {
+function TopBar({ projectName, time, rate, status, mode, transportState, onVocalFx, onTimeline, onPlay, onStop, onSave }: {
   projectName: string;
   time: string;
   rate: string;
@@ -432,6 +441,7 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onVocal
   onTimeline(): void;
   onPlay(): void;
   onStop(): void;
+  onSave(): void;
 }) {
   return (
     <header className="top-bar">
@@ -449,6 +459,7 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onVocal
       <div className="rate">{rate}</div>
       <div className="engine-status"><span />{status}</div>
       <div className="preview-banner">{mode}</div>
+      <button className="settings" aria-label="Save Project" title="Save Project" onClick={onSave}>▣</button>
       <button className="settings">⚙</button>
     </header>
   );
