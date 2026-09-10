@@ -14,6 +14,17 @@ enum class SystemRouteError {
   blackHoleHasNoStereoInput,
   outputHasNoStereoOutput,
   sampleRateMismatch,
+  engineNotReady,
+  osApplyUnavailable,
+  noOwnedRoute,
+};
+
+enum class SystemRouteTransactionState {
+  idle,
+  pending,
+  active,
+  restoring,
+  error,
 };
 
 struct SystemRouteSelection {
@@ -36,6 +47,29 @@ struct SystemRouteDiagnostics {
   double outputSampleRate = 0.0;
 };
 
+struct SystemRouteTransaction {
+  SystemRouteTransactionState state = SystemRouteTransactionState::idle;
+  SystemRouteError error = SystemRouteError::none;
+  bool ownsSystemRoute = false;
+  std::string originalOutputUid;
+  SystemRouteSelection selection;
+};
+
+class SystemRouteTransactionManager {
+ public:
+  SystemRouteTransaction requestEnable(
+    const SystemRouteDiagnostics& diagnostics,
+    std::string originalOutputUid,
+    bool engineReady,
+    bool osApplySupported
+  );
+  SystemRouteTransaction disable(bool osRestoreSupported);
+  const SystemRouteTransaction& transaction() const;
+
+ private:
+  SystemRouteTransaction transaction_;
+};
+
 std::optional<DeviceDescriptor> findBlackHoleDevice(std::span<const DeviceDescriptor> devices);
 bool isLoopbackDevice(const DeviceDescriptor& device);
 SystemRouteDiagnostics validateSystemRoute(
@@ -44,5 +78,6 @@ SystemRouteDiagnostics validateSystemRoute(
   const SystemRouteSelection& requested
 );
 const char* systemRouteErrorName(SystemRouteError error);
+const char* systemRouteTransactionStateName(SystemRouteTransactionState state);
 
 }  // namespace localmixer::engine

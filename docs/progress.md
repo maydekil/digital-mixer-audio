@@ -612,6 +612,32 @@ Known limitations:
 - Modal diagnostics depend on running desktop engine mode; browser/UI preview still cannot query native audio devices.
 - No screenshot QA was run for this modal change in this turn.
 
+### Phase04 Checkpoint — Route Transaction Ownership Foundation
+
+Changed files:
+- `native/engine/src/engine/SystemRouting.hpp`, `native/engine/src/engine/SystemRouting.cpp`: added route transaction state/ownership model for guarded enable/disable/restore flow.
+- `native/engine/tests/SystemRoutingTest.cpp`: verifies engine-not-ready, invalid route, OS apply unavailable, active ownership, restore, and no-owned-route behavior.
+- `native/engine/src/main.cpp`: exposes `routing-system-enable`, `routing-system-disable`, and `routing-system-status` over stdio.
+- `apps/desktop/electron/main.ts`: whitelists route transaction commands.
+- `scripts/test-native.mjs`: protocol smoke verifies transaction commands return structured state and no false success.
+- `docs/setup/system-audio-routing.md`: documents current transaction commands and `OS_APPLY_UNAVAILABLE` behavior.
+
+Implemented behavior:
+- Native engine now has an explicit ownership state machine for system route changes.
+- Enable refuses invalid diagnostics, engine-not-ready state, and missing OS apply support.
+- Disable refuses to restore unowned routes and reports `NO_OWNED_ROUTE`.
+- This checkpoint intentionally avoids changing macOS default output until the CoreAudio apply/restore adapter is implemented and verified.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; CMake/Ninja build passed, CTest passed 6/6, engine self-test passed, and protocol smoke covered route transaction commands.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Route apply/restore is still blocked with `OS_APPLY_UNAVAILABLE`; no macOS default output is changed by this checkpoint.
+- Durable recovery marker across process restart is not implemented yet.
+
 ## Native Sound Pad Spike — Early User-Requested
 Status: IMPLEMENTED_UNVERIFIED_PLAYBACK
 Prerequisites: user explicitly requested this before UI-04

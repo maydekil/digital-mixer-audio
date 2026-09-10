@@ -250,6 +250,17 @@ std::string systemRouteDiagnosticsJson(
   return json;
 }
 
+std::string systemRouteTransactionJson(const localmixer::engine::SystemRouteTransaction& transaction) {
+  std::string json = "\"state\":\"";
+  json += localmixer::engine::systemRouteTransactionStateName(transaction.state);
+  json += "\",\"error\":\"" + std::string(localmixer::engine::systemRouteErrorName(transaction.error)) + "\"";
+  json += ",\"ownsSystemRoute\":" + std::string(transaction.ownsSystemRoute ? "true" : "false");
+  json += ",\"originalOutputUid\":\"" + escapeJson(transaction.originalOutputUid) + "\"";
+  json += ",\"blackHoleUid\":\"" + escapeJson(transaction.selection.blackHoleUid) + "\"";
+  json += ",\"physicalOutputUid\":\"" + escapeJson(transaction.selection.physicalOutputUid) + "\"";
+  return json;
+}
+
 std::string devicesJson(std::span<const localmixer::engine::DeviceDescriptor> devices) {
   std::string json = "[";
   for (std::size_t index = 0; index < devices.size(); index += 1) {
@@ -475,6 +486,7 @@ void writeRawResponse(const std::string& id, bool ok, const std::string& type, c
 int runStdioProtocol() {
   localmixer::engine::EngineRuntime runtime;
   localmixer::engine::MixerGraphController graphController;
+  localmixer::engine::SystemRouteTransactionManager routeTransactionManager;
   SyncedMonitorSelection monitorSelection;
 #if defined(__APPLE__)
   localmixer::platform::macos::PersistentPassthroughMonitor persistentMonitor;
@@ -553,6 +565,37 @@ int runStdioProtocol() {
         outputStart
       );
       writeRawResponse(id, true, "routing-system-diagnostics", fields);
+    } else if (type == "routing-system-enable") {
+      runtime.refreshDevices(loadNativeDevices());
+      const auto sampleRate = readJsonNumberField(line, "sampleRate").value_or(48000.0);
+      const auto inputStart = static_cast<std::uint32_t>(readJsonNumberField(line, "blackHoleInputStartChannel").value_or(0.0));
+      const auto outputStart = static_cast<std::uint32_t>(readJsonNumberField(line, "physicalOutputStartChannel").value_or(0.0));
+      const auto diagnostics = localmixer::engine::validateSystemRoute(
+        runtime.devices(),
+        localmixer::engine::ProjectAudioConfig{.sampleRate = sampleRate, .blockSize = 256},
+        localmixer::engine::SystemRouteSelection{
+          .blackHoleUid = readJsonStringField(line, "blackHoleUid"),
+          .physicalOutputUid = readJsonStringField(line, "physicalOutputUid"),
+          .blackHoleInputStartChannel = inputStart,
+          .physicalOutputStartChannel = outputStart,
+        }
+      );
+      const bool engineReady = runtime.status().state != localmixer::engine::RuntimeState::error;
+      const auto transaction = routeTransactionManager.requestEnable(
+        diagnostics,
+        readJsonStringField(line, "originalOutputUid"),
+        engineReady,
+        false
+      );
+      writeRawResponse(id, transaction.state == localmixer::engine::SystemRouteTransactionState::active,
+        "routing-system-enable", systemRouteTransactionJson(transaction));
+    } else if (type == "routing-system-disable") {
+      const auto transaction = routeTransactionManager.disable(false);
+      writeRawResponse(id, transaction.error == localmixer::engine::SystemRouteError::none,
+        "routing-system-disable", systemRouteTransactionJson(transaction));
+    } else if (type == "routing-system-status") {
+      writeRawResponse(id, true, "routing-system-status",
+        systemRouteTransactionJson(routeTransactionManager.transaction()));
     } else if (type == "sync-mixer-graph") {
       const auto fields = syncMixerGraphResultJson(line, graphController, monitorSelection);
       writeRawResponse(id, fields.find("\"synced\":true") != std::string::npos, "sync-mixer-graph", fields);

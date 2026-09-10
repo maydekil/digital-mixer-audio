@@ -34,4 +34,12 @@ It reports:
 - sample-rate mismatch.
 - rejected loopback output routes.
 
-Current foundation is read-only. It does not install BlackHole, create aggregate devices, or change macOS default output.
+Current foundation is read-only for OS routing. It does not install BlackHole, create aggregate devices, or change macOS default output.
+
+The native engine also exposes guarded transaction commands:
+
+- `routing-system-enable`
+- `routing-system-disable`
+- `routing-system-status`
+
+At this checkpoint, enable/disable track ownership and recovery state but return `OS_APPLY_UNAVAILABLE` instead of changing macOS output. This prevents a false success state before the CoreAudio route apply/restore adapter is implemented and verified.

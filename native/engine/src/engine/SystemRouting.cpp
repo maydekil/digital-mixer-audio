@@ -115,6 +115,79 @@ const char* systemRouteErrorName(SystemRouteError error) {
     case SystemRouteError::blackHoleHasNoStereoInput: return "BLACKHOLE_HAS_NO_STEREO_INPUT";
     case SystemRouteError::outputHasNoStereoOutput: return "OUTPUT_HAS_NO_STEREO_OUTPUT";
     case SystemRouteError::sampleRateMismatch: return "SAMPLE_RATE_MISMATCH";
+    case SystemRouteError::engineNotReady: return "ENGINE_NOT_READY";
+    case SystemRouteError::osApplyUnavailable: return "OS_APPLY_UNAVAILABLE";
+    case SystemRouteError::noOwnedRoute: return "NO_OWNED_ROUTE";
+  }
+  return "UNKNOWN";
+}
+
+SystemRouteTransaction SystemRouteTransactionManager::requestEnable(
+  const SystemRouteDiagnostics& diagnostics,
+  std::string originalOutputUid,
+  bool engineReady,
+  bool osApplySupported
+) {
+  transaction_ = {
+    .state = SystemRouteTransactionState::pending,
+    .error = SystemRouteError::none,
+    .ownsSystemRoute = false,
+    .originalOutputUid = std::move(originalOutputUid),
+    .selection = diagnostics.selection,
+  };
+  if (!engineReady) {
+    transaction_.state = SystemRouteTransactionState::error;
+    transaction_.error = SystemRouteError::engineNotReady;
+    return transaction_;
+  }
+  if (!diagnostics.routeValid) {
+    transaction_.state = SystemRouteTransactionState::error;
+    transaction_.error = diagnostics.error;
+    return transaction_;
+  }
+  if (!osApplySupported) {
+    transaction_.state = SystemRouteTransactionState::error;
+    transaction_.error = SystemRouteError::osApplyUnavailable;
+    return transaction_;
+  }
+
+  transaction_.state = SystemRouteTransactionState::active;
+  transaction_.ownsSystemRoute = true;
+  transaction_.error = SystemRouteError::none;
+  return transaction_;
+}
+
+SystemRouteTransaction SystemRouteTransactionManager::disable(bool osRestoreSupported) {
+  if (!transaction_.ownsSystemRoute) {
+    transaction_.state = SystemRouteTransactionState::idle;
+    transaction_.error = SystemRouteError::noOwnedRoute;
+    return transaction_;
+  }
+
+  transaction_.state = SystemRouteTransactionState::restoring;
+  if (!osRestoreSupported) {
+    transaction_.state = SystemRouteTransactionState::error;
+    transaction_.error = SystemRouteError::osApplyUnavailable;
+    return transaction_;
+  }
+
+  transaction_.state = SystemRouteTransactionState::idle;
+  transaction_.error = SystemRouteError::none;
+  transaction_.ownsSystemRoute = false;
+  return transaction_;
+}
+
+const SystemRouteTransaction& SystemRouteTransactionManager::transaction() const {
+  return transaction_;
+}
+
+const char* systemRouteTransactionStateName(SystemRouteTransactionState state) {
+  switch (state) {
+    case SystemRouteTransactionState::idle: return "IDLE";
+    case SystemRouteTransactionState::pending: return "PENDING";
+    case SystemRouteTransactionState::active: return "ACTIVE";
+    case SystemRouteTransactionState::restoring: return "RESTORING";
+    case SystemRouteTransactionState::error: return "ERROR";
   }
   return "UNKNOWN";
 }

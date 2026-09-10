@@ -76,6 +76,33 @@ async function testEngineProtocol() {
       typeof message.error === "string"
     )
   );
+  child.stdin.write(`${JSON.stringify({ id: "native-route-enable", type: "routing-system-enable", sampleRate: 48000 })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-route-enable" &&
+      message.type === "routing-system-enable" &&
+      message.ok === false &&
+      typeof message.state === "string" &&
+      typeof message.error === "string"
+    )
+  );
+  child.stdin.write(`${JSON.stringify({ id: "native-route-status", type: "routing-system-status" })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-route-status" &&
+      message.type === "routing-system-status" &&
+      typeof message.ownsSystemRoute === "boolean"
+    )
+  );
+  child.stdin.write(`${JSON.stringify({ id: "native-route-disable", type: "routing-system-disable" })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-route-disable" &&
+      message.type === "routing-system-disable" &&
+      message.ok === false &&
+      message.error === "NO_OWNED_ROUTE"
+    )
+  );
   child.stdin.write(`${JSON.stringify({
     id: "native-sync-graph",
     type: "sync-mixer-graph",
