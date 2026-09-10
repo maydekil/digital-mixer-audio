@@ -1,4 +1,5 @@
 add_library(local_mixer_dsp STATIC
+  src/dsp/Eq.cpp
   src/dsp/Gain.cpp
   src/dsp/Meter.cpp
   src/dsp/OutputProtection.cpp
@@ -58,6 +59,15 @@ target_link_libraries(local-mixer-meter-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-meter-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-meter-tests COMMAND local-mixer-meter-tests)
+
+add_executable(local-mixer-eq-tests
+  tests/EqTest.cpp
+)
+
+target_link_libraries(local-mixer-eq-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-eq-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-eq-tests COMMAND local-mixer-eq-tests)
 
 add_executable(local-mixer-output-protection-tests
   tests/OutputProtectionTest.cpp

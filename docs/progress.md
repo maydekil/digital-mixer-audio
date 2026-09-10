@@ -1108,3 +1108,23 @@ Validation:
 Known limitations:
 - Meter taps are not yet wired into realtime graph points.
 - UI meter decay/hold remains preview-simulated.
+
+### Phase07 Checkpoint — Native Biquad EQ Foundation
+
+Changed files:
+- `native/engine/src/dsp/Eq.hpp`, `native/engine/src/dsp/Eq.cpp`: added native biquad coefficient generation, response measurement, and sample processing.
+- `native/engine/tests/EqTest.cpp`: verifies bypass unity, peaking EQ center gain, HPF cutoff/attenuation, and finite processed output.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired EQ into native test/build evidence.
+
+Implemented behavior:
+- Native C++20 DSP supports HPF, LPF, peaking, low-shelf, and high-shelf biquad filters.
+- Bypassed EQ returns unity coefficients.
+- Magnitude response can be inspected without renderer DSP or browser audio paths.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 10/10 including `local-mixer-eq-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- EQ bands are not yet wired into the realtime mixer graph or right-side channel strip controls.
+- Parameter smoothing/crossfade for audible EQ changes is still pending.
