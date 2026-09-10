@@ -2564,3 +2564,24 @@ Validation:
 
 Known limitations:
 - Desktop Project menu save/open/relink UI remains partial; this checkpoint only strengthens the native session document contract.
+
+### Phase19 Hardening Checkpoint — Project Dialog IPC Foundation
+
+Changed files:
+- `apps/desktop/electron/ProjectDialogs.ts`: added reusable project path normalization and `.lam.json` open validation.
+- `apps/desktop/electron/main.ts`, `apps/desktop/electron/preload.ts`, `apps/desktop/src/types/localMixer.d.ts`: exposed `project:choose-open` and `project:choose-save` IPC dialog paths to the renderer preload boundary.
+- `tests/electron/project-dialogs.test.ts`: verifies save-path normalization and open-path rejection for non-project files.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/task-plan.json`, `docs/progress.md`: updated session/menu evidence.
+
+Implemented behavior:
+- Desktop code now has a validated native dialog path foundation for opening and saving Local Audio Mixer project files.
+- Project save paths normalize to `.lam.json`; open paths reject empty or non-project JSON paths.
+
+Validation:
+- command: `npm run typecheck && npm run test:ui && npm run build:desktop:main`
+- exit/result: `0`; TypeScript passed, Vitest 21/21 passed, and Electron main/preload build passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 21/21, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- This does not yet serialize the live renderer snapshot to disk or apply a loaded session to the UI/engine graph.

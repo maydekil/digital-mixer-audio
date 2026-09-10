@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { EngineSupervisor } from "./EngineSupervisor.js";
+import { normalizeProjectSavePath, validateProjectOpenPath } from "./ProjectDialogs.js";
 
 const require = createRequire(import.meta.url);
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron") as typeof import("electron");
@@ -156,6 +157,31 @@ function registerMediaIpc() {
   });
 }
 
+function registerProjectIpc() {
+  ipcMain.handle("project:choose-open", async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ["openFile"],
+      filters: [
+        { name: "Local Audio Mixer Project", extensions: ["lam.json"] },
+        { name: "JSON", extensions: ["json"] }
+      ]
+    });
+    if (result.canceled || result.filePaths.length === 0) return { ok: true, canceled: true };
+    return validateProjectOpenPath(result.filePaths[0]);
+  });
+
+  ipcMain.handle("project:choose-save", async () => {
+    const result = await dialog.showSaveDialog({
+      defaultPath: "Untitled.lam.json",
+      filters: [
+        { name: "Local Audio Mixer Project", extensions: ["lam.json"] }
+      ]
+    });
+    if (result.canceled || !result.filePath) return { ok: true, canceled: true };
+    return { ok: true, path: normalizeProjectSavePath(result.filePath) };
+  });
+}
+
 function registerEngineIpc() {
   ipcMain.handle("engine:command", async (_event, type: unknown, payload: unknown) => {
     if (typeof type !== "string" || !supportedEngineCommands.has(type)) {
@@ -219,6 +245,7 @@ app.whenReady().then(async () => {
   await startEngineIfRequired();
   registerSoundPadIpc();
   registerMediaIpc();
+  registerProjectIpc();
   registerEngineIpc();
   await createWindow();
   app.on("activate", async () => {
