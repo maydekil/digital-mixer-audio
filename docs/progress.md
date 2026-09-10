@@ -2319,3 +2319,24 @@ Validation:
 Known limitations:
 - The desktop/native runtime still needs persistent FX program processor instances bound to FX A/B unit snapshots during live graph processing.
 - Full 99-program rendered fixture comparison, audible QA, transition crossfade listening, export parity, callback timing metrics, and stress QA remain partial.
+
+### Phase19 Hardening Checkpoint — Mixer Render Runtime FX Binding
+
+Changed files:
+- `native/engine/src/engine/MixerRenderRuntime.hpp`, `native/engine/src/engine/MixerRenderRuntime.cpp`: added a small native render runtime that owns `MixerGraph` plus persistent FX A/B program wet processors.
+- `native/engine/tests/MixerRenderRuntimeTest.cpp`: verifies default FX A/B program IDs, invalid program rejection without replacing the active program, and processing a graph with an FX A factory wet return.
+- `native/engine/CMakeLists.txt`, `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: wired focused build/test evidence and updated remaining-gap wording.
+
+Implemented behavior:
+- Native graph rendering can now use persistent factory FX processors for FX A and FX B instead of requiring ad hoc callbacks at each call site.
+- The runtime defaults match the compact FX rows: FX A program 12 Vocal Plate and FX B program 50 Stereo 320.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-render-runtime-tests`
+- exit/result: `0`; render runtime test target built.
+- command: `ctest --test-dir native/engine/build -R local-mixer-render-runtime-tests --output-on-failure`
+- exit/result: `0`; focused render runtime test passed.
+
+Known limitations:
+- This checkpoint verifies the native render module, not yet the desktop live Core Audio callback path.
+- Full 99-program rendered fixture comparison, audible QA, transition crossfade listening, export parity, callback timing metrics, and stress QA remain partial.

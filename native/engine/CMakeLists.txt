@@ -41,6 +41,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/MixerControlQueue.cpp
   src/engine/MixerGraph.cpp
   src/engine/MixerGraphController.cpp
+  src/engine/MixerRenderRuntime.cpp
   src/engine/PerAppCapture.cpp
   src/engine/PluginRegistry.cpp
   src/engine/Recording.cpp
@@ -242,6 +243,15 @@ target_link_libraries(local-mixer-graph-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-graph-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-graph-tests COMMAND local-mixer-graph-tests)
+
+add_executable(local-mixer-render-runtime-tests
+  tests/MixerRenderRuntimeTest.cpp
+)
+
+target_link_libraries(local-mixer-render-runtime-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-render-runtime-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-render-runtime-tests COMMAND local-mixer-render-runtime-tests)
 
 add_executable(local-mixer-routing-graph-tests
   tests/RoutingGraphTest.cpp
