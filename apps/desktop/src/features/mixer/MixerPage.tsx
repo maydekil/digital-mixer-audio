@@ -8,7 +8,7 @@ import { MediaImportPanel } from "../media/components/MediaImportPanel";
 import { ChannelProcessingPanel } from "../processing/components/ChannelProcessingPanel";
 import { SoundPadPanel } from "../sound-pads/components/SoundPadPanel";
 import { VocalFxPanel } from "../vocal-fx/components/VocalFxPanel";
-import { plannedTakeFromResponse, snapshotToRecordingPlan } from "../recording/recordingDocument";
+import { plannedTakeFromResponse, replayChannelFromTake, snapshotToRecordingPlan } from "../recording/recordingDocument";
 import { ChannelBank } from "./components/ChannelBank";
 import type { ChannelState, FxProgram, MixerSnapshot } from "../../adapters/MixerControlPort";
 import type { ProjectMediaStatus } from "../project/projectMediaWorkflow";
@@ -174,6 +174,10 @@ export function MixerPage() {
       refresh(() => {
         if (takes.length > 0) {
           adapter.addRecordedTakes(takes);
+          for (const take of takes) {
+            const replay = replayChannelFromTake(take);
+            if (replay) adapter.addSourceChannel(replay.role, replay.name, replay.source);
+          }
           adapter.setRecordingStatus("saved");
         } else {
           adapter.setRecordingStatus("failed", typeof result.error === "string" ? result.error : "RECORDING_STOP_FAILED");

@@ -1,4 +1,4 @@
-import type { MixerSnapshot, RecordedTakeState, RecordingTap } from "../../adapters/MixerControlPort";
+import type { ChannelRole, MixerSnapshot, RecordedTakeState, RecordingTap } from "../../adapters/MixerControlPort";
 
 export interface RecordingPlanRequest {
   schemaVersion: 1;
@@ -10,6 +10,12 @@ export interface RecordingPlanRequest {
   channels: number;
   armedChannelIds: string[];
   armedChannelCount: number;
+}
+
+export interface RecordedTakeReplayChannel {
+  role: Exclude<ChannelRole, "group" | "master">;
+  name: string;
+  source: string;
 }
 
 export function snapshotToRecordingPlan(snapshot: MixerSnapshot, directory: string): RecordingPlanRequest {
@@ -41,6 +47,16 @@ export function plannedTakeFromResponse(message: Record<string, unknown>): Recor
     replayWithNeutralInserts: message.replayWithNeutralInserts === true,
     partial: message.partial === true
   }];
+}
+
+export function replayChannelFromTake(take: RecordedTakeState): RecordedTakeReplayChannel | null {
+  if (!take.path.trim() || take.partial) return null;
+  const label = take.id.trim() || "take";
+  return {
+    role: take.tap === "master" ? "music" : "vocal",
+    name: `Take ${label}`,
+    source: take.path
+  };
 }
 
 function isTakeResponse(message: Record<string, unknown>) {

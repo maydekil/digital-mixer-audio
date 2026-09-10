@@ -2960,3 +2960,29 @@ Validation:
 Known limitations:
 - Desktop does not expose an interactive export progress/cancel UI yet.
 - FX return stem files and packaged playback/listening inspection remain PARTIAL/NOT_RUN.
+
+### Phase19 Hardening Checkpoint — Recorded Take Replay Channel Foundation
+
+Changed files:
+- `apps/desktop/src/features/recording/recordingDocument.ts`: added `replayChannelFromTake`, which converts saved non-partial takes into source-channel replay drafts.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: after `recording-stop` returns saved take metadata, the desktop flow now adds each saved non-partial take back into the mixer as a source channel.
+- `tests/ui/recording-document.test.ts`: verifies replay channel role/source mapping and rejects partial takes.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated recording replay evidence.
+
+Implemented behavior:
+- Saved master takes become music replay source channels.
+- Saved dry/processed vocal takes become vocal replay source channels.
+- Partial takes are not auto-inserted for replay.
+- The renderer still handles metadata and paths only; no PCM crosses IPC or React state.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 43/43 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 43/43, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- The native writer still creates only the take container through command/control in this automated path; callback-driven live PCM writing remains pending.
+- Replay insertion is source-channel/session/export routing foundation, not packaged manual listening acceptance.
