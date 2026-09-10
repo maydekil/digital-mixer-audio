@@ -1,4 +1,5 @@
 add_library(local_mixer_dsp STATIC
+  src/dsp/DeEsser.cpp
   src/dsp/Dynamics.cpp
   src/dsp/Eq.cpp
   src/dsp/Gain.cpp
@@ -16,6 +17,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/SystemRouting.cpp
   src/engine/Timeline.cpp
   src/engine/Transport.cpp
+  src/engine/VocalStripPreset.cpp
   src/engine/WaveformPyramid.cpp
 )
 
@@ -78,6 +80,24 @@ target_link_libraries(local-mixer-dynamics-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-dynamics-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-dynamics-tests COMMAND local-mixer-dynamics-tests)
+
+add_executable(local-mixer-de-esser-tests
+  tests/DeEsserTest.cpp
+)
+
+target_link_libraries(local-mixer-de-esser-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-de-esser-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-de-esser-tests COMMAND local-mixer-de-esser-tests)
+
+add_executable(local-mixer-vocal-strip-preset-tests
+  tests/VocalStripPresetTest.cpp
+)
+
+target_link_libraries(local-mixer-vocal-strip-preset-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-vocal-strip-preset-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-vocal-strip-preset-tests COMMAND local-mixer-vocal-strip-preset-tests)
 
 add_executable(local-mixer-output-protection-tests
   tests/OutputProtectionTest.cpp

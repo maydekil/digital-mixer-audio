@@ -1152,3 +1152,30 @@ Validation:
 Known limitations:
 - Dynamics processors are not yet wired into the realtime channel strip graph or native parameter API.
 - Gain-reduction telemetry is local to the processor instance; UI subscriptions remain pending.
+
+## Phase09 — Vocal Channel And De-Esser
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: Phase08 IMPLEMENTED_UNVERIFIED
+
+### Phase09 Checkpoint — Native De-Esser And Vocal Presets
+
+Changed files:
+- `native/engine/src/dsp/DeEsser.hpp`, `native/engine/src/dsp/DeEsser.cpp`: added native high-frequency detector de-esser with reduction cap, linked stereo processing, and separate detector audition render path.
+- `native/engine/src/engine/VocalStripPreset.hpp`, `native/engine/src/engine/VocalStripPreset.cpp`: added native starting values for `Voice Clean`, `Voice Warm`, `Voice Broadcast`, and `Music Flat`.
+- `native/engine/tests/DeEsserTest.cpp`, `native/engine/tests/VocalStripPresetTest.cpp`: added DSP and preset coverage.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired Phase09 build/test/progress evidence.
+
+Implemented behavior:
+- High-frequency bursts above detector threshold are reduced with a configurable maximum reduction cap.
+- Low-frequency content outside the detector path is not over-reduced in the acceptance fixture.
+- Linked stereo detection applies the same de-essing gain to both channels.
+- Detector audition renders to a separate monitor buffer and does not replace the master/recording output path.
+- Voice preset starting values are native-owned and editable by later UI/session layers.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 13/13 including `local-mixer-de-esser-tests` and `local-mixer-vocal-strip-preset-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- De-esser is not yet wired into realtime channel strip processing or UI/native parameter commands.
+- Presets are native configuration factories only; session persistence and UI selection are pending.
