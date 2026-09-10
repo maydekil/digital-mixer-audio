@@ -810,3 +810,32 @@ Known limitations:
 - This is a narrow native sound-pad spike, not the full C++20/JUCE mixer engine.
 - Audible playback must be checked by running the Electron desktop app on a macOS session with an available default output device.
 - Playback still shells out to macOS `/usr/bin/afplay`; a JUCE-owned sample player belongs in the later native engine phases.
+
+## Phase06 — Import File And Basic Transport
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: Phase04 IMPLEMENTED_UNVERIFIED
+
+### Phase06 Checkpoint — Native WAV Streaming Reader And Transport Clock
+
+Changed files:
+- `native/engine/src/engine/MediaFile.hpp`, `native/engine/src/engine/MediaFile.cpp`: added a RIFF/WAV stream reader that parses metadata at open and reads requested frame windows into normalized float buffers.
+- `native/engine/src/engine/Transport.hpp`, `native/engine/src/engine/Transport.cpp`: added native transport clock state for play, pause, stop, seek, and simple loop wrapping.
+- `native/engine/tests/MediaTransportTest.cpp`: added fixture-backed CTest coverage for WAV metadata, read-window normalization, pause/seek/stop, and loop wrap.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired the module into native builds and Phase06 evidence.
+
+Implemented behavior:
+- WAV open does not decode the whole file; audio samples are read by frame window.
+- PCM 16/24/32-bit and 32-bit float WAV sample conversion paths are present.
+- Stop returns to the configured playback start frame; pause retains position; loop wraps position in sample frames.
+- All file and transport work remains native C++ and does not use browser audio.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 7/7, engine self-test, device enumeration smoke, and protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- AIFF, FLAC, MP3, and M4A import are not implemented yet.
+- Import job progress/cancel, waveform pyramid, timeline scheduling, stale-buffer flush, and audible file playback are not implemented yet.
+- Mixed-rate resampling and hardware playback verification remain `NOT_RUN`.

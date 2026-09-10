@@ -3,11 +3,13 @@ add_library(local_mixer_dsp STATIC
   src/dsp/OutputProtection.cpp
   src/engine/DeviceService.cpp
   src/engine/EngineRuntime.cpp
+  src/engine/MediaFile.cpp
   src/engine/MixerControlQueue.cpp
   src/engine/MixerGraph.cpp
   src/engine/MixerGraphController.cpp
   src/engine/SystemRouteRecovery.cpp
   src/engine/SystemRouting.cpp
+  src/engine/Transport.cpp
 )
 
 target_include_directories(local_mixer_dsp PUBLIC src)
@@ -86,3 +88,12 @@ target_link_libraries(local-mixer-system-routing-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-system-routing-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-system-routing-tests COMMAND local-mixer-system-routing-tests)
+
+add_executable(local-mixer-media-transport-tests
+  tests/MediaTransportTest.cpp
+)
+
+target_link_libraries(local-mixer-media-transport-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-media-transport-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-media-transport-tests COMMAND local-mixer-media-transport-tests)
