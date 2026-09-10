@@ -2461,3 +2461,24 @@ Validation:
 
 Known limitations:
 - This is instrumentation foundation only; 30/60-minute soak, 32-track stress, CPU measurements, and audible glitch checks remain NOT_RUN.
+
+### Phase19 Hardening Checkpoint — Processed Mixer Graph Export
+
+Changed files:
+- `native/engine/src/engine/Export.hpp`, `native/engine/src/engine/Export.cpp`: added `exportMixerGraphToWav`, a native offline export helper that renders source buffers through `MixerRenderRuntime` before writing WAV.
+- `native/engine/tests/ExportTest.cpp`: verifies processed graph export prints mixer graph gain instead of copying dry source samples.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated export traceability and remaining-gap wording.
+
+Implemented behavior:
+- Offline export code can now render through the same native mixer runtime used by monitor graph processing.
+- The existing timeline WAV export remains available for dry timeline rendering.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-export-tests && ctest --test-dir native/engine/build -R local-mixer-export-tests --output-on-failure`
+- exit/result: `0`; focused export test passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 19/19, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- This is a native helper and focused test, not the full desktop export dialog workflow.
+- Live recording replay, processed take insertion, FX return stem file inspection, and packaged offline export playback remain partial/NOT_RUN.

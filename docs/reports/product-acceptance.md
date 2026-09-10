@@ -23,7 +23,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 
 | ID | Scenario | Status | Blocking gap |
 | --- | --- | --- | --- |
-| E2E-01 | File-only import/play/EQ/fader/export | `PARTIAL` | Export dialog/offline playback of result not run. |
+| E2E-01 | File-only import/play/EQ/fader/export | `PARTIAL` | Native processed graph export has focused coverage; desktop export dialog/offline playback of result not run. |
 | E2E-02 | System audio via BlackHole | `PARTIAL` | Full processed route and restore not run from packaged app. |
 | E2E-03 | Hybrid mic+backing with FX A/B | `PARTIAL` | Audible isolation and dual-return evidence not run. |
 | E2E-04 | Harmony ON/OFF/key/level | `PARTIAL` | Real vocal intervals, measured delay, and no-click audition not run. |
@@ -48,7 +48,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 
 ## Critical Unresolved Work
 
-- Native realtime insert graph and monitor selection have channel processor wiring, FX A/B send-return state, Vocal FX rack slots, and callback/deadline counters carried in the Core Audio monitor runtime; factory FX recipes now have native wet processors and 12 Vocal FX catalog entries have production factory coverage, but still need 99-program auditory QA, Harmony acceptance, export parity, stress runs, and live listening QA.
+- Native realtime insert graph and monitor selection have channel processor wiring, FX A/B send-return state, Vocal FX rack slots, and callback/deadline counters carried in the Core Audio monitor runtime; factory FX recipes now have native wet processors, 12 Vocal FX catalog entries have production factory coverage, and processed graph export has focused native coverage, but still need 99-program auditory QA, Harmony acceptance, full record/export parity, stress runs, and live listening QA.
 - AU/VST3 runtime hosting/editor/latency compensation is not complete; Phase17 is scanner/registry/state foundation.
 - Per-app Core Audio tap capture is not complete; Phase18 is capability/assignment foundation.
 - Live recording to timeline and replay through desktop workflow are not complete.

@@ -5,10 +5,12 @@
 #include <cmath>
 #include <filesystem>
 #include <iostream>
+#include <array>
 
 namespace {
 
 using localmixer::engine::ExportRequest;
+using localmixer::engine::ExportGraphSource;
 using localmixer::engine::ExportStemRequest;
 using localmixer::engine::MediaFileError;
 using localmixer::engine::TimelineClip;
@@ -16,6 +18,7 @@ using localmixer::engine::TimelineMedia;
 using localmixer::engine::TimelineScheduler;
 using localmixer::engine::WavStreamReader;
 using localmixer::engine::buildExportStemPlan;
+using localmixer::engine::exportMixerGraphToWav;
 using localmixer::engine::exportTimelineToWav;
 using localmixer::engine::partialExportPath;
 
@@ -94,6 +97,34 @@ int main() {
   if (!stemPlan.master || !stemPlan.fxAReturn || !stemPlan.fxBReturn || stemPlan.stemCount != 3 ||
       stemPlan.monitorVolumePrinted) {
     std::cerr << "FX returns should export as separate stems without printing monitor volume\n";
+    return 1;
+  }
+
+  localmixer::engine::MixerRenderRuntime runtime{48000.0};
+  const auto strip = runtime.graph().createStrip("Processed", "#18d6e7");
+  if (strip.error != localmixer::engine::MixerError::none) return 1;
+  runtime.graph().setLevel(strip.id, 0.0f, -6.0f, 0.0f);
+  const std::vector<float> mono{1.0f, 1.0f, 1.0f, 1.0f};
+  const std::array<ExportGraphSource, 1> graphSources{
+    ExportGraphSource{.stripId = strip.id, .samples = mono, .channels = 1}
+  };
+  const auto processedPath = directory / "processed.wav";
+  const auto processed = exportMixerGraphToWav(runtime, graphSources, ExportRequest{
+    .outputPath = processedPath,
+    .sampleRate = 48000,
+    .durationFrames = 4,
+    .blockFrames = 2,
+  });
+  if (!processed.success || processed.framesWritten != 4) {
+    std::cerr << "processed graph export should render through MixerRenderRuntime\n";
+    return 1;
+  }
+  WavStreamReader processedReader;
+  if (processedReader.open(processedPath) != MediaFileError::none) return 1;
+  const auto processedRead = processedReader.readFrames(0, 4);
+  if (processedRead.samples.size() != 8 || !near(processedRead.samples[0], 0.5011872f) ||
+      !near(processedRead.samples[1], 0.5011872f)) {
+    std::cerr << "processed graph export should print channel graph gain\n";
     return 1;
   }
 

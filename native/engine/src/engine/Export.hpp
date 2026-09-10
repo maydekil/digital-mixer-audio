@@ -1,5 +1,6 @@
 #pragma once
 
+#include "engine/MixerRenderRuntime.hpp"
 #include "engine/Timeline.hpp"
 
 #include <cstdint>
@@ -28,6 +29,12 @@ struct ExportResult {
   std::uint64_t framesWritten = 0;
 };
 
+struct ExportGraphSource {
+  StripId stripId;
+  std::span<const float> samples;
+  std::uint32_t channels = 1;
+};
+
 struct ExportStemRequest {
   bool master = true;
   bool fxAReturn = false;
@@ -44,6 +51,11 @@ struct ExportStemPlan {
 };
 
 ExportResult exportTimelineToWav(const TimelineScheduler& timeline, const ExportRequest& request);
+ExportResult exportMixerGraphToWav(
+  MixerRenderRuntime& runtime,
+  std::span<const ExportGraphSource> sources,
+  const ExportRequest& request
+);
 ExportStemPlan buildExportStemPlan(const ExportStemRequest& request);
 std::filesystem::path partialExportPath(const std::filesystem::path& outputPath);
 
