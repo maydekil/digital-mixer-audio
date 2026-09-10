@@ -2037,3 +2037,26 @@ Validation:
 
 Known limitations:
 - MIXFX-05 remains `IMPLEMENTED_UNVERIFIED_QA_REPORT`; 99-program impulse/sine/vocal renders, level-matched audition, hardware system+mic+file soak, CPU/deadline/xrun metrics, and realtime fade listening evidence are NOT_RUN.
+
+## HARM-03 — Harmony Button End-to-end QA
+Status: IMPLEMENTED_UNVERIFIED_QA_REPORT
+Prerequisites: MIXFX-05 IMPLEMENTED_UNVERIFIED
+
+### HARM-03 Checkpoint — Harmony Checklist Report
+
+Changed files:
+- `docs/reports/harmony-button.md`: added required Harmony button report with automated evidence, 8C.6 checklist status, and manual evidence gaps.
+- `docs/task-plan.json`, `docs/progress.md`: updated HARM-03 status and evidence paths.
+
+Implemented behavior:
+- HARM-03 now has explicit evidence for primary instance binding, duplicate/capacity protection, session roundtrip, automation IDs, generated voice semantics, disabled-lead preservation, and Harmony Level voice-only behavior.
+- The report records UI contract coverage for Mixer shortcut/gear/key/scale behavior while keeping hardware/listening claims separate.
+
+Validation:
+- command: `ctest --test-dir native/engine/build -R 'local-mixer-(harmony|channel-harmony|automation|session)' --output-on-failure`
+- exit/result: `0`; 4/4 focused tests passed for session document, automation, channel harmony controller, and harmony effect.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 36/36, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- HARM-03 is not final `VERIFIED`; real vocal recording, known-key auditory QA, packaged screenshot, audio-system+music+Harmony together, UI tab switching in packaged app, undo/redo, record/export, Monitor Fast, and backend-failure behavior remain PARTIAL or NOT_RUN.
