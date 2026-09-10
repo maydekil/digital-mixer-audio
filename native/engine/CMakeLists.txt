@@ -13,6 +13,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/MixerControlQueue.cpp
   src/engine/MixerGraph.cpp
   src/engine/MixerGraphController.cpp
+  src/engine/RoutingGraph.cpp
   src/engine/SystemRouteRecovery.cpp
   src/engine/SystemRouting.cpp
   src/engine/Timeline.cpp
@@ -134,6 +135,15 @@ target_link_libraries(local-mixer-graph-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-graph-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-graph-tests COMMAND local-mixer-graph-tests)
+
+add_executable(local-mixer-routing-graph-tests
+  tests/RoutingGraphTest.cpp
+)
+
+target_link_libraries(local-mixer-routing-graph-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-routing-graph-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-routing-graph-tests COMMAND local-mixer-routing-graph-tests)
 
 add_executable(local-mixer-system-routing-tests
   tests/SystemRoutingTest.cpp

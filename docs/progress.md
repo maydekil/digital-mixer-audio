@@ -1179,3 +1179,28 @@ Validation:
 Known limitations:
 - De-esser is not yet wired into realtime channel strip processing or UI/native parameter commands.
 - Presets are native configuration factories only; session persistence and UI selection are pending.
+
+## Phase10 — Bus, Aux, DCA, And Monitoring
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: Phase09 IMPLEMENTED_UNVERIFIED
+
+### Phase10 Checkpoint — Native Routing Graph Foundation
+
+Changed files:
+- `native/engine/src/engine/RoutingGraph.hpp`, `native/engine/src/engine/RoutingGraph.cpp`: added native route nodes, route edges, topological ordering, cycle rejection, send tap semantics, DCA effective gain, and export eligibility helpers.
+- `native/engine/tests/RoutingGraphTest.cpp`: verifies duplicate node rejection, valid channel/subgroup/aux/main/monitor routing, rejected cycles without graph mutation, pre/post send semantics, mute behavior, DCA effective gain, and PFL/AFL export exclusion.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired Phase10 build/test/progress evidence.
+
+Implemented behavior:
+- Route graph edges are validated before mutation; cycles are rejected before the active graph changes.
+- Pre-fader sends ignore fader and DCA movement, while post-fader/AFL sends include fader and DCA effective gain.
+- Muted channels do not feed sends.
+- PFL/AFL monitor routes are explicitly excluded from export eligibility.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 14/14 including `local-mixer-routing-graph-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- The foundation does not yet instantiate all fixed buses (4 subgroups, 4 aux, FX A/B returns, 4 DCA) in a session graph.
+- Route graph is not yet connected to realtime mixing buffers, monitor selector UI, or save/session persistence.
