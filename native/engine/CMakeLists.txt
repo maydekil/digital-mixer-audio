@@ -8,6 +8,7 @@ add_library(local_mixer_dsp STATIC
   src/dsp/OutputProtection.cpp
   src/dsp/fx/EffectRack.cpp
   src/dsp/fx/EffectRegistry.cpp
+  src/dsp/fx/CharacterEffects.cpp
   src/dsp/fx/DelayEffect.cpp
   src/dsp/fx/ModulationEffects.cpp
   src/dsp/fx/ReverbEffect.cpp
@@ -264,3 +265,12 @@ target_link_libraries(local-mixer-time-modulation-effects-tests PRIVATE local_mi
 target_compile_features(local-mixer-time-modulation-effects-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-time-modulation-effects-tests COMMAND local-mixer-time-modulation-effects-tests)
+
+add_executable(local-mixer-character-effects-tests
+  tests/fx/CharacterEffectsTest.cpp
+)
+
+target_link_libraries(local-mixer-character-effects-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-character-effects-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-character-effects-tests COMMAND local-mixer-character-effects-tests)

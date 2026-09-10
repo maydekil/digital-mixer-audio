@@ -8,15 +8,15 @@ This report mirrors the native registry in `native/engine/src/dsp/fx/EffectRegis
 
 - Required native effect IDs: 12
 - Registered native effect IDs: 12
-- `implemented_unverified`: `reverb`, `delay`, `chorus`, `flanger`, `phaser`
-- `unavailable`: `doubler`, `pitch_shift`, `formant_shift`, `pitch_correct`, `harmony`, `saturation`, `vocoder`
+- `implemented_unverified`: `reverb`, `delay`, `chorus`, `doubler`, `saturation`, `flanger`, `phaser`
+- `unavailable`: `pitch_shift`, `formant_shift`, `pitch_correct`, `harmony`, `vocoder`
 - `verified`: none
 
 ## Verification
 
 - Native registry unit test: `local-mixer-effect-registry-tests`
 - Latest full command used after wiring: `npm run test:native`
-- Latest result: PASS, CTest 23/23
+- Latest result: PASS, CTest 24/24
 
 ## Open Follow-Up
 

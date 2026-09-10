@@ -1437,3 +1437,28 @@ Validation:
 Known limitations:
 - Room/Plate/Hall character differences, ping-pong/stereo delay modes, tempo-sync note mapping, damping filters, and click-free automation ramps remain incomplete.
 - Processors are not yet connected to production UI controls/presets, offline export equivalence tests, or realtime rack publication.
+
+## VFX-03 — Saturation, Telephone/Megaphone, And Doubler
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: VFX-02 IMPLEMENTED_UNVERIFIED
+
+### VFX-03 Checkpoint — Native Character FX Foundation
+
+Changed files:
+- `native/engine/src/dsp/fx/CharacterEffects.hpp`, `native/engine/src/dsp/fx/CharacterEffects.cpp`: added native saturation and vocal doubler processors using the VFX `EffectProcessor` interface.
+- `native/engine/tests/fx/CharacterEffectsTest.cpp`: verifies saturation output bounds, DC suppression, drive changing waveform shape, doubler wet-only output without direct dry, and two independent bounded micro-delay voices.
+- `native/engine/src/dsp/fx/EffectRegistry.cpp`, `docs/reports/vocal-fx-catalog-vfx00.md`: updated `doubler` and `saturation` to `implemented_unverified`.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired VFX-03 build/test/progress evidence.
+
+Implemented behavior:
+- Saturation uses native soft waveshaping, output trim, clipping bounds, and a DC blocker.
+- Doubler produces wet micro-delay voices with independent delays and pan placement.
+- Doubler output does not include the dry vocal; dry is counted once by the rack mix layer.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 24/24 including `local-mixer-character-effects-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- Telephone/megaphone preset band-limiting, oversampling modes, aliasing comparison, detune cents, slow modulation, and mono fold-down tests remain pending.
+- Processors are not yet connected to production UI controls/presets, offline export equivalence tests, or realtime rack publication.
