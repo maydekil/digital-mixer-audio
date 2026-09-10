@@ -213,6 +213,41 @@ int main() {
     return 1;
   }
 
+  MixerGraph eqGraph;
+  const auto eqStrip = eqGraph.createStrip("EQ", "#18d6e7");
+  if (eqStrip.error != MixerError::none) return 1;
+  std::array<float, 256> eqSource{};
+  eqSource.fill(0.25f);
+  std::array<float, 256> eqLeft{};
+  std::array<float, 256> eqRight{};
+  std::array<SourceBuffer, 1> eqSources{SourceBuffer{.stripId = eqStrip.id, .samples = eqSource, .channels = 1}};
+  auto eqConfig = localmixer::engine::defaultChannelProcessorConfig();
+  eqConfig.eqEnabled = true;
+  eqConfig.noiseEnabled = false;
+  eqConfig.compressorEnabled = false;
+  eqConfig.deEsserEnabled = false;
+  eqConfig.eqBands[0] = localmixer::dsp::EqBandConfig{
+    .type = localmixer::dsp::EqFilterType::lowShelf,
+    .enabled = true,
+    .sampleRate = 48000.0,
+    .frequencyHz = 1000.0,
+    .gainDb = 12.0,
+    .q = 0.707,
+  };
+  for (std::size_t band = 1; band < eqConfig.eqBands.size(); band += 1) {
+    eqConfig.eqBands[band].enabled = false;
+  }
+  eqGraph.setProcessors(eqStrip.id, eqConfig);
+  if (!expect(eqGraph.process(eqSources, StereoOutput{.left = eqLeft, .right = eqRight}),
+              MixerError::none,
+              "eq processor process failed")) {
+    return 1;
+  }
+  if (!(eqLeft.back() > 0.5f && eqRight.back() > 0.5f)) {
+    std::cerr << "active native EQ band should alter the channel graph output\n";
+    return 1;
+  }
+
   rampGraph.setMute(rampStrip.id, true);
   if (!expect(rampGraph.process(rampSources, StereoOutput{.left = rampLeft, .right = rampRight}),
               MixerError::none,

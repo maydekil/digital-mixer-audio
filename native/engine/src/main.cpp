@@ -277,6 +277,29 @@ std::string indexedField(std::uint32_t index, const std::string& suffix) {
   return "channel" + std::to_string(index) + suffix;
 }
 
+std::string indexedEqField(std::uint32_t channelIndex, std::size_t bandIndex, const std::string& suffix) {
+  return indexedField(channelIndex, "Eq" + std::to_string(bandIndex) + suffix);
+}
+
+localmixer::dsp::EqFilterType eqTypeFromUiName(const std::string& name, localmixer::dsp::EqFilterType fallback) {
+  if (name == "High Pass" || name == "HPF") return localmixer::dsp::EqFilterType::highPass;
+  if (name == "Low Pass" || name == "LPF") return localmixer::dsp::EqFilterType::lowPass;
+  if (name == "Peak" || name == "Bell") return localmixer::dsp::EqFilterType::peaking;
+  if (name == "Low Shelf") return localmixer::dsp::EqFilterType::lowShelf;
+  if (name == "High Shelf") return localmixer::dsp::EqFilterType::highShelf;
+  return fallback;
+}
+
+void readEqBandFields(const std::string& line, std::uint32_t channelIndex, localmixer::engine::ChannelProcessorConfig& processors) {
+  for (std::size_t bandIndex = 0; bandIndex < processors.eqBands.size(); bandIndex += 1) {
+    auto& band = processors.eqBands[bandIndex];
+    band.frequencyHz = readJsonNumberField(line, indexedEqField(channelIndex, bandIndex, "FreqHz")).value_or(band.frequencyHz);
+    band.gainDb = readJsonNumberField(line, indexedEqField(channelIndex, bandIndex, "GainDb")).value_or(band.gainDb);
+    band.q = readJsonNumberField(line, indexedEqField(channelIndex, bandIndex, "Q")).value_or(band.q);
+    band.type = eqTypeFromUiName(readJsonStringField(line, indexedEqField(channelIndex, bandIndex, "Type")), band.type);
+  }
+}
+
 #if defined(__APPLE__)
 std::string persistentMonitorStatusJson(const localmixer::platform::macos::PersistentMonitorStatus& status) {
   return persistentMonitorStatusJson(
@@ -339,6 +362,7 @@ std::string syncMixerGraphResultJson(
     processors.compressorEnabled = readJsonBoolField(line, indexedField(index, "ProcessorComp")).value_or(false);
     processors.noiseEnabled = readJsonBoolField(line, indexedField(index, "ProcessorNoise")).value_or(false);
     processors.deEsserEnabled = readJsonBoolField(line, indexedField(index, "ProcessorDeEsser")).value_or(false);
+    readEqBandFields(line, index, processors);
 
     prepared.setSourceUid(created.id, sourceUid);
     prepared.setAssignment(created.id, assignment, 0, assignment == localmixer::engine::SourceAssignment::stereo);

@@ -347,6 +347,12 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}ProcessorComp`] = channel.processing.comp;
     payload[`${prefix}ProcessorNoise`] = channel.processing.noise;
     payload[`${prefix}ProcessorDeEsser`] = false;
+    channel.eqBands.forEach((band, bandIndex) => {
+      payload[`${prefix}Eq${bandIndex}FreqHz`] = band.freqHz;
+      payload[`${prefix}Eq${bandIndex}GainDb`] = band.gainDb;
+      payload[`${prefix}Eq${bandIndex}Q`] = band.qValue ?? 0.707;
+      payload[`${prefix}Eq${bandIndex}Type`] = band.type ?? "Peak";
+    });
     payload[`${prefix}TrimDb`] = channel.trimDb;
     payload[`${prefix}FaderDb`] = channel.faderDb;
     payload[`${prefix}Pan`] = channel.pan / 100;

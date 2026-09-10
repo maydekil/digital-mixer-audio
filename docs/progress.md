@@ -2162,3 +2162,27 @@ Known limitations:
 - EQ still uses the default approved-UI curve; per-band parameter values from the right processing panel are not synced to native yet.
 - De-esser has native DSP and chain support but no dedicated mixer UI toggle/parameter sync in this checkpoint.
 - Vocal FX rack, FX A/B return processing, Harmony insertion, record/export parity, hardware listening, and stress QA remain partial.
+
+### Phase19 Hardening Checkpoint — EQ Band Parameter Sync To Native Graph
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: includes four per-channel EQ band frequency, gain, Q, and type fields in the `sync-mixer-graph` payload.
+- `native/engine/src/main.cpp`: reads the EQ band fields into `ChannelProcessorConfig` while keeping old payloads compatible with default values.
+- `native/engine/tests/MixerGraphTest.cpp`: added native graph evidence that an active custom EQ band changes channel output after filter settle.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated DSP traceability and remaining blocker wording.
+
+Implemented behavior:
+- The channel processing panel's per-channel EQ values are no longer UI-only state; they can be consumed by the native mixer graph through `sync-mixer-graph`.
+- Native graph tests now cover both processor bypass/active noise behavior and custom EQ behavior.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-engine local-mixer-graph-tests`
+- exit/result: `0`; native engine and graph test target built.
+- command: `ctest --test-dir native/engine/build -R local-mixer-graph-tests --output-on-failure`
+- exit/result: `0`; focused mixer graph test passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size gate passed with warning `native/engine/src/main.cpp 842`.
+
+Known limitations:
+- `native/engine/src/main.cpp` grew to 842 lines; command parsing should be split before adding more protocol surface.
+- Compressor parameters, de-esser parameters, Vocal FX rack insertion, FX A/B returns, Harmony insertion, export parity, live listening, and stress QA remain partial.
