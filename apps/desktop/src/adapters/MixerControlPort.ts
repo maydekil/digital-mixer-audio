@@ -1,0 +1,87 @@
+import type { EqBandDisplay, MeterLevel } from "../components/audio/types";
+
+export type ChannelKind = "source" | "group" | "master";
+export type ChannelRole = "system" | "vocal" | "instrument" | "music" | "group" | "master";
+export type FxUnitId = "fx-a" | "fx-b";
+
+export interface SendState {
+  enabled: boolean;
+  gainDb: number;
+}
+
+export interface ChannelState {
+  id: string;
+  name: string;
+  source: string;
+  kind: ChannelKind;
+  role: ChannelRole;
+  selected?: boolean;
+  trimDb: number;
+  pan: number;
+  faderDb: number;
+  mute: boolean;
+  solo: boolean;
+  monitor?: boolean;
+  recordArm?: boolean;
+  harmonyVisible?: boolean;
+  harmonyEnabled?: boolean;
+  sends: Record<FxUnitId, SendState>;
+  meter: MeterLevel;
+}
+
+export interface FxProgram {
+  id: number;
+  name: string;
+  family: string;
+  macro1: { label: string; value: string };
+  macro2: { label: string; value: string };
+}
+
+export interface FxUnitState {
+  id: FxUnitId;
+  label: "FX A" | "FX B";
+  accent: "amber" | "cyan";
+  enabled: boolean;
+  programId: number;
+  modified: boolean;
+  returnDb: number;
+  meter: MeterLevel;
+}
+
+export type EqBandState = EqBandDisplay;
+
+export interface HarmonyState {
+  enabled: boolean;
+  key: string;
+  scale: string;
+  voice1: string;
+  voice2: string;
+  levelDb: number;
+}
+
+export interface MixerSnapshot {
+  modeLabel: string;
+  projectName: string;
+  transportTime: string;
+  sampleRateLabel: string;
+  engineStatus: string;
+  selectedChannelId: string;
+  channels: ChannelState[];
+  fxUnits: FxUnitState[];
+  programs: FxProgram[];
+  eqBands: EqBandState[];
+  harmony: HarmonyState;
+}
+
+export interface MixerControlPort {
+  getSnapshot(): MixerSnapshot;
+  selectChannel(channelId: string): void;
+  setChannelFader(channelId: string, valueDb: number): void;
+  setChannelSend(channelId: string, unitId: FxUnitId, gainDb: number): void;
+  setFxProgram(unitId: FxUnitId, programId: number): void;
+  setFxEnabled(unitId: FxUnitId, enabled: boolean): void;
+  resetFxProgram(unitId: FxUnitId): void;
+  setHarmonyEnabled(enabled: boolean): void;
+  updateHarmony(field: keyof HarmonyState, value: string | number | boolean): void;
+  resetClip(channelId: string): void;
+}

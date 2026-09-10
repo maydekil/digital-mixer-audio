@@ -1,0 +1,59 @@
+# macOS
+.DS_Store
+._*
+
+# Dependencies
+node_modules/
+
+# Build dan packaging output
+dist/
+dist-electron/
+build/
+out/
+release/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+CMakeUserPresets.json
+
+# Cache
+.cache/
+.vite/
+.turbo/
+.eslintcache
+*.tsbuildinfo
+
+# Test output
+coverage/
+playwright-report/
+test-results/
+
+# Runtime logs
+logs/
+*.log
+
+# Environment lokal dan credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+/secrets/
+/credentials/
+*.p12
+*.pfx
+
+# Data runtime lokal — bukan fixture pengujian
+/local-data/recordings/
+/local-data/exports/
+/local-data/sessions/
+/local-data/autosave/
+/local-data/media-cache/
+
+# Konfigurasi IDE pribadi
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
