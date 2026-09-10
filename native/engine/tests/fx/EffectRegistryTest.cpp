@@ -63,11 +63,13 @@ int main() {
   const auto pitchShift = findEffect("pitch_shift");
   const auto formantShift = findEffect("formant_shift");
   const auto harmony = findEffect("harmony");
-  if (!pitchShift.has_value() || !formantShift.has_value() || !harmony.has_value() ||
+  const auto vocoder = findEffect("vocoder");
+  if (!pitchShift.has_value() || !formantShift.has_value() || !harmony.has_value() || !vocoder.has_value() ||
       pitchShift->availability != EffectAvailability::implementedUnverified ||
       formantShift->availability != EffectAvailability::implementedUnverified ||
-      harmony->availability != EffectAvailability::implementedUnverified) {
-    std::cerr << "Pitch/formant/harmony effects should be marked implemented_unverified after VFX-06\n";
+      harmony->availability != EffectAvailability::implementedUnverified ||
+      vocoder->availability != EffectAvailability::implementedUnverified) {
+    std::cerr << "VFX processor metadata should be marked implemented_unverified after VFX-07\n";
     return 1;
   }
 

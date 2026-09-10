@@ -21,7 +21,7 @@ This document records the design contract for native Vocal FX. It is not evidenc
 | `saturation` | `dsp/fx/SaturationEffect` | VFX-03 | `implemented_unverified` | harmonics, output trim, DC suppression |
 | `flanger` | `dsp/fx/ModulationEffects` | VFX-02 | `implemented_unverified` | comb sweep and bounded feedback |
 | `phaser` | `dsp/fx/ModulationEffects` | VFX-02 | `implemented_unverified` | all-pass sweep and silence stability |
-| `vocoder` | `dsp/fx/VocoderEffect` | VFX-07 | `unavailable` | filter-bank envelope, carrier note handling, panic |
+| `vocoder` | `dsp/fx/VocoderEffect` | VFX-07 | `implemented_unverified` | filter-bank envelope, carrier note handling, panic |
 
 ## Format Policy
 

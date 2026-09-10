@@ -131,7 +131,7 @@ constexpr std::array<EffectDescriptor, 12> kCatalog{{
   {"phaser", "Phaser", EffectCategory::modulation, 1, ChannelFormat::monoToStereo, ChannelFormat::stereo,
     EffectAvailability::implementedUnverified, "dsp/fx/ModulationEffects", "VFX-02", "all-pass sweep and silence stability"},
   {"vocoder", "Vocoder / Robot", EffectCategory::synth, 1, ChannelFormat::mono, ChannelFormat::mono,
-    EffectAvailability::unavailable, "dsp/fx/VocoderEffect", "VFX-07", "filter bank envelope and carrier notes"},
+    EffectAvailability::implementedUnverified, "dsp/fx/VocoderEffect", "VFX-07", "filter bank envelope and carrier notes"},
 }};
 
 constexpr std::array<std::span<const ParameterDescriptor>, 12> kParameterSpans{{

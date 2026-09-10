@@ -1544,3 +1544,28 @@ Known limitations:
 - Harmony is not yet connected to production rack IPC/UI controls, preset rows, or monitor profile policy.
 - Dry/voice latency alignment is reported at processor level but not yet reconciled in the realtime mixer graph.
 - Real vocal audition, consonant behavior, CPU/xrun profiling with two voices, and final HARM QA remain pending.
+
+## VFX-07 — Vocoder And Robot Voice
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: VFX-06 IMPLEMENTED_UNVERIFIED
+
+### VFX-07 Checkpoint — Native Vocoder Foundation
+
+Changed files:
+- `native/engine/src/dsp/fx/VocoderEffect.hpp`, `native/engine/src/dsp/fx/VocoderEffect.cpp`: added a native 16-band vocoder/robot processor with log-spaced analysis/synthesis bands, envelope followers, internal fixed carrier, MIDI carrier mode, maximum 4 active notes, all-notes-off, panic, unvoiced/noise mix, output trim, and bounded tail reporting.
+- `native/engine/tests/fx/VocoderEffectTest.cpp`: verifies modulator silence stays silent, fixed carrier note changes output pitch/color, MIDI notes produce output, all-notes-off prevents stuck carrier output, panic clears output, and rendered samples remain finite.
+- `native/engine/src/dsp/fx/EffectRegistry.cpp`, `docs/specs/vocal-fx.md`, `docs/reports/vocal-fx-catalog-vfx00.md`: updated `vocoder` to `implemented_unverified`.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired VFX-07 build/test/progress evidence.
+
+Implemented behavior:
+- Vocoder processing is native C++ only and uses no Web Audio, renderer DSP, browser synthesizer, or network service.
+- Robot preset foundation is available through internal fixed carrier note behavior; MIDI carrier mode supports up to four active notes.
+- Panic and all-notes-off are explicit native controls for stuck-note prevention.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 28/28 including `local-mixer-vocoder-effect-tests`, engine self-test, device enumeration smoke, and protocol smoke passed.
+
+Known limitations:
+- Vocoder is not yet connected to production rack IPC/UI controls, preset browser, or MIDI device event plumbing.
+- Anti-aliasing quality, articulation listening QA on real vocal recordings, spectral-band fixture detail, CPU profiling, and final VFX-09 quality reports remain pending.

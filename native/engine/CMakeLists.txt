@@ -19,6 +19,7 @@ add_library(local_mixer_dsp STATIC
   src/dsp/fx/PitchCorrectionEffect.cpp
   src/dsp/fx/PitchDetector.cpp
   src/dsp/fx/ReverbEffect.cpp
+  src/dsp/fx/VocoderEffect.cpp
   src/engine/Automation.cpp
   src/engine/DeviceService.cpp
   src/engine/EngineRuntime.cpp
@@ -311,3 +312,12 @@ target_link_libraries(local-mixer-harmony-effect-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-harmony-effect-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-harmony-effect-tests COMMAND local-mixer-harmony-effect-tests)
+
+add_executable(local-mixer-vocoder-effect-tests
+  tests/fx/VocoderEffectTest.cpp
+)
+
+target_link_libraries(local-mixer-vocoder-effect-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-vocoder-effect-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-vocoder-effect-tests COMMAND local-mixer-vocoder-effect-tests)
