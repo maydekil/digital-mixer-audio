@@ -24,6 +24,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/ChannelHarmonyController.cpp
   src/engine/ChannelProcessorChain.cpp
   src/engine/DeviceService.cpp
+  src/engine/EngineGraphSyncJson.cpp
   src/engine/EngineResponseJson.cpp
   src/engine/EngineRuntime.cpp
   src/engine/Export.cpp

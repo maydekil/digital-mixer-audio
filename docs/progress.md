@@ -2186,3 +2186,23 @@ Validation:
 Known limitations:
 - `native/engine/src/main.cpp` grew to 842 lines; command parsing should be split before adding more protocol surface.
 - Compressor parameters, de-esser parameters, Vocal FX rack insertion, FX A/B returns, Harmony insertion, export parity, live listening, and stress QA remain partial.
+
+### Phase19 Hardening Checkpoint — Mixer Graph Sync Parser Split
+
+Changed files:
+- `native/engine/src/engine/EngineGraphSyncJson.hpp`, `native/engine/src/engine/EngineGraphSyncJson.cpp`: moved `sync-mixer-graph` payload parsing, EQ field mapping, monitor selection extraction, and graph publication response formatting out of the CLI entry point.
+- `native/engine/src/main.cpp`: now keeps the stdio loop and delegates graph sync parsing to the engine protocol helper.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired the helper into the native library and recorded evidence paths.
+
+Implemented behavior:
+- No audio behavior is intentionally changed.
+- `native/engine/src/main.cpp` shrank from 842 lines to 718 lines, removing the file-size warning while preserving the new EQ/processor sync path.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-engine local-mixer-graph-tests`
+- exit/result: `0`; native engine and graph test target built.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 36/36, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- This is modular hardening only; compressor parameter sync, de-esser UI control, Vocal FX rack insertion, FX A/B returns, Harmony insertion, export parity, live listening, and stress QA remain partial.
