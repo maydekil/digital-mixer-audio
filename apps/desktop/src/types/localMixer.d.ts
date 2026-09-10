@@ -7,6 +7,7 @@ declare global {
       nativeEngine: string;
       playSoundPad?: (padId: string) => Promise<{ ok: boolean; error?: string }>;
       stopSoundPads?: () => Promise<{ ok: boolean; stopped?: boolean; error?: string }>;
+      chooseMediaFile?: () => Promise<{ ok: boolean; path?: string; canceled?: boolean; error?: string }>;
       engineCommand?: (type: string, payload?: Record<string, unknown>) => Promise<Record<string, unknown>>;
     };
   }

@@ -971,3 +971,31 @@ Validation:
 Known limitations:
 - FFmpeg decoding is not yet integrated into native import jobs.
 - End-user packaged FFmpeg resource path and bundling are still a later packaging requirement.
+
+### Phase06 Checkpoint — Desktop Media Import Surface
+
+Changed files:
+- `apps/desktop/src/features/media/components/MediaImportPanel.tsx`: added a compact media import modal with native file selection, inspect, import, poll, and cancel controls.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: Timeline tab opens the media import surface and keeps transport controls wired to native transport.
+- `apps/desktop/electron/main.ts`, `apps/desktop/electron/preload.ts`, `apps/desktop/src/types/localMixer.d.ts`: added a sandbox-safe Electron file picker bridge for local audio files.
+- `apps/desktop/src/styles/app.css`: added compact modal styling.
+- `tests/ui/visual.visual.ts`: added Playwright coverage for the Timeline import surface.
+- `docs/task-plan.json`, `docs/progress.md`: added evidence paths and verification record.
+
+Implemented behavior:
+- Desktop media selection runs through Electron main; renderer does not access filesystem directly.
+- Import UI calls native `media-inspect` and pollable import job commands through the existing engine bridge.
+- Browser preview can open the panel but cannot fake import success without the desktop/native bridge.
+- No browser audio element, Web Audio, or PCM-over-IPC path was introduced.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`.
+- command: `npm run test:visual`
+- exit/result: `0`; 5 Playwright tests passed, including media import panel visibility.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Automated test does not click the OS file picker.
+- Imported media still is not placed on a playable timeline track.

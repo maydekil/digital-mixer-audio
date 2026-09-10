@@ -3,6 +3,7 @@ import { PreviewAdapter } from "../../adapters/preview/PreviewAdapter";
 import { CompactFxRow } from "../fx/components/CompactFxRow";
 import { HarmonyQuickPanel } from "../harmony/components/HarmonyQuickPanel";
 import { HardwareMonitorPanel } from "../hardware/components/HardwareMonitorPanel";
+import { MediaImportPanel } from "../media/components/MediaImportPanel";
 import { ChannelProcessingPanel } from "../processing/components/ChannelProcessingPanel";
 import { SoundPadPanel } from "../sound-pads/components/SoundPadPanel";
 import { ChannelBank } from "./components/ChannelBank";
@@ -21,6 +22,7 @@ export function MixerPage() {
   const adapter = useMemo(() => new PreviewAdapter(), []);
   const [snapshot, setSnapshot] = useState(adapter.getSnapshot());
   const [hardwareOpen, setHardwareOpen] = useState(false);
+  const [mediaImportOpen, setMediaImportOpen] = useState(false);
   const [devices, setDevices] = useState<HardwareDevice[]>([]);
   const [outputUid, setOutputUid] = useState("");
   const [transportState, setTransportState] = useState("stopped");
@@ -95,6 +97,7 @@ export function MixerPage() {
         status={snapshot.engineStatus}
         mode={snapshot.modeLabel}
         transportState={transportState}
+        onTimeline={() => setMediaImportOpen(true)}
         onPlay={() => void sendTransport(transportState === "playing" ? "transport-pause" : "transport-play")}
         onStop={() => void sendTransport("transport-stop")}
       />
@@ -147,6 +150,7 @@ export function MixerPage() {
       </section>
       <Footer outputUid={outputUid} outputOptions={outputOptions} onOutput={setOutputUid} onHardware={() => setHardwareOpen(true)} />
       <HardwareMonitorPanel open={hardwareOpen} onClose={() => setHardwareOpen(false)} />
+      <MediaImportPanel open={mediaImportOpen} onClose={() => setMediaImportOpen(false)} />
     </main>
   );
 }
@@ -186,13 +190,14 @@ function channelColor(channel: ChannelState) {
   return "#6ed6e8";
 }
 
-function TopBar({ projectName, time, rate, status, mode, transportState, onPlay, onStop }: {
+function TopBar({ projectName, time, rate, status, mode, transportState, onTimeline, onPlay, onStop }: {
   projectName: string;
   time: string;
   rate: string;
   status: string;
   mode: string;
   transportState: string;
+  onTimeline(): void;
   onPlay(): void;
   onStop(): void;
 }) {
@@ -200,7 +205,7 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onPlay,
     <header className="top-bar">
       <div className="window-dots"><span /><span /><span /></div>
       <h1>{projectName}</h1>
-      <nav><button className="active">Mixer</button><button>Vocal FX</button><button>Timeline</button><button>Routing</button></nav>
+      <nav><button className="active">Mixer</button><button>Vocal FX</button><button onClick={onTimeline}>Timeline</button><button>Routing</button></nav>
       <div className="transport">
         <button aria-label="Stop" onClick={onStop}>■</button>
         <button aria-label={transportState === "playing" ? "Pause" : "Play"} className="play" onClick={onPlay}>

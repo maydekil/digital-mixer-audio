@@ -69,3 +69,13 @@ test("hardware modal exposes guarded system routing controls", async ({ page }) 
   await expect(page.getByRole("button", { name: "Enable Route" })).toBeVisible();
   await expect(page.getByText("Recovery")).toBeVisible();
 });
+
+test("timeline tab opens native media import surface", async ({ page }) => {
+  await page.setViewportSize({ width: 1680, height: 945 });
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Timeline" }).click();
+  await expect(page.getByRole("dialog", { name: "Media import" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Choose" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Import" })).toBeDisabled();
+});

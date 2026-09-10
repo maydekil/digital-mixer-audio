@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 import { EngineSupervisor } from "./EngineSupervisor.js";
 
 const require = createRequire(import.meta.url);
-const { app, BrowserWindow, ipcMain, shell } = require("electron") as typeof import("electron");
+const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron") as typeof import("electron");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDev = process.env.LOCAL_MIXER_DEV_SERVER === "1";
@@ -134,6 +134,19 @@ function registerSoundPadIpc() {
   ipcMain.handle("sound-pad:stop", async () => ({ ok: true, stopped: stopActiveSoundPad() }));
 }
 
+function registerMediaIpc() {
+  ipcMain.handle("media:choose-file", async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ["openFile"],
+      filters: [
+        { name: "Audio", extensions: ["wav", "aif", "aiff", "flac", "mp3", "m4a"] }
+      ]
+    });
+    if (result.canceled || result.filePaths.length === 0) return { ok: true, canceled: true };
+    return { ok: true, path: result.filePaths[0] };
+  });
+}
+
 function registerEngineIpc() {
   ipcMain.handle("engine:command", async (_event, type: unknown, payload: unknown) => {
     if (typeof type !== "string" || !supportedEngineCommands.has(type)) {
@@ -196,6 +209,7 @@ app.whenReady().then(async () => {
   validateRequiredEngine();
   await startEngineIfRequired();
   registerSoundPadIpc();
+  registerMediaIpc();
   registerEngineIpc();
   await createWindow();
   app.on("activate", async () => {
