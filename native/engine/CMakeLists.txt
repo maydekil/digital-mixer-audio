@@ -10,6 +10,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/SystemRouteRecovery.cpp
   src/engine/SystemRouting.cpp
   src/engine/Transport.cpp
+  src/engine/WaveformPyramid.cpp
 )
 
 target_include_directories(local_mixer_dsp PUBLIC src)

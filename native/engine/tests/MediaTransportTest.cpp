@@ -1,5 +1,6 @@
 #include "engine/MediaFile.hpp"
 #include "engine/Transport.hpp"
+#include "engine/WaveformPyramid.hpp"
 
 #include <cmath>
 #include <filesystem>
@@ -13,6 +14,7 @@ using localmixer::engine::TransportClock;
 using localmixer::engine::TransportLoop;
 using localmixer::engine::TransportState;
 using localmixer::engine::WavStreamReader;
+using localmixer::engine::buildWaveformPyramid;
 
 void writeU16(std::ofstream& file, std::uint16_t value) {
   file.put(static_cast<char>(value & 0xFF));
@@ -79,6 +81,13 @@ int main() {
   if (!near(chunk.samples[0], -1.0f) || !near(chunk.samples[1], 0.5f) ||
       !near(chunk.samples[2], 0.25f) || !near(chunk.samples[3], -0.25f)) {
     std::cerr << "streaming read samples were not normalized correctly\n";
+    return 1;
+  }
+  const auto pyramid = buildWaveformPyramid(reader, 2);
+  if (pyramid.error != MediaFileError::none || pyramid.points.size() != 2 ||
+      !near(pyramid.points[0].min, -0.25f) || !near(pyramid.points[0].max, 0.5f) ||
+      !near(pyramid.points[1].min, 0.0f) || !near(pyramid.points[1].max, 0.0f)) {
+    std::cerr << "waveform pyramid should stream min/max points\n";
     return 1;
   }
 

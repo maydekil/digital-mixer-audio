@@ -862,3 +862,24 @@ Validation:
 Known limitations:
 - Metadata import is not yet a queued import job with progress/cancel.
 - PCM streaming is available in native tests but is not yet scheduled into audible timeline playback.
+
+### Phase06 Checkpoint — Streaming Waveform Pyramid
+
+Changed files:
+- `native/engine/src/engine/WaveformPyramid.hpp`, `native/engine/src/engine/WaveformPyramid.cpp`: added native min/max waveform point generation from `WavStreamReader`.
+- `native/engine/tests/MediaTransportTest.cpp`: verifies waveform points from a stereo fixture without browser audio.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/progress.md`: wired waveform module into native build and evidence.
+
+Implemented behavior:
+- Waveform generation reads bounded frame chunks from the native stream reader instead of loading entire media into renderer state.
+- Stereo samples are folded to a mono display envelope for min/max point generation.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native build, CTest 7/7, engine self-test, device enumeration smoke, and protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Waveform pyramid is not yet exposed as a cancellable import job.
+- Timeline UI still uses fixture state; imported waveform display is not wired yet.
