@@ -11,6 +11,7 @@
 #include "platform/macos/CoreAudioInputMeter.hpp"
 #include "platform/macos/CoreAudioOutputStream.hpp"
 #include "platform/macos/CoreAudioPassthrough.hpp"
+#include "platform/macos/CoreAudioSystemRoute.hpp"
 #endif
 
 #include <array>
@@ -486,16 +487,34 @@ int runStdioProtocol() {
         }
       );
       const bool engineReady = runtime.status().state != localmixer::engine::RuntimeState::error;
+      const bool allowOsRouteChange = readJsonBoolField(line, "allowOsRouteChange").value_or(false);
+      bool routeApplied = false;
+      std::string originalOutputUid = readJsonStringField(line, "originalOutputUid");
+#if defined(__APPLE__)
+      if (allowOsRouteChange && diagnostics.routeValid && engineReady) {
+        if (originalOutputUid.empty()) originalOutputUid = localmixer::platform::macos::currentDefaultOutputUid();
+        const auto apply = localmixer::platform::macos::setDefaultOutputUid(diagnostics.selection.blackHoleUid);
+        routeApplied = apply.ok;
+      }
+#endif
       const auto transaction = routeTransactionManager.requestEnable(
         diagnostics,
-        readJsonStringField(line, "originalOutputUid"),
+        originalOutputUid,
         engineReady,
-        false
+        routeApplied
       );
       writeRawResponse(id, transaction.state == localmixer::engine::SystemRouteTransactionState::active,
         "routing-system-enable", systemRouteTransactionJson(transaction));
     } else if (type == "routing-system-disable") {
-      const auto transaction = routeTransactionManager.disable(false);
+      const auto currentTransaction = routeTransactionManager.transaction();
+      bool restored = false;
+#if defined(__APPLE__)
+      if (currentTransaction.ownsSystemRoute && !currentTransaction.originalOutputUid.empty()) {
+        const auto restore = localmixer::platform::macos::setDefaultOutputUid(currentTransaction.originalOutputUid);
+        restored = restore.ok;
+      }
+#endif
+      const auto transaction = routeTransactionManager.disable(restored);
       writeRawResponse(id, transaction.error == localmixer::engine::SystemRouteError::none,
         "routing-system-disable", systemRouteTransactionJson(transaction));
     } else if (type == "routing-system-status") {

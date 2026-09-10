@@ -42,4 +42,6 @@ The native engine also exposes guarded transaction commands:
 - `routing-system-disable`
 - `routing-system-status`
 
-At this checkpoint, enable/disable track ownership and recovery state but return `OS_APPLY_UNAVAILABLE` instead of changing macOS output. This prevents a false success state before the CoreAudio route apply/restore adapter is implemented and verified.
+By default, `routing-system-enable` does not change macOS output and returns `OS_APPLY_UNAVAILABLE`. The command must include `allowOsRouteChange: true` before the native CoreAudio adapter attempts to set the macOS default output to BlackHole and store the previous output UID for restore.
+
+The desktop UI does not expose this enable action yet. Use route diagnostics first, and only run route apply manually when BlackHole and physical output validation are ready.

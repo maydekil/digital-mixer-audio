@@ -27,6 +27,7 @@ if(APPLE)
     src/platform/macos/CoreAudioInputMeter.mm
     src/platform/macos/CoreAudioOutputStream.mm
     src/platform/macos/CoreAudioPassthrough.mm
+    src/platform/macos/CoreAudioSystemRoute.mm
   )
   target_link_libraries(local-mixer-engine PRIVATE "-framework AVFoundation" "-framework CoreAudio" "-framework CoreFoundation")
 endif()

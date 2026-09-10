@@ -638,6 +638,28 @@ Known limitations:
 - Route apply/restore is still blocked with `OS_APPLY_UNAVAILABLE`; no macOS default output is changed by this checkpoint.
 - Durable recovery marker across process restart is not implemented yet.
 
+### Phase04 Checkpoint — Guarded CoreAudio Route Apply Adapter
+
+Changed files:
+- `native/engine/src/platform/macos/CoreAudioSystemRoute.hpp`, `native/engine/src/platform/macos/CoreAudioSystemRoute.mm`: native macOS adapter for reading current default output UID and setting default output UID.
+- `native/engine/src/main.cpp`: `routing-system-enable` can call the CoreAudio route adapter only when `allowOsRouteChange: true`; default remains no OS change. `routing-system-disable` restores only an owned route with stored original output UID.
+- `native/engine/CMakeLists.txt`: links the new macOS route adapter into the engine executable.
+- `docs/setup/system-audio-routing.md`: documents the explicit `allowOsRouteChange` guard.
+- `docs/task-plan.json`: Phase04 evidence includes the CoreAudio route adapter.
+
+Implemented behavior:
+- CoreAudio default output apply/restore code now exists behind an explicit protocol guard.
+- Automated tests and current desktop UI do not change OS routing.
+- Route ownership still flows through the native transaction manager, so disable does not restore routes it does not own.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; Objective-C++ CoreAudio route adapter compiled, CTest passed 6/6, engine self-test passed, and protocol smoke passed without changing OS route.
+
+Known limitations:
+- Manual route apply/restore with real BlackHole remains `NOT_RUN`.
+- Durable recovery marker across app restart is still not implemented.
+
 ### Phase04 Maintenance — Protocol Helper Split
 
 Changed files:
