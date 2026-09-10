@@ -20,6 +20,7 @@ const supportedEngineCommands = new Set([
   "play-test-tone",
   "monitor-passthrough",
   "prepare-passthrough",
+  "routing-system-diagnostics",
   "sync-mixer-graph",
   "start-mixer-monitor",
   "stop-mixer-monitor",

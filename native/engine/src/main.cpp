@@ -3,6 +3,7 @@
 #include "engine/EngineRuntime.hpp"
 #include "engine/MixerGraph.hpp"
 #include "engine/MixerGraphController.hpp"
+#include "engine/SystemRouting.hpp"
 #if defined(__APPLE__)
 #include "platform/macos/CoreAudioDevices.hpp"
 #include "platform/macos/CoreAudioInputMeter.hpp"
@@ -89,7 +90,7 @@ bool runSelfTest() {
 void printVersion() {
   std::cout
     << "{\"name\":\"local-mixer-engine\","
-    << "\"version\":\"0.1.0-phase05-foundation\","
+    << "\"version\":\"0.1.0-phase04-routing-foundation\","
     << "\"protocol\":" << kProtocolVersion << ","
     << "\"audio\":\"not-started\","
     << "\"juce\":\"pinned-8.0.15-not-linked\"}"
@@ -215,6 +216,38 @@ std::string monitorPassthroughResultJson(
 #else
   return "\"monitored\":false,\"error\":\"UNSUPPORTED_PLATFORM\",\"inputChannels\":0,\"outputChannels\":0,\"inputSampleRate\":0,\"outputSampleRate\":0,\"inputPeak\":0";
 #endif
+}
+
+std::string systemRouteDiagnosticsJson(
+  std::span<const localmixer::engine::DeviceDescriptor> devices,
+  const std::string& blackHoleUid,
+  const std::string& outputUid,
+  double sampleRate,
+  std::uint32_t inputStartChannel,
+  std::uint32_t outputStartChannel
+) {
+  const auto diagnostics = localmixer::engine::validateSystemRoute(
+    devices,
+    localmixer::engine::ProjectAudioConfig{.sampleRate = sampleRate, .blockSize = 256},
+    localmixer::engine::SystemRouteSelection{
+      .blackHoleUid = blackHoleUid,
+      .physicalOutputUid = outputUid,
+      .blackHoleInputStartChannel = inputStartChannel,
+      .physicalOutputStartChannel = outputStartChannel,
+    }
+  );
+  std::string json = "\"routeValid\":" + std::string(diagnostics.routeValid ? "true" : "false");
+  json += ",\"blackHoleAvailable\":" + std::string(diagnostics.blackHoleAvailable ? "true" : "false");
+  json += ",\"error\":\"" + std::string(localmixer::engine::systemRouteErrorName(diagnostics.error)) + "\"";
+  json += ",\"blackHoleUid\":\"" + escapeJson(diagnostics.selection.blackHoleUid) + "\"";
+  json += ",\"physicalOutputUid\":\"" + escapeJson(diagnostics.selection.physicalOutputUid) + "\"";
+  json += ",\"selectedInputStart\":" + std::to_string(diagnostics.selectedInputStart);
+  json += ",\"selectedInputEnd\":" + std::to_string(diagnostics.selectedInputEnd);
+  json += ",\"selectedOutputStart\":" + std::to_string(diagnostics.selectedOutputStart);
+  json += ",\"selectedOutputEnd\":" + std::to_string(diagnostics.selectedOutputEnd);
+  json += ",\"blackHoleSampleRate\":" + std::to_string(diagnostics.blackHoleSampleRate);
+  json += ",\"outputSampleRate\":" + std::to_string(diagnostics.outputSampleRate);
+  return json;
 }
 
 std::string devicesJson(std::span<const localmixer::engine::DeviceDescriptor> devices) {
@@ -506,6 +539,20 @@ int runStdioProtocol() {
       writeRawResponse(id, ok, "prepare-passthrough",
         "\"error\":\"" + std::string(localmixer::engine::prepareErrorName(result.error)) +
         "\",\"status\":" + statusJson(runtime.status()));
+    } else if (type == "routing-system-diagnostics") {
+      runtime.refreshDevices(loadNativeDevices());
+      const auto sampleRate = readJsonNumberField(line, "sampleRate").value_or(48000.0);
+      const auto inputStart = static_cast<std::uint32_t>(readJsonNumberField(line, "blackHoleInputStartChannel").value_or(0.0));
+      const auto outputStart = static_cast<std::uint32_t>(readJsonNumberField(line, "physicalOutputStartChannel").value_or(0.0));
+      const auto fields = systemRouteDiagnosticsJson(
+        runtime.devices(),
+        readJsonStringField(line, "blackHoleUid"),
+        readJsonStringField(line, "physicalOutputUid"),
+        sampleRate,
+        inputStart,
+        outputStart
+      );
+      writeRawResponse(id, true, "routing-system-diagnostics", fields);
     } else if (type == "sync-mixer-graph") {
       const auto fields = syncMixerGraphResultJson(line, graphController, monitorSelection);
       writeRawResponse(id, fields.find("\"synced\":true") != std::string::npos, "sync-mixer-graph", fields);

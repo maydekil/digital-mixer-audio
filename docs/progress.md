@@ -4,7 +4,7 @@ Specification: `docs/specs/AUDIO-MIXER-AI-IMPLEMENTATION.md` revision 1.7.
 
 ## Project Status
 
-- Current gate: Phase05 multi-source engine/channel strip foundation.
+- Current gate: Phase04 system audio routing foundation.
 - Reference image: `docs/design/Digital Mixer Audio.png`; visual target is available and inspected.
 - Native audio engine: `PHASE05_GRAPH_FOUNDATION_IMPLEMENTED_UNVERIFIED`; native sound-pad spike remains separate early user-requested work.
 - Product completion: `NOT_STARTED`; UI work is not DSP, hardware, or package acceptance.
@@ -558,6 +558,37 @@ Validation:
 - exit/result: `0`; native protocol smoke verified multi-monitor rejection.
 - command: `npm run verify`
 - exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+## Phase04 — System Audio Capture And Routing Recovery
+Status: IMPLEMENTED_UNVERIFIED
+Prerequisites: Phase03 VERIFIED, Phase05 IMPLEMENTED_UNVERIFIED foundation
+
+Changed files:
+- `native/engine/src/engine/SystemRouting.hpp`, `native/engine/src/engine/SystemRouting.cpp`: native read-only route diagnostics for BlackHole detection, physical output validation, selected stereo ranges, sample-rate validation, and loopback-output rejection.
+- `native/engine/tests/SystemRoutingTest.cpp`: covers missing BlackHole, valid default route, loopback output rejection, sample-rate mismatch, and invalid stereo input range.
+- `native/engine/CMakeLists.txt`: adds the system routing module and `local-mixer-system-routing-tests`.
+- `native/engine/src/main.cpp`: exposes `routing-system-diagnostics` over bounded stdio protocol and reports route validity/rejection reason without changing OS audio routing.
+- `apps/desktop/electron/main.ts`: whitelists the route diagnostics command.
+- `scripts/test-native.mjs`: protocol smoke verifies `routing-system-diagnostics` returns structured route status.
+- `docs/setup/system-audio-routing.md`: manual BlackHole/Aggregate Device setup and recovery guidance.
+- `docs/task-plan.json`: Phase04 moved to `IMPLEMENTED_UNVERIFIED`.
+
+Implemented behavior:
+- Engine can detect a BlackHole-like loopback device by UID/name.
+- Engine rejects output routes that point back to BlackHole/loopback/aggregate devices to avoid feedback or double dry path.
+- Engine reports selected stereo input/output channel ranges and sample-rate mismatch reasons.
+- Phase04 foundation is read-only; it does not install drivers, create aggregate devices, restart `coreaudiod`, or alter macOS default output.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native CMake/Ninja build passed, CTest passed 6/6 including `local-mixer-system-routing-tests`, engine self-test passed, and protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Real BlackHole hardware/system-audio path was not available in this automated test environment; physical browser/QuickTime -> BlackHole -> engine -> headphones test remains `NOT_RUN`.
+- System route transaction/restore is not implemented yet; no OS default output is changed by this checkpoint.
+- Aggregate channel mapping wizard UI is not implemented yet.
 
 ## Native Sound Pad Spike — Early User-Requested
 Status: IMPLEMENTED_UNVERIFIED_PLAYBACK

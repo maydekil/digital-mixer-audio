@@ -67,6 +67,15 @@ async function testEngineProtocol() {
       typeof message.status === "object"
     )
   );
+  child.stdin.write(`${JSON.stringify({ id: "native-route-diagnostics", type: "routing-system-diagnostics", sampleRate: 48000 })}\n`);
+  await waitFor(() =>
+    messages.some((message) =>
+      message.id === "native-route-diagnostics" &&
+      message.type === "routing-system-diagnostics" &&
+      typeof message.routeValid === "boolean" &&
+      typeof message.error === "string"
+    )
+  );
   child.stdin.write(`${JSON.stringify({
     id: "native-sync-graph",
     type: "sync-mixer-graph",

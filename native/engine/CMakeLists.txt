@@ -6,6 +6,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/MixerControlQueue.cpp
   src/engine/MixerGraph.cpp
   src/engine/MixerGraphController.cpp
+  src/engine/SystemRouting.cpp
 )
 
 target_include_directories(local_mixer_dsp PUBLIC src)
@@ -72,3 +73,12 @@ target_link_libraries(local-mixer-graph-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-graph-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-graph-tests COMMAND local-mixer-graph-tests)
+
+add_executable(local-mixer-system-routing-tests
+  tests/SystemRoutingTest.cpp
+)
+
+target_link_libraries(local-mixer-system-routing-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-system-routing-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-system-routing-tests COMMAND local-mixer-system-routing-tests)
