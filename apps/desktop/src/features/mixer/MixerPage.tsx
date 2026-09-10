@@ -114,11 +114,13 @@ export function MixerPage() {
   }
 
   async function exportProject() {
-    if (!window.localMixer?.chooseExportOutputPath) return;
+    if (!window.localMixer?.chooseExportOutputPath || !window.localMixer?.engineCommand) return;
     const target = await window.localMixer.chooseExportOutputPath();
     if (!target.ok || target.canceled || !target.path) return;
     const request = snapshotToExportRequest(adapter.getSnapshot(), target.path);
-    await window.localMixer.engineCommand?.("export-plan", request as unknown as Record<string, unknown>);
+    const plan = await window.localMixer.engineCommand("export-plan", request as unknown as Record<string, unknown>);
+    if (plan.exportable !== true) return;
+    await window.localMixer.engineCommand("export-render", request as unknown as Record<string, unknown>);
   }
 
   function addChannel() {

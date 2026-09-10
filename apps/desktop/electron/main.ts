@@ -48,6 +48,7 @@ const supportedEngineCommands = new Set([
   "transport-seek",
   "transport-status",
   "export-plan",
+  "export-render",
   "recording-plan",
   "routing-system-diagnostics",
   "routing-system-enable",

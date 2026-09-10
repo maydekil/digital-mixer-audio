@@ -23,14 +23,14 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 
 | ID | Scenario | Status | Blocking gap |
 | --- | --- | --- | --- |
-| E2E-01 | File-only import/play/EQ/fader/export | `PARTIAL` | Native processed graph export has focused coverage; desktop export output dialog/preflight exists; rendered desktop export file and offline playback of result not run. |
+| E2E-01 | File-only import/play/EQ/fader/export | `PARTIAL` | Native processed graph export has focused coverage; desktop export output dialog/preflight/render command exists; offline playback of result and full imported-media desktop export are not run. |
 | E2E-02 | System audio via BlackHole | `PARTIAL` | Full processed route and restore not run from packaged app. |
 | E2E-03 | Hybrid mic+backing with FX A/B | `PARTIAL` | Audible isolation and dual-return evidence not run. |
 | E2E-04 | Harmony ON/OFF/key/level | `PARTIAL` | Real vocal intervals, measured delay, and no-click audition not run. |
 | E2E-05 | Record dry/master then replay | `PARTIAL` | Native take metadata and desktop recording preflight exist; live take writing, replay insertion, and alignment not exposed end-to-end. |
 | E2E-06 | Processed vocal take replay | `PARTIAL` | Processed take metadata can request neutral insert replay and persists in session JSON; desktop preflight can plan take metadata; successful live processed recording flow not run. |
 | E2E-07 | Save/open/collect/relink | `PARTIAL` | Session contracts cover channel state, FX, harmony, plugin, and take metadata; desktop Open/Save Project can roundtrip renderer snapshot `.lam.json`; collect/relink foundation detects missing media, copies present files, and updates channel source paths; packaged/manual relink dialog acceptance pending. |
-| E2E-08 | Master + FX return stems | `PARTIAL` | Stem planning tests and desktop/native export preflight pass; rendered stem files not inspected. |
+| E2E-08 | Master + FX return stems | `PARTIAL` | Stem planning tests and desktop/native export preflight pass; native WAV render smoke exists for the master path; rendered FX return stem files not inspected. |
 | E2E-09 | Device unplug/sleep/crash/full kill | `PARTIAL` | Supervisor/recovery tests pass; device/sleep/manual kill pending. |
 | E2E-10 | Automation+MIDI+plugin state | `PARTIAL` | Automation/plugin state contracts pass; MIDI device and runtime plugin host pending. |
 | E2E-11 | Clean packaged app offline | `PARTIAL` | Unsigned package exists; GUI launch/permission/offline import-record-export not run. |

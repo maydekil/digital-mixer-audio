@@ -506,6 +506,27 @@ int runStdioProtocol() {
         ",\"stemCount\":" + std::to_string(plan.stemCount) +
         ",\"liveSourceCount\":" + std::to_string(liveSourceCount) +
         ",\"monitorVolumePrinted\":" + std::string(plan.monitorVolumePrinted ? "true" : "false"));
+    } else if (type == "export-render") {
+      const auto outputPath = readJsonStringField(line, "outputPath");
+      const auto liveSourceCount = static_cast<std::uint32_t>(readJsonNumberField(line, "liveSourceCount").value_or(0.0));
+      const auto sampleRate = static_cast<std::uint32_t>(readJsonNumberField(line, "sampleRate").value_or(48000.0));
+      const auto durationFrames = static_cast<std::uint64_t>(readJsonNumberField(line, "durationFrames").value_or(0.0));
+      const auto blockFrames = static_cast<std::uint32_t>(readJsonNumberField(line, "blockFrames").value_or(512.0));
+      localmixer::engine::TimelineScheduler timeline;
+      const auto result = localmixer::engine::exportTimelineToWav(timeline, localmixer::engine::ExportRequest{
+        .outputPath = outputPath,
+        .sampleRate = sampleRate,
+        .durationFrames = durationFrames,
+        .blockFrames = blockFrames,
+        .liveSourceCount = liveSourceCount,
+      });
+      writeRawResponse(id, true, "export-render",
+        "\"rendered\":" + std::string(result.success ? "true" : "false") +
+        ",\"canceled\":" + std::string(result.canceled ? "true" : "false") +
+        ",\"error\":\"" + escapeJson(result.error) + "\"" +
+        ",\"path\":\"" + escapeJson(result.path.string()) + "\"" +
+        ",\"framesWritten\":" + std::to_string(result.framesWritten) +
+        ",\"ignoredLiveSources\":" + std::to_string(result.ignoredLiveSources));
     } else if (type == "recording-plan") {
       const auto directory = readJsonStringField(line, "directory");
       const auto baseName = readJsonStringField(line, "baseName");

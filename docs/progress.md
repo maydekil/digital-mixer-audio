@@ -2777,3 +2777,39 @@ Validation:
 Known limitations:
 - This is preflight and metadata flow only. It does not start a Core Audio recording callback, write live samples, insert a take onto the timeline, or replay recorded audio.
 - Hardware/live mic recording and packaged manual record-stop-replay acceptance remain NOT_RUN/PARTIAL.
+
+### Phase19 Hardening Checkpoint — Desktop Export Render Foundation
+
+Changed files:
+- `apps/desktop/src/features/export/exportDocument.ts`: added native render duration and block-size fields to the renderer export request.
+- `apps/desktop/electron/main.ts`: allowed `export-render` through the desktop engine command boundary.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: Export Mix now preflights first and invokes native render only when `export-plan` reports `exportable:true`.
+- `native/engine/src/main.cpp`: added `export-render`, a native stdio command that renders an offline-safe timeline WAV through `Export::exportTimelineToWav` and reports path, frames written, cancellation, and live-source rejection metadata.
+- `apps/desktop/electron/EngineSupervisor.ts`: normalized asynchronous stdin EPIPE errors through the existing send-error helper so supervisor tests stay deterministic.
+- `tests/ui/export-document.test.ts`: verifies duration and block-size export request fields.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated export evidence.
+
+Implemented behavior:
+- Desktop Export Mix can now move from output selection and native preflight into a native WAV render command.
+- Native render writes WAV files without Web Audio, browser media APIs, renderer PCM, or JSON sample transfer.
+- Live-source export remains blocked through the existing `liveSourceCount` preflight/render metadata.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 37/37 passed.
+- command: `cmake --build native/engine/build --target local-mixer-engine local-mixer-export-tests`
+- exit/result: `0`; native engine and export tests built.
+- command: `npm run build:desktop:main`
+- exit/result: `0`; Electron main/preload build passed.
+- command: `tmpfile=/tmp/local-mixer-export-render-smoke.wav; rm -f "$tmpfile"; printf '{"id":"cmd-export","type":"export-render","outputPath":"'$tmpfile'","sampleRate":48000,"durationFrames":1024,"blockFrames":256,"liveSourceCount":0}\n' | native/engine/build/native/engine/local-mixer-engine --stdio; test -s "$tmpfile"`
+- exit/result: `0`; engine returned `rendered:true`, `framesWritten:1024`, and the WAV file existed with nonzero size.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size guard passed; `native/engine/src/main.cpp` warned at 813 lines, below the 1,000-line hard limit.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 37/37, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- This checkpoint renders an offline-safe timeline path; imported media timeline export through the desktop journey, FX return stem files, and packaged playback inspection remain PARTIAL/NOT_RUN.
+- Live sources are still intentionally rejected for offline export until live recording/timeline material is available.

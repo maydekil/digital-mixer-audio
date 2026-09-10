@@ -106,7 +106,7 @@ export class EngineSupervisor extends EventEmitter {
     child.stdout.on("data", (chunk: Buffer) => this.readStdout(chunk));
     child.stderr.on("data", (chunk: Buffer) => this.readStderr(chunk));
     child.stdin.on("error", (error) => {
-      this.failAll(error);
+      this.failAll(this.toSendError(error));
       if (this.stateValue !== "STOPPED") this.setState("ERROR");
     });
     child.on("error", (error) => this.failAll(error));

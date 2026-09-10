@@ -12,6 +12,8 @@ describe("export workflow request", () => {
       outputPath: "/tmp/mix.wav",
       format: "wav",
       sampleRate: 48000,
+      durationFrames: 480000,
+      blockFrames: 512,
       master: true,
       fxAReturn: true,
       fxBReturn: true,

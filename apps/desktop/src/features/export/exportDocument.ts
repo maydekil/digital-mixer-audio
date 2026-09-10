@@ -6,6 +6,8 @@ export interface ExportWorkflowRequest {
   outputPath: string;
   format: "wav";
   sampleRate: number;
+  durationFrames: number;
+  blockFrames: number;
   master: boolean;
   fxAReturn: boolean;
   fxBReturn: boolean;
@@ -20,6 +22,8 @@ export function snapshotToExportRequest(snapshot: MixerSnapshot, outputPath: str
     outputPath,
     format: "wav",
     sampleRate: 48000,
+    durationFrames: 48000 * 10,
+    blockFrames: 512,
     master: true,
     fxAReturn: snapshot.fxUnits.some((unit) => unit.id === "fx-a" && unit.enabled),
     fxBReturn: snapshot.fxUnits.some((unit) => unit.id === "fx-b" && unit.enabled),
