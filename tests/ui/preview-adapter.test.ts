@@ -98,4 +98,17 @@ describe("PreviewAdapter", () => {
     expect(snapshot.channels.find((channel) => channel.id === "guitar")?.monitor).toBe(true);
     expect(snapshot.channels.find((channel) => channel.id === "music")?.monitor).toBe(false);
   });
+
+  it("updates vocal FX rack selection, bypass, and preset state", () => {
+    const adapter = new PreviewAdapter();
+    adapter.selectVocalFxSlot("robot");
+    adapter.setVocalFxSlotEnabled("robot", true);
+    adapter.applyVocalFxPreset("harmony-duo");
+
+    const snapshot = adapter.getSnapshot();
+    expect(snapshot.vocalFx.selectedSlotId).toBe("harmony");
+    expect(snapshot.vocalFx.activePresetId).toBe("harmony-duo");
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "harmony")?.enabled).toBe(true);
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "robot")?.enabled).toBe(false);
+  });
 });

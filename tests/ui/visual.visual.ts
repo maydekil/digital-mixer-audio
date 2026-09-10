@@ -79,3 +79,15 @@ test("timeline tab opens native media import surface", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Choose" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Import" })).toBeDisabled();
 });
+
+test("vocal fx tab opens rack editor surface", async ({ page }) => {
+  await page.setViewportSize({ width: 1680, height: 945 });
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Vocal FX" }).click();
+  await expect(page.getByRole("dialog", { name: "Vocal FX rack" })).toBeVisible();
+  await expect(page.getByLabel("Effect Library")).toContainText("Pitch Correction");
+  await expect(page.getByLabel("Rack slots")).toContainText("Robot Voice");
+  await page.getByLabel("Vocal FX preset").selectOption("robot");
+  await expect(page.getByLabel("Effect editor")).toContainText("Robot Voice");
+});

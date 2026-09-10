@@ -115,6 +115,32 @@ export class PreviewAdapter implements MixerControlPort {
     this.snapshot.harmony = { ...this.snapshot.harmony, [field]: value };
   }
 
+  selectVocalFxSlot(slotId: string): void {
+    if (this.snapshot.vocalFx.slots.some((slot) => slot.id === slotId)) {
+      this.snapshot.vocalFx = { ...this.snapshot.vocalFx, selectedSlotId: slotId };
+    }
+  }
+
+  setVocalFxSlotEnabled(slotId: string, enabled: boolean): void {
+    this.snapshot.vocalFx = {
+      ...this.snapshot.vocalFx,
+      slots: this.snapshot.vocalFx.slots.map((slot) => slot.id === slotId ? { ...slot, enabled } : slot)
+    };
+  }
+
+  applyVocalFxPreset(presetId: string): void {
+    if (!this.snapshot.vocalFx.presets.some((preset) => preset.id === presetId)) return;
+    this.snapshot.vocalFx = {
+      ...this.snapshot.vocalFx,
+      activePresetId: presetId,
+      selectedSlotId: presetId === "robot" ? "robot" : presetId === "harmony-duo" ? "harmony" : this.snapshot.vocalFx.selectedSlotId,
+      slots: this.snapshot.vocalFx.slots.map((slot) => ({
+        ...slot,
+        enabled: presetEnabled(presetId, slot.effectType, slot.enabled)
+      }))
+    };
+  }
+
   resetClip(channelId: string): void {
     this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? {
       ...channel,
@@ -126,6 +152,24 @@ export class PreviewAdapter implements MixerControlPort {
     const selected = this.snapshot.channels.find((channel) => channel.id === this.snapshot.selectedChannelId);
     if (selected) this.snapshot.eqBands = structuredClone(selected.eqBands);
   }
+}
+
+function presetEnabled(presetId: string, effectType: string, fallback: boolean) {
+  const enabledByPreset: Record<string, string[]> = {
+    "clean-voice": [],
+    "warm-broadcast": ["saturation", "reverb"],
+    "studio-pop": ["pitch_correct", "doubler", "reverb"],
+    "karaoke-hall": ["reverb", "delay"],
+    "slapback": ["delay"],
+    "wide-double": ["doubler", "chorus"],
+    "low-character": ["pitch_shift", "formant_shift"],
+    "bright-character": ["pitch_shift", "formant_shift"],
+    "hard-tune": ["pitch_correct"],
+    "harmony-duo": ["harmony", "reverb"],
+    "telephone": ["saturation"],
+    "robot": ["vocoder"]
+  };
+  return enabledByPreset[presetId]?.includes(effectType) ?? fallback;
 }
 
 function clamp(value: number, min: number, max: number) {

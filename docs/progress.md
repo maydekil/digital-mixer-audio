@@ -1569,3 +1569,34 @@ Validation:
 Known limitations:
 - Vocoder is not yet connected to production rack IPC/UI controls, preset browser, or MIDI device event plumbing.
 - Anti-aliasing quality, articulation listening QA on real vocal recordings, spectral-band fixture detail, CPU profiling, and final VFX-09 quality reports remain pending.
+
+## VFX-08 — Vocal FX UI, Presets, And Rack Hooks
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: VFX-07 IMPLEMENTED_UNVERIFIED
+
+### VFX-08 Checkpoint — Desktop Vocal FX Rack Editor Surface
+
+Changed files:
+- `apps/desktop/src/features/vocal-fx/components/VocalFxPanel.tsx`: added a compact desktop modal for Vocal FX with effect library categories, rack slots, selected effect editor, bypass/on toggle, preset selector, latency summary, and Studio FX profile display.
+- `apps/desktop/src/adapters/MixerControlPort.ts`, `apps/desktop/src/adapters/preview/PreviewAdapter.ts`, `apps/desktop/src/fixtures/approvedMixerSession.ts`: added preview/native-facing Vocal FX rack state, 12 starting-point presets, rack slot selection, slot enable/bypass, and preset application state.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`, `apps/desktop/src/styles/app.css`: wired the top-bar Vocal FX button to the modal and added compact tool-style layout CSS.
+- `tests/ui/preview-adapter.test.ts`, `tests/ui/visual.visual.ts`: added unit and visual coverage for rack state mutations and opening/selecting the Vocal FX editor.
+
+Implemented behavior:
+- The UI now exposes all required Vocal FX families in a rack/editor surface instead of only the quick harmony strip.
+- Preset names match the required starting points: Clean Voice, Warm Broadcast, Studio Pop, Karaoke Hall, Slapback, Wide Double, Low Character, Bright Character, Hard Tune, Harmony Duo, Telephone, and Robot.
+- State changes are adapter-owned and do not use Web Audio, browser media APIs, renderer PCM, or fake browser audio processing.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 17/17 passed including Vocal FX rack adapter state.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 17/17, native CTest 28/28, engine smoke checks, and UI build passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright 6/6 passed including Vocal FX rack modal surface and refreshed mixer screenshots.
+
+Known limitations:
+- VFX-08 is UI/adapter foundation only; production native IPC commands for rack slot add/remove/reorder, parameter automation, A/B snapshots, and engine CPU/latency telemetry are still pending integration phases.
+- Visual Playwright evidence is refreshed, but full native rack IPC, persistence, and automation acceptance remain pending.

@@ -232,6 +232,38 @@
 .media-import-status { display: grid; grid-template-columns: repeat(5, auto minmax(58px, 1fr)); gap: 6px; align-items: center; min-width: 0; border: 1px solid #244a55; border-radius: 5px; padding: 7px; background: rgba(8, 22, 28, 0.72); }
 .media-import-status strong { color: #dff4f8; font-size: 10px; font-weight: 430; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+.vocal-fx-modal { width: min(1040px, calc(100vw - 48px)); height: min(620px, calc(100vh - 64px)); display: grid; grid-template-columns: 220px minmax(230px, 0.8fr) minmax(340px, 1fr); grid-template-rows: 34px minmax(0, 1fr); gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 7px; background: rgba(10, 28, 36, 0.98); box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5); overflow: hidden; }
+.vocal-fx-modal header { grid-column: 1 / 4; display: grid; grid-template-columns: minmax(0, 1fr) 190px 68px; gap: 8px; align-items: center; min-width: 0; }
+.vocal-fx-modal header div { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.vocal-fx-modal header strong { font-size: 12px; font-weight: 500; white-space: nowrap; }
+.vocal-fx-modal header span { color: #9fc2cc; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vocal-fx-modal select { min-width: 0; color: var(--text); background: #102b34; border: 1px solid #315966; border-radius: 5px; min-height: 26px; padding: 0 7px; }
+.vocal-fx-library, .vocal-fx-rack, .vocal-fx-editor { min-width: 0; min-height: 0; border: 1px solid #244a55; border-radius: 6px; background: rgba(8, 22, 28, 0.72); overflow: auto; }
+.vocal-fx-library { display: grid; align-content: start; gap: 7px; padding: 8px; }
+.vocal-fx-library div { display: grid; gap: 4px; }
+.vocal-fx-library strong { color: #9fc2cc; font-size: 10px; font-weight: 480; }
+.vocal-fx-library button { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 18px; align-items: center; gap: 4px; min-height: 24px; color: var(--text); background: #0c2530; border: 1px solid #24515e; border-radius: 5px; padding: 0 7px; text-align: left; font-size: 10px; }
+.vocal-fx-library button:hover, .vocal-fx-slot:hover { border-color: var(--cyan); background: #10313c; }
+.vocal-fx-library button span { color: var(--cyan); text-align: center; }
+.vocal-fx-rack { display: grid; align-content: start; gap: 6px; padding: 8px; }
+.vocal-fx-slot { display: grid; grid-template-columns: 24px minmax(0, 1fr) 70px; align-items: center; gap: 6px; min-height: 34px; color: #dff4f8; background: #0b222b; border: 1px solid #244a55; border-radius: 5px; padding: 0 8px; text-align: left; }
+.vocal-fx-slot span { color: #8fb3bd; font-size: 10px; }
+.vocal-fx-slot strong { min-width: 0; font-size: 11px; font-weight: 470; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vocal-fx-slot em { color: #9fc2cc; font-size: 9px; font-style: normal; text-align: right; }
+.vocal-fx-slot.is-selected { border-color: var(--cyan); box-shadow: inset 3px 0 0 var(--cyan); }
+.vocal-fx-slot.is-enabled strong { color: #f4ffff; }
+.vocal-fx-editor { display: grid; grid-template-rows: 46px minmax(0, 1fr) 34px; gap: 8px; padding: 8px; }
+.vocal-fx-editor-title { display: grid; grid-template-columns: minmax(0, 1fr) 78px; align-items: center; gap: 8px; }
+.vocal-fx-editor-title strong { display: block; font-size: 16px; font-weight: 520; line-height: 1.05; }
+.vocal-fx-editor-title span { display: block; margin-top: 4px; color: #9fc2cc; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vocal-fx-params { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 7px; }
+.vocal-fx-params label { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 86px; align-items: center; gap: 8px; min-height: 34px; border: 1px solid #244a55; border-radius: 5px; padding: 0 8px; }
+.vocal-fx-params span { color: #bcd7de; font-size: 10px; }
+.vocal-fx-params b { min-width: 0; color: var(--cyan); font-size: 11px; font-weight: 450; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vocal-fx-editor footer { display: grid; grid-template-columns: 54px 1fr 42px 1fr; gap: 8px; align-items: center; border-top: 1px solid #244a55; padding-top: 7px; }
+.vocal-fx-editor footer span { color: #9fc2cc; font-size: 10px; }
+.vocal-fx-editor footer strong { color: #dff4f8; font-size: 11px; font-weight: 450; }
+
 .footer-bar { border-top: 1px solid var(--border); border-bottom: 0; font-size: 12px; }
 .footer-bar label { display: flex; align-items: center; gap: 8px; }
 .monitor-volume { margin-left: auto; display: flex; align-items: center; gap: 10px; min-width: 390px; }

@@ -63,6 +63,35 @@ export interface HarmonyState {
   levelDb: number;
 }
 
+export interface VocalFxParameter {
+  id: string;
+  label: string;
+  value: string;
+}
+
+export interface VocalFxSlot {
+  id: string;
+  effectType: string;
+  label: string;
+  category: "Pitch" | "Space" | "Modulation" | "Character" | "Synth";
+  enabled: boolean;
+  availability: "implemented_unverified" | "verified";
+  latencyMs: number;
+  parameters: VocalFxParameter[];
+}
+
+export interface VocalFxPreset {
+  id: string;
+  name: string;
+}
+
+export interface VocalFxState {
+  selectedSlotId: string;
+  activePresetId: string;
+  slots: VocalFxSlot[];
+  presets: VocalFxPreset[];
+}
+
 export interface MixerSnapshot {
   modeLabel: string;
   projectName: string;
@@ -75,6 +104,7 @@ export interface MixerSnapshot {
   programs: FxProgram[];
   eqBands: EqBandState[];
   harmony: HarmonyState;
+  vocalFx: VocalFxState;
 }
 
 export interface MixerControlPort {
@@ -98,5 +128,8 @@ export interface MixerControlPort {
   resetFxProgram(unitId: FxUnitId): void;
   setHarmonyEnabled(enabled: boolean): void;
   updateHarmony(field: keyof HarmonyState, value: string | number | boolean): void;
+  selectVocalFxSlot(slotId: string): void;
+  setVocalFxSlotEnabled(slotId: string, enabled: boolean): void;
+  applyVocalFxPreset(presetId: string): void;
   resetClip(channelId: string): void;
 }

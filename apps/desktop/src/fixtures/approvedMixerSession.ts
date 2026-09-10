@@ -36,7 +36,35 @@ export const approvedMixerSession: MixerSnapshot = {
     }
   ],
   eqBands: cloneEqBands(),
-  harmony: { enabled: true, key: "C", scale: "Major", voice1: "+3rd", voice2: "+5th", levelDb: 0 }
+  harmony: { enabled: true, key: "C", scale: "Major", voice1: "+3rd", voice2: "+5th", levelDb: 0 },
+  vocalFx: {
+    selectedSlotId: "pitch-correct",
+    activePresetId: "studio-pop",
+    presets: [
+      { id: "clean-voice", name: "Clean Voice" },
+      { id: "warm-broadcast", name: "Warm Broadcast" },
+      { id: "studio-pop", name: "Studio Pop" },
+      { id: "karaoke-hall", name: "Karaoke Hall" },
+      { id: "slapback", name: "Slapback" },
+      { id: "wide-double", name: "Wide Double" },
+      { id: "low-character", name: "Low Character" },
+      { id: "bright-character", name: "Bright Character" },
+      { id: "hard-tune", name: "Hard Tune" },
+      { id: "harmony-duo", name: "Harmony Duo" },
+      { id: "telephone", name: "Telephone" },
+      { id: "robot", name: "Robot" }
+    ],
+    slots: [
+      slot("pitch-correct", "pitch_correct", "Pitch Correction", "Pitch", true, 92, [["Key", "C"], ["Scale", "Major"], ["Retune", "80 ms"], ["Amount", "70%"]]),
+      slot("formant-shift", "formant_shift", "Formant Shift", "Pitch", false, 58, [["Shift", "+0 st"], ["Mix", "100%"]]),
+      slot("doubler", "doubler", "Vocal Doubler", "Modulation", true, 0, [["Voice 1", "-6 cent"], ["Voice 2", "+6 cent"], ["Level", "-9 dB"]]),
+      slot("plate", "reverb", "Plate Reverb", "Space", true, 0, [["Decay", "1.4 s"], ["Pre-delay", "20 ms"], ["Mix", "15%"]]),
+      slot("stereo-delay", "delay", "Stereo Delay", "Space", false, 0, [["Time", "250 ms"], ["Feedback", "20%"], ["Mix", "12%"]]),
+      slot("harmony", "harmony", "Harmony Duo", "Pitch", false, 92, [["Voice 1", "+3rd"], ["Voice 2", "+5th"], ["Level", "-12 dB"]]),
+      slot("robot", "vocoder", "Robot Voice", "Synth", false, 0, [["Carrier", "C2"], ["Bands", "16"], ["Wet", "100%"]]),
+      slot("saturation", "saturation", "Saturation", "Character", false, 0, [["Drive", "3 dB"], ["Output", "-3 dB"]])
+    ]
+  }
 };
 
 function channel(id: string, name: string, source: string, role: "system" | "vocal" | "instrument" | "music" | "group", faderDb: number, sendA: number, sendB: number, mon: boolean, rec: boolean) {
@@ -56,4 +84,17 @@ function channel(id: string, name: string, source: string, role: "system" | "voc
 
 function cloneEqBands() {
   return baseEqBands.map((band) => ({ ...band }));
+}
+
+function slot(id: string, effectType: string, label: string, category: "Pitch" | "Space" | "Modulation" | "Character" | "Synth", enabled: boolean, latencyMs: number, params: Array<[string, string]>) {
+  return {
+    id,
+    effectType,
+    label,
+    category,
+    enabled,
+    latencyMs,
+    availability: "implemented_unverified" as const,
+    parameters: params.map(([paramLabel, value]) => ({ id: `${id}-${paramLabel.toLowerCase().replaceAll(" ", "-")}`, label: paramLabel, value }))
+  };
 }
