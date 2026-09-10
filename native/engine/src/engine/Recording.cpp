@@ -144,6 +144,18 @@ const std::filesystem::path& RecordingSession::path() const {
   return writer_.path();
 }
 
+RecordedTakeMetadata RecordingSession::metadata() const {
+  return {
+    .path = writer_.path(),
+    .tap = config_.tap,
+    .sampleRate = config_.sampleRate,
+    .channels = config_.channels,
+    .frames = writer_.framesWritten(),
+    .replayWithNeutralInserts = config_.tap == RecordingTap::processed || config_.tap == RecordingTap::master,
+    .partial = state_ == RecordingState::overrun || state_ == RecordingState::failed,
+  };
+}
+
 std::filesystem::path makeCollisionSafeTakePath(
   const std::filesystem::path& directory, const std::string& baseName, const std::string& extension) {
   for (int suffix = 0; suffix < 1000; suffix += 1) {
@@ -152,6 +164,15 @@ std::filesystem::path makeCollisionSafeTakePath(
     if (!std::filesystem::exists(path, error)) return path;
   }
   return directory / takeName(baseName.empty() ? "take" : baseName, 1000, extension);
+}
+
+const char* recordingTapName(RecordingTap tap) {
+  switch (tap) {
+    case RecordingTap::dry: return "dry";
+    case RecordingTap::processed: return "processed";
+    case RecordingTap::master: return "master";
+  }
+  return "unknown";
 }
 
 }  // namespace localmixer::engine

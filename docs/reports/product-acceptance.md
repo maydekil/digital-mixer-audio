@@ -27,8 +27,8 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 | E2E-02 | System audio via BlackHole | `PARTIAL` | Full processed route and restore not run from packaged app. |
 | E2E-03 | Hybrid mic+backing with FX A/B | `PARTIAL` | Audible isolation and dual-return evidence not run. |
 | E2E-04 | Harmony ON/OFF/key/level | `PARTIAL` | Real vocal intervals, measured delay, and no-click audition not run. |
-| E2E-05 | Record dry/master then replay | `PARTIAL` | Live take replay and alignment not exposed end-to-end. |
-| E2E-06 | Processed vocal take replay | `NOT_RUN` | Requires successful processed recording flow. |
+| E2E-05 | Record dry/master then replay | `PARTIAL` | Native take metadata exists; live take replay and alignment not exposed end-to-end. |
+| E2E-06 | Processed vocal take replay | `PARTIAL` | Processed take metadata can request neutral insert replay; successful live processed recording flow not run. |
 | E2E-07 | Save/open/collect/relink | `PARTIAL` | Session contracts pass; desktop project menu flow pending. |
 | E2E-08 | Master + FX return stems | `PARTIAL` | Stem planning tests pass; rendered files not inspected. |
 | E2E-09 | Device unplug/sleep/crash/full kill | `PARTIAL` | Supervisor/recovery tests pass; device/sleep/manual kill pending. |
@@ -51,7 +51,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 - Native realtime insert graph and monitor selection have channel processor wiring, FX A/B send-return state, Vocal FX rack slots, and callback/deadline counters carried in the Core Audio monitor runtime; factory FX recipes now have native wet processors, 12 Vocal FX catalog entries have production factory coverage, and processed graph export has focused native coverage, but still need 99-program auditory QA, Harmony acceptance, full record/export parity, stress runs, and live listening QA.
 - AU/VST3 runtime hosting/editor/latency compensation is not complete; Phase17 is scanner/registry/state foundation.
 - Per-app Core Audio tap capture is not complete; Phase18 is capability/assignment foundation.
-- Live recording to timeline and replay through desktop workflow are not complete.
+- Live recording to timeline and replay through desktop workflow are not complete; native take metadata now marks replay insert behavior and partial/overrun state.
 - Product-level 30/60-minute soak and 32-track stress are not run; monitor callback counters exist but do not replace acceptance soak evidence.
 - Packaged `.app` TCC permission prompt, clean-location launch, and offline workflow require manual target-Mac testing.
 

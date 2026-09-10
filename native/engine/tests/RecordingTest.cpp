@@ -13,8 +13,10 @@ using localmixer::engine::MediaFileError;
 using localmixer::engine::RecordingConfig;
 using localmixer::engine::RecordingSession;
 using localmixer::engine::RecordingState;
+using localmixer::engine::RecordingTap;
 using localmixer::engine::WavStreamReader;
 using localmixer::engine::makeCollisionSafeTakePath;
+using localmixer::engine::recordingTapName;
 
 bool near(float actual, float expected) {
   return std::fabs(actual - expected) < 0.0001f;
@@ -63,6 +65,24 @@ int main() {
     std::cerr << "recorded WAV samples should round-trip as clamped float32\n";
     return 1;
   }
+  const auto dryMetadata = session.metadata();
+  if (dryMetadata.tap != RecordingTap::master || dryMetadata.frames != 2 || !dryMetadata.replayWithNeutralInserts ||
+      dryMetadata.partial || std::string(recordingTapName(dryMetadata.tap)) != "master") {
+    std::cerr << "master take metadata should request neutral insert replay without partial flag\n";
+    return 1;
+  }
+
+  RecordingSession drySession;
+  const std::vector<float> drySamples{0.1f};
+  if (!drySession.arm(RecordingConfig{.directory = directory, .baseName = "dry", .sampleRate = 48000, .channels = 1, .tap = RecordingTap::dry}) ||
+      !drySession.start() || !drySession.write(drySamples) || !drySession.stop()) {
+    std::cerr << "dry recording metadata fixture should save\n";
+    return 1;
+  }
+  if (drySession.metadata().replayWithNeutralInserts || std::string(recordingTapName(drySession.metadata().tap)) != "dry") {
+    std::cerr << "dry take replay should keep channel inserts available\n";
+    return 1;
+  }
 
   RecordingSession overrun;
   const std::vector<float> overrunSamples{0.5f};
@@ -74,6 +94,10 @@ int main() {
   overrun.markOverrun();
   if (!overrun.stop() || overrun.state() != RecordingState::overrun || overrun.framesWritten() != 1) {
     std::cerr << "overrun should finalize valid data and retain overrun status\n";
+    return 1;
+  }
+  if (!overrun.metadata().partial) {
+    std::cerr << "overrun metadata should mark the take partial\n";
     return 1;
   }
 

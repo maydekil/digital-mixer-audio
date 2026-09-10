@@ -2482,3 +2482,23 @@ Validation:
 Known limitations:
 - This is a native helper and focused test, not the full desktop export dialog workflow.
 - Live recording replay, processed take insertion, FX return stem file inspection, and packaged offline export playback remain partial/NOT_RUN.
+
+### Phase19 Hardening Checkpoint — Recording Take Replay Metadata
+
+Changed files:
+- `native/engine/src/engine/Recording.hpp`, `native/engine/src/engine/Recording.cpp`: added `RecordedTakeMetadata` and tap names for dry, processed, and master recordings.
+- `native/engine/tests/RecordingTest.cpp`: verifies master/processed-style replay requires neutral inserts, dry takes remain available for channel processing, and overrun takes are marked partial.
+- `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: updated recording evidence and remaining-gap wording.
+
+Implemented behavior:
+- Native recording sessions can now report metadata needed to avoid double-processing replay of master/processed takes.
+- Overrun state is exposed as partial take metadata while preserving valid written frames.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-recording-tests && ctest --test-dir native/engine/build -R local-mixer-recording-tests --output-on-failure`
+- exit/result: `0`; focused recording test passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 19/19, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- This is the native metadata contract only; live record-stop-playback insertion into the desktop timeline remains partial.

@@ -31,6 +31,16 @@ struct RecordingConfig {
   RecordingTap tap = RecordingTap::master;
 };
 
+struct RecordedTakeMetadata {
+  std::filesystem::path path;
+  RecordingTap tap = RecordingTap::master;
+  std::uint32_t sampleRate = 48000;
+  std::uint16_t channels = 2;
+  std::uint64_t frames = 0;
+  bool replayWithNeutralInserts = false;
+  bool partial = false;
+};
+
 class WavFloatWriter {
  public:
   bool open(const std::filesystem::path& path, std::uint32_t sampleRate, std::uint16_t channels);
@@ -56,6 +66,7 @@ class RecordingSession {
   RecordingState state() const;
   std::uint64_t framesWritten() const;
   const std::filesystem::path& path() const;
+  RecordedTakeMetadata metadata() const;
 
  private:
   RecordingConfig config_;
@@ -65,5 +76,6 @@ class RecordingSession {
 
 std::filesystem::path makeCollisionSafeTakePath(
   const std::filesystem::path& directory, const std::string& baseName, const std::string& extension);
+const char* recordingTapName(RecordingTap tap);
 
 }  // namespace localmixer::engine
