@@ -1810,3 +1810,33 @@ Validation:
 Known limitations:
 - HARM-01 is UI/ACK binding only; native audio renderer insertion, voice-only ramp, lead alignment, Monitor Fast effective-state messaging, and recording/offline snapshot semantics remain pending HARM-02.
 - Advanced multiple-primary chooser UX is still represented by native rejection rather than a full selection dialog.
+
+## HARM-02 — Voice Transition And Sync Semantics
+Status: IMPLEMENTED_UNVERIFIED_FOUNDATION
+Prerequisites: HARM-01 IMPLEMENTED_UNVERIFIED
+
+### HARM-02 Checkpoint — Harmony Voice Ramp And Automation IDs
+
+Changed files:
+- `native/engine/src/dsp/fx/HarmonyEffect.hpp`, `native/engine/src/dsp/fx/HarmonyEffect.cpp`: added native enabled target/ramp for harmony voices, explicit `setEnabled`, `setHarmonyLevelDb`, and realtime parameter 5 for Harmony Level. The dry/lead samples remain untouched while voices are added or ramped out.
+- `native/engine/tests/fx/HarmonyEffectTest.cpp`: verifies disabled Harmony keeps lead unchanged, silence still gates voices, and Harmony Level does not trim lead signal.
+- `native/engine/src/engine/Automation.hpp`, `native/engine/src/engine/Automation.cpp`: added stable automation IDs for `harmony.enabled.<channel>` and `harmony.level.<channel>`.
+- `native/engine/tests/AutomationTest.cpp`: verifies Harmony desired-state and level automation IDs.
+
+Implemented behavior:
+- OFF/disabled Harmony mutes generated voices only; lead remains present once and at the same level.
+- Harmony Level is an additive voice-level trim and does not control lead gain.
+- Enable/disable uses a bounded native ramp for voice contribution rather than abruptly muting the whole processor output.
+- Automation naming now has explicit desired-state targets for Harmony enable and level.
+
+Validation:
+- command: `native/engine/build/native/engine/local-mixer-harmony-effect-tests`
+- exit/result: `0`; HarmonyEffect tests passed including disabled-lead and level semantics.
+- command: `native/engine/build/native/engine/local-mixer-automation-tests`
+- exit/result: `0`; automation tests passed including Harmony IDs.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 18/18, native CTest 33/33, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- HARM-02 adds processor semantics and automation IDs, but full channel insert graph wiring, monitor-profile effective status, recording/offline graph snapshots, and undo/redo integration remain pending later integration/QA gates.
+- Auditory click testing and real vocal fixture acceptance are still NOT_RUN pending HARM-03/INT hardware QA.

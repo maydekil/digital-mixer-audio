@@ -116,6 +116,35 @@ bool testSilenceGate() {
   return !effect.lastTarget().active && rms(left, 0) == 0.0f && rms(right, 0) == 0.0f;
 }
 
+bool testVoiceOnlyDisableKeepsLead() {
+  HarmonyEffect effect(HarmonyConfig{.enabled = false});
+  constexpr auto blockFrames = std::size_t{2048};
+  effect.prepare(ProcessSpec{.sampleRate = 48000.0, .maximumBlockFrames = blockFrames, .channels = 1});
+  auto left = sine(261.625565, 48000.0, blockFrames * 20);
+  auto right = left;
+  const auto original = left;
+  for (std::size_t offset = 0; offset < left.size(); offset += blockFrames) {
+    AudioBlockView block{
+      std::span<float>(left.data() + offset, blockFrames),
+      std::span<float>(right.data() + offset, blockFrames),
+    };
+    effect.process(block, ProcessContext{.sampleRate = 48000.0, .absoluteFrame = static_cast<std::uint64_t>(offset)});
+  }
+  return rmsDelta(left, original, 0) < 0.0001f && rmsDelta(right, original, 0) < 0.0001f;
+}
+
+bool testHarmonyLevelDoesNotTrimLead() {
+  HarmonyEffect effect(HarmonyConfig{.enabled = false, .harmonyLevelDb = -30.0f});
+  constexpr auto blockFrames = std::size_t{2048};
+  effect.prepare(ProcessSpec{.sampleRate = 48000.0, .maximumBlockFrames = blockFrames, .channels = 1});
+  auto left = sine(329.627557, 48000.0, blockFrames * 4);
+  auto right = left;
+  const auto original = left;
+  AudioBlockView block{std::span<float>(left.data(), blockFrames), std::span<float>(right.data(), blockFrames)};
+  effect.process(block, ProcessContext{.sampleRate = 48000.0, .absoluteFrame = 0});
+  return rmsDelta(left, original, 0) < 0.0001f && rmsDelta(right, original, 0) < 0.0001f;
+}
+
 }  // namespace
 
 int main() {
@@ -129,6 +158,14 @@ int main() {
   }
   if (!testSilenceGate()) {
     std::cerr << "harmony should keep silence silent and avoid false targets\n";
+    return 1;
+  }
+  if (!testVoiceOnlyDisableKeepsLead()) {
+    std::cerr << "disabled harmony should keep lead unchanged while voices are silent\n";
+    return 1;
+  }
+  if (!testHarmonyLevelDoesNotTrimLead()) {
+    std::cerr << "harmony level should not trim lead signal\n";
     return 1;
   }
   std::cout << "local-mixer-harmony-effect-tests ok\n";

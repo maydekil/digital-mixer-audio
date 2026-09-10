@@ -61,6 +61,8 @@ std::string automationParameterId(AutomationParameter parameter, const std::stri
     case AutomationParameter::send: return "fx.send." + targetId;
     case AutomationParameter::fxReturn: return "fx.return." + targetId;
     case AutomationParameter::fxMacro: return "fx.macro." + targetId;
+    case AutomationParameter::harmonyEnabled: return "harmony.enabled." + targetId;
+    case AutomationParameter::harmonyLevel: return "harmony.level." + targetId;
   }
   return "unknown." + targetId;
 }

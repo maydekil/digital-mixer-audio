@@ -35,6 +35,8 @@ HarmonyEffect::HarmonyEffect(HarmonyConfig config) : config_(config) {}
 
 void HarmonyEffect::prepare(const ProcessSpec& spec) {
   spec_ = spec;
+  enabledTarget_ = config_.enabled ? 1.0f : 0.0f;
+  enabledRamp_ = enabledTarget_;
   detector_.prepare(PitchDetectorConfig{.sampleRate = spec.sampleRate});
   for (auto& voice : voices_) {
     voice = makeRubberBandPitchBackend();
@@ -60,6 +62,8 @@ void HarmonyEffect::reset() noexcept {
   samplesSinceAnalysis_ = 0;
   filledAnalysis_ = 0;
   voiceGate_ = 0.0f;
+  enabledTarget_ = config_.enabled ? 1.0f : 0.0f;
+  enabledRamp_ = enabledTarget_;
   lastTarget_ = {};
 }
 
@@ -84,6 +88,7 @@ void HarmonyEffect::applyRealtimeParameter(ParameterId parameter, float value) n
   if (parameter == 2) config_.voice2.levelDb = std::clamp(value, -60.0f, 0.0f);
   if (parameter == 3) config_.voice1.interval = std::clamp(static_cast<int>(std::lround(value)), -12, 12);
   if (parameter == 4) config_.voice2.interval = std::clamp(static_cast<int>(std::lround(value)), -12, 12);
+  if (parameter == 5) setHarmonyLevelDb(value);
 }
 
 std::uint32_t HarmonyEffect::latencySamples() const noexcept {
@@ -93,6 +98,15 @@ std::uint32_t HarmonyEffect::latencySamples() const noexcept {
 
 std::uint64_t HarmonyEffect::maximumTailSamples() const noexcept {
   return latencySamples() + detector_.windowFrames();
+}
+
+void HarmonyEffect::setEnabled(bool enabled) noexcept {
+  config_.enabled = enabled;
+  enabledTarget_ = enabled ? 1.0f : 0.0f;
+}
+
+void HarmonyEffect::setHarmonyLevelDb(float levelDb) noexcept {
+  config_.harmonyLevelDb = std::clamp(levelDb, -30.0f, 6.0f);
 }
 
 void HarmonyEffect::pushAnalysisSample(float sample) noexcept {
@@ -141,12 +155,13 @@ bool HarmonyEffect::processBackendBlock(AudioBlockView& block, std::size_t offse
     if (!voices_[voice] || !configs[voice].enabled) continue;
     voices_[voice]->setPitchSemitones(lastTarget_.shiftSemitones[voice]);
     if (!voices_[voice]->processBlock(voiceInput_, voiceOutput_[voice])) return false;
-    const auto level = decibelsToLinear(configs[voice].levelDb) * voiceGate_;
+    const auto level = decibelsToLinear(configs[voice].levelDb + config_.harmonyLevelDb) * voiceGate_;
     const auto leftGain = panLeft(configs[voice].pan) * level;
     const auto rightGain = panRight(configs[voice].pan) * level;
     for (std::size_t index = 0; index < frames; index += 1) {
-      block.left[offset + index] += voiceOutput_[voice][index] * leftGain;
-      block.right[offset + index] += voiceOutput_[voice][index] * rightGain;
+      enabledRamp_ += std::clamp(enabledTarget_ - enabledRamp_, -1.0f / 1920.0f, 1.0f / 1920.0f);
+      block.left[offset + index] += voiceOutput_[voice][index] * leftGain * enabledRamp_;
+      block.right[offset + index] += voiceOutput_[voice][index] * rightGain * enabledRamp_;
     }
   }
   return true;

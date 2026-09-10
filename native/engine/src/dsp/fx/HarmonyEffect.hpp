@@ -29,6 +29,8 @@ struct HarmonyConfig {
   float a4Hz = 440.0f;
   float confidenceThreshold = 0.85f;
   bool preserveFormants = true;
+  bool enabled = true;
+  float harmonyLevelDb = 0.0f;
   HarmonyVoiceConfig voice1{};
   HarmonyVoiceConfig voice2{.enabled = true, .interval = 4, .levelDb = -15.0f, .pan = 0.4f};
 };
@@ -51,6 +53,8 @@ class HarmonyEffect final : public EffectProcessor {
   std::uint32_t latencySamples() const noexcept override;
   std::uint64_t maximumTailSamples() const noexcept override;
 
+  void setEnabled(bool enabled) noexcept;
+  void setHarmonyLevelDb(float levelDb) noexcept;
   HarmonyTarget lastTarget() const noexcept { return lastTarget_; }
 
  private:
@@ -71,6 +75,8 @@ class HarmonyEffect final : public EffectProcessor {
   std::uint32_t filledAnalysis_ = 0;
   std::uint32_t hopFrames_ = 256;
   float voiceGate_ = 0.0f;
+  float enabledRamp_ = 1.0f;
+  float enabledTarget_ = 1.0f;
   HarmonyTarget lastTarget_;
 };
 

@@ -14,6 +14,8 @@ enum class AutomationParameter {
   send,
   fxReturn,
   fxMacro,
+  harmonyEnabled,
+  harmonyLevel,
 };
 
 enum class AutomationValueMode {

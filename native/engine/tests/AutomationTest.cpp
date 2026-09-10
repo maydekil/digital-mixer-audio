@@ -81,7 +81,9 @@ int main() {
 
   if (automationParameterId(AutomationParameter::send, "voice.fx-a") != "fx.send.voice.fx-a" ||
       automationParameterId(AutomationParameter::fxReturn, "fx-a") != "fx.return.fx-a" ||
-      automationParameterId(AutomationParameter::fxMacro, "fx-a.macro1") != "fx.macro.fx-a.macro1") {
+      automationParameterId(AutomationParameter::fxMacro, "fx-a.macro1") != "fx.macro.fx-a.macro1" ||
+      automationParameterId(AutomationParameter::harmonyEnabled, "voice") != "harmony.enabled.voice" ||
+      automationParameterId(AutomationParameter::harmonyLevel, "voice") != "harmony.level.voice") {
     std::cerr << "FX automation parameter IDs should be stable and explicit\n";
     return 1;
   }
