@@ -8,6 +8,11 @@ const baseEqBands = [
   { id: "high", label: "HIGH", color: "#B862F0", freqHz: 10000, gainDb: 4, freq: "10.0 kHz", gain: "+4.0 dB", type: "Shelf" }
 ] as const;
 
+const defaultDynamics = {
+  compressor: { thresholdDb: -18, ratio: 3, attackMs: 10, releaseMs: 120 },
+  deEsser: { frequencyHz: 6000, thresholdDb: -24, maxReductionDb: 6 }
+};
+
 export const approvedMixerSession: MixerSnapshot = {
   modeLabel: "UI PREVIEW · Audio engine not connected",
   projectName: "Local Audio Mixer",
@@ -30,6 +35,7 @@ export const approvedMixerSession: MixerSnapshot = {
       id: "master", name: "MASTER", source: "Output 1-2", kind: "master", role: "master",
       enabled: true, trimDb: 0, pan: 0, faderDb: -1, mute: false, solo: false,
       processing: { eq: true, comp: false, noise: false, insertFx: false },
+      dynamics: cloneDynamics(),
       sends: { "fx-a": { enabled: false, gainDb: 0 }, "fx-b": { enabled: false, gainDb: 0 } },
       eqBands: cloneEqBands(),
       meter: { left: -4, right: -5, clip: true }
@@ -73,6 +79,7 @@ function channel(id: string, name: string, source: string, role: "system" | "voc
     selected: id === "voice", enabled: true, trimDb: 0, pan: 0, faderDb, mute: false, solo: false,
     monitor: mon, recordArm: rec, harmonyVisible: role === "vocal", harmonyEnabled: false,
     processing: { eq: true, comp: role === "vocal", noise: role === "vocal", insertFx: role === "vocal" },
+    dynamics: cloneDynamics(),
     sends: {
       "fx-a": { enabled: sendA !== 0, gainDb: sendA },
       "fx-b": { enabled: sendB !== 0, gainDb: sendB }
@@ -84,6 +91,10 @@ function channel(id: string, name: string, source: string, role: "system" | "voc
 
 function cloneEqBands() {
   return baseEqBands.map((band) => ({ ...band }));
+}
+
+function cloneDynamics() {
+  return structuredClone(defaultDynamics);
 }
 
 function slot(id: string, effectType: string, label: string, category: "Pitch" | "Space" | "Modulation" | "Character" | "Synth", enabled: boolean, latencyMs: number, params: Array<[string, string]>) {

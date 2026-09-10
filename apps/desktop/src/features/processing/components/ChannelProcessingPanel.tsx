@@ -11,10 +11,14 @@ interface ChannelProcessingPanelProps {
   linkedProgram: FxProgram;
   onSendA(valueDb: number): void;
   onEqChange(bandId: EqBandState["id"], field: "freqHz" | "gainDb" | "qValue" | "type", value: number | string): void;
+  onCompressorChange(field: keyof ChannelState["dynamics"]["compressor"], value: number): void;
+  onDeEsserChange(field: keyof ChannelState["dynamics"]["deEsser"], value: number): void;
 }
 
-export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSendA, onEqChange }: ChannelProcessingPanelProps) {
+export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSendA, onEqChange, onCompressorChange, onDeEsserChange }: ChannelProcessingPanelProps) {
   const sendA = channel.sends["fx-a"];
+  const compressor = channel.dynamics.compressor;
+  const deEsser = channel.dynamics.deEsser;
   return (
     <aside className="processing-panel">
       <header className="processing-header">
@@ -48,16 +52,17 @@ export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSend
       <section className={`processor-card compressor-card ${channel.processing.comp ? "is-active" : "is-bypassed"}`}>
         <div className="processor-title"><span>⏻</span><strong>COMPRESSOR</strong><div className="gain-reduction">Gain Reduction <i /></div></div>
         <div className="compressor-controls">
-          <RotaryKnob label="Threshold" value="-18 dB" />
-          <RotaryKnob label="Ratio" value="3:1" />
-          <RotaryKnob label="Attack" value="10 ms" />
-          <RotaryKnob label="Release" value="120 ms" />
+          <RotaryKnob label="Threshold" value={`${compressor.thresholdDb} dB`} numericValue={compressor.thresholdDb} min={-80} max={0} onChange={(value) => onCompressorChange("thresholdDb", value)} />
+          <RotaryKnob label="Ratio" value={`${compressor.ratio}:1`} numericValue={compressor.ratio} min={1} max={20} step={0.5} onChange={(value) => onCompressorChange("ratio", value)} />
+          <RotaryKnob label="Attack" value={`${compressor.attackMs} ms`} numericValue={compressor.attackMs} min={0.1} max={200} step={0.1} onChange={(value) => onCompressorChange("attackMs", value)} />
+          <RotaryKnob label="Release" value={`${compressor.releaseMs} ms`} numericValue={compressor.releaseMs} min={10} max={3000} onChange={(value) => onCompressorChange("releaseMs", value)} />
         </div>
       </section>
       <div className="lower-processors">
-        <section className={`processor-card ${channel.processing.noise ? "is-active" : "is-bypassed"}`}>
-          <div className="processor-title"><span>⏻</span><strong>NOISE CONTROL</strong></div>
-          <RotaryKnob label="Frequency" value="6.0 kHz" />
+        <section className={`processor-card ${channel.role === "vocal" ? "is-active" : "is-bypassed"}`}>
+          <div className="processor-title"><span>⏻</span><strong>DE-ESSER</strong></div>
+          <RotaryKnob label="Frequency" value={formatFrequency(deEsser.frequencyHz)} numericValue={deEsser.frequencyHz} min={1000} max={12000} step={100} onChange={(value) => onDeEsserChange("frequencyHz", value)} />
+          <RotaryKnob label="Threshold" value={`${deEsser.thresholdDb} dB`} numericValue={deEsser.thresholdDb} min={-80} max={0} onChange={(value) => onDeEsserChange("thresholdDb", value)} />
         </section>
         <section className={`processor-card ${channel.processing.insertFx ? "is-active" : "is-bypassed"}`}>
           <div className="processor-title"><span>⏻</span><strong>SEND A · {linkedProgram.name}</strong></div>
@@ -76,4 +81,8 @@ function parseNumber(value: string) {
 function parseFrequency(value: string) {
   const parsed = parseNumber(value);
   return value.toLowerCase().includes("k") ? parsed * 1000 : parsed;
+}
+
+function formatFrequency(value: number) {
+  return value >= 1000 ? `${(value / 1000).toFixed(1)} kHz` : `${Math.round(value)} Hz`;
 }

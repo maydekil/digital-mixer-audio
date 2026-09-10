@@ -2246,3 +2246,29 @@ Validation:
 Known limitations:
 - Hardware listening for processed monitoring is still NOT_RUN in this environment.
 - De-esser UI control, Vocal FX rack insertion, FX A/B returns, Harmony insertion, export parity, live callback timing metrics, and stress QA remain partial.
+
+### Phase19 Hardening Checkpoint — Dynamics Parameter Sync
+
+Changed files:
+- `apps/desktop/src/adapters/MixerControlPort.ts`, `apps/desktop/src/fixtures/approvedMixerSession.ts`, `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: added per-channel compressor and de-esser state with clamped preview updates.
+- `apps/desktop/src/features/processing/components/ChannelProcessingPanel.tsx`: made compressor and de-esser controls interactive via existing rotary controls.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: sends compressor and de-esser parameters through `sync-mixer-graph`.
+- `native/engine/src/engine/EngineGraphSyncJson.cpp`, `native/engine/tests/EngineGraphSyncJsonTest.cpp`: reads compressor/de-esser parameter fields into native `ChannelProcessorConfig` and verifies monitor selection preserves them.
+- `tests/ui/preview-adapter.test.ts`, `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: added UI state coverage and updated remaining-gap wording.
+
+Implemented behavior:
+- Compressor threshold, ratio, attack, and release are editable per channel and carried to native graph sync.
+- De-esser detector frequency, threshold, and max reduction are represented per channel; visible de-esser frequency/threshold controls now update state and sync to native.
+- Existing command payloads remain backward compatible by falling back to native defaults when fields are absent.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `cmake --build native/engine/build --target local-mixer-engine-graph-sync-json-tests && ctest --test-dir native/engine/build -R local-mixer-engine-graph-sync-json-tests --output-on-failure`
+- exit/result: `0`; native graph-sync parser test passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 19/19 passed.
+
+Known limitations:
+- Noise gate threshold/timing is still native-default only; a dedicated UI parameter surface is pending.
+- Vocal FX rack insertion, FX A/B returns, Harmony insertion, export parity, live listening, callback timing metrics, and stress QA remain partial.

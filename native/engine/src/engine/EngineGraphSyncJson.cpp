@@ -91,6 +91,20 @@ std::string syncMixerGraphResultJson(
     processors.compressorEnabled = readJsonBoolField(line, indexedField(index, "ProcessorComp")).value_or(false);
     processors.noiseEnabled = readJsonBoolField(line, indexedField(index, "ProcessorNoise")).value_or(false);
     processors.deEsserEnabled = readJsonBoolField(line, indexedField(index, "ProcessorDeEsser")).value_or(false);
+    processors.compressor.thresholdDb = static_cast<float>(
+      readJsonNumberField(line, indexedField(index, "CompThresholdDb")).value_or(processors.compressor.thresholdDb));
+    processors.compressor.ratio = static_cast<float>(
+      readJsonNumberField(line, indexedField(index, "CompRatio")).value_or(processors.compressor.ratio));
+    processors.compressor.attackMs = static_cast<float>(
+      readJsonNumberField(line, indexedField(index, "CompAttackMs")).value_or(processors.compressor.attackMs));
+    processors.compressor.releaseMs = static_cast<float>(
+      readJsonNumberField(line, indexedField(index, "CompReleaseMs")).value_or(processors.compressor.releaseMs));
+    processors.deEsser.detectorFrequencyHz = static_cast<float>(
+      readJsonNumberField(line, indexedField(index, "DeEsserFrequencyHz")).value_or(processors.deEsser.detectorFrequencyHz));
+    processors.deEsser.thresholdDb = static_cast<float>(
+      readJsonNumberField(line, indexedField(index, "DeEsserThresholdDb")).value_or(processors.deEsser.thresholdDb));
+    processors.deEsser.maxReductionDb = static_cast<float>(
+      readJsonNumberField(line, indexedField(index, "DeEsserMaxReductionDb")).value_or(processors.deEsser.maxReductionDb));
     readEqBandFields(line, index, processors);
 
     prepared.setSourceUid(created.id, sourceUid);

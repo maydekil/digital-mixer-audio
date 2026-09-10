@@ -73,6 +73,18 @@ describe("PreviewAdapter", () => {
     expect(mid1?.q).toBe("2.00");
   });
 
+  it("updates selected channel dynamics parameters", () => {
+    const adapter = new PreviewAdapter();
+    adapter.setChannelCompressorParam("voice", "thresholdDb", -22);
+    adapter.setChannelCompressorParam("voice", "ratio", 4);
+    adapter.setChannelDeEsserParam("voice", "frequencyHz", 7200);
+
+    const voice = adapter.getSnapshot().channels.find((channel) => channel.id === "voice");
+    expect(voice?.dynamics.compressor.thresholdDb).toBe(-22);
+    expect(voice?.dynamics.compressor.ratio).toBe(4);
+    expect(voice?.dynamics.deEsser.frequencyHz).toBe(7200);
+  });
+
   it("loads a native FX bank without changing existing unit choices", () => {
     const adapter = new PreviewAdapter();
     adapter.setPrograms([

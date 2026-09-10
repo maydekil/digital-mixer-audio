@@ -35,6 +35,14 @@ int main() {
     "\"channel0ProcessorEq\":true,"
     "\"channel0ProcessorComp\":true,"
     "\"channel0ProcessorNoise\":true,"
+    "\"channel0ProcessorDeEsser\":true,"
+    "\"channel0CompThresholdDb\":-22,"
+    "\"channel0CompRatio\":4,"
+    "\"channel0CompAttackMs\":12,"
+    "\"channel0CompReleaseMs\":150,"
+    "\"channel0DeEsserFrequencyHz\":7200,"
+    "\"channel0DeEsserThresholdDb\":-30,"
+    "\"channel0DeEsserMaxReductionDb\":8,"
     "\"channel0Eq0FreqHz\":120,"
     "\"channel0Eq0GainDb\":5,"
     "\"channel0Eq0Q\":0.8,"
@@ -48,8 +56,22 @@ int main() {
     std::cerr << "sync response should publish monitored source selection\n";
     return 1;
   }
-  if (!selection.processors.eqEnabled || !selection.processors.compressorEnabled || !selection.processors.noiseEnabled) {
+  if (!selection.processors.eqEnabled || !selection.processors.compressorEnabled || !selection.processors.noiseEnabled ||
+      !selection.processors.deEsserEnabled) {
     std::cerr << "monitor selection should keep processor enable flags\n";
+    return 1;
+  }
+  if (!near(selection.processors.compressor.thresholdDb, -22.0) ||
+      !near(selection.processors.compressor.ratio, 4.0) ||
+      !near(selection.processors.compressor.attackMs, 12.0) ||
+      !near(selection.processors.compressor.releaseMs, 150.0)) {
+    std::cerr << "monitor selection should keep compressor parameters\n";
+    return 1;
+  }
+  if (!near(selection.processors.deEsser.detectorFrequencyHz, 7200.0) ||
+      !near(selection.processors.deEsser.thresholdDb, -30.0) ||
+      !near(selection.processors.deEsser.maxReductionDb, 8.0)) {
+    std::cerr << "monitor selection should keep de-esser parameters\n";
     return 1;
   }
   if (!near(selection.processors.eqBands[0].frequencyHz, 120.0) ||

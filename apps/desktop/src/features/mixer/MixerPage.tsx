@@ -304,6 +304,8 @@ export function MixerPage() {
             linkedProgram={programA}
             onSendA={(value) => refresh(() => adapter.setChannelSend(selected.id, "fx-a", value))}
             onEqChange={(bandId, field, value) => refresh(() => adapter.updateEqBand(bandId, field, value))}
+            onCompressorChange={(field, value) => refresh(() => adapter.setChannelCompressorParam(selected.id, field, value))}
+            onDeEsserChange={(field, value) => refresh(() => adapter.setChannelDeEsserParam(selected.id, field, value))}
           />
           <SoundPadPanel />
         </div>
@@ -346,7 +348,14 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}ProcessorEq`] = channel.processing.eq;
     payload[`${prefix}ProcessorComp`] = channel.processing.comp;
     payload[`${prefix}ProcessorNoise`] = channel.processing.noise;
-    payload[`${prefix}ProcessorDeEsser`] = false;
+    payload[`${prefix}ProcessorDeEsser`] = channel.role === "vocal";
+    payload[`${prefix}CompThresholdDb`] = channel.dynamics.compressor.thresholdDb;
+    payload[`${prefix}CompRatio`] = channel.dynamics.compressor.ratio;
+    payload[`${prefix}CompAttackMs`] = channel.dynamics.compressor.attackMs;
+    payload[`${prefix}CompReleaseMs`] = channel.dynamics.compressor.releaseMs;
+    payload[`${prefix}DeEsserFrequencyHz`] = channel.dynamics.deEsser.frequencyHz;
+    payload[`${prefix}DeEsserThresholdDb`] = channel.dynamics.deEsser.thresholdDb;
+    payload[`${prefix}DeEsserMaxReductionDb`] = channel.dynamics.deEsser.maxReductionDb;
     channel.eqBands.forEach((band, bandIndex) => {
       payload[`${prefix}Eq${bandIndex}FreqHz`] = band.freqHz;
       payload[`${prefix}Eq${bandIndex}GainDb`] = band.gainDb;

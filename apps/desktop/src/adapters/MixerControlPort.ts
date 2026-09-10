@@ -28,6 +28,7 @@ export interface ChannelState {
   harmonyVisible?: boolean;
   harmonyEnabled?: boolean;
   processing: Record<ProcessorId, boolean>;
+  dynamics: ChannelDynamicsState;
   sends: Record<FxUnitId, SendState>;
   eqBands: EqBandState[];
   meter: MeterLevel;
@@ -56,6 +57,20 @@ export interface FxUnitState {
 }
 
 export type EqBandState = EqBandDisplay;
+
+export interface ChannelDynamicsState {
+  compressor: {
+    thresholdDb: number;
+    ratio: number;
+    attackMs: number;
+    releaseMs: number;
+  };
+  deEsser: {
+    frequencyHz: number;
+    thresholdDb: number;
+    maxReductionDb: number;
+  };
+}
 
 export interface HarmonyState {
   enabled: boolean;
@@ -131,6 +146,8 @@ export interface MixerControlPort {
   setChannelMonitor(channelId: string, monitor: boolean): void;
   setChannelRecordArm(channelId: string, armed: boolean): void;
   setChannelProcessor(channelId: string, processorId: ProcessorId, enabled: boolean): void;
+  setChannelCompressorParam(channelId: string, field: keyof ChannelDynamicsState["compressor"], value: number): void;
+  setChannelDeEsserParam(channelId: string, field: keyof ChannelDynamicsState["deEsser"], value: number): void;
   setFxProgram(unitId: FxUnitId, programId: number): void;
   setFxProgramPending(unitId: FxUnitId, pending: boolean): void;
   ackFxProgram(unitId: FxUnitId, programId: number, revision: number, modified?: boolean): void;

@@ -1,4 +1,4 @@
-import type { EqBandState, FxProgram, FxUnitId, HarmonyState, MixerControlPort, MixerSnapshot, ProcessorId } from "../MixerControlPort";
+import type { ChannelDynamicsState, EqBandState, FxProgram, FxUnitId, HarmonyState, MixerControlPort, MixerSnapshot, ProcessorId } from "../MixerControlPort";
 import { approvedMixerSession } from "../../fixtures/approvedMixerSession";
 
 export class PreviewAdapter implements MixerControlPort {
@@ -78,6 +78,32 @@ export class PreviewAdapter implements MixerControlPort {
     this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? {
       ...channel,
       processing: { ...channel.processing, [processorId]: enabled }
+    } : channel);
+  }
+
+  setChannelCompressorParam(channelId: string, field: keyof ChannelDynamicsState["compressor"], value: number): void {
+    this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? {
+      ...channel,
+      dynamics: {
+        ...channel.dynamics,
+        compressor: {
+          ...channel.dynamics.compressor,
+          [field]: clampCompressor(field, value)
+        }
+      }
+    } : channel);
+  }
+
+  setChannelDeEsserParam(channelId: string, field: keyof ChannelDynamicsState["deEsser"], value: number): void {
+    this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? {
+      ...channel,
+      dynamics: {
+        ...channel.dynamics,
+        deEsser: {
+          ...channel.dynamics.deEsser,
+          [field]: clampDeEsser(field, value)
+        }
+      }
     } : channel);
   }
 
@@ -243,6 +269,19 @@ function presetEnabled(presetId: string, effectType: string, fallback: boolean) 
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, Number.isFinite(value) ? value : min));
+}
+
+function clampCompressor(field: keyof ChannelDynamicsState["compressor"], value: number) {
+  if (field === "thresholdDb") return clamp(value, -80, 0);
+  if (field === "ratio") return clamp(value, 1, 20);
+  if (field === "attackMs") return clamp(value, 0.1, 200);
+  return clamp(value, 10, 3000);
+}
+
+function clampDeEsser(field: keyof ChannelDynamicsState["deEsser"], value: number) {
+  if (field === "frequencyHz") return clamp(value, 1000, 12000);
+  if (field === "thresholdDb") return clamp(value, -80, 0);
+  return clamp(value, 0, 24);
 }
 
 function formatEqBand<T extends EqBandState>(band: T): T {
