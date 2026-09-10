@@ -2388,3 +2388,25 @@ Validation:
 Known limitations:
 - The Vocal FX rack still needs live channel insertion, UI slot state sync into native graph, and real vocal listening QA.
 - Dedicated `pitch_shift` and `formant_shift` EffectProcessor wrappers are pending.
+
+### Phase19 Hardening Checkpoint — Pitch And Formant Vocal FX Wrappers
+
+Changed files:
+- `native/engine/src/dsp/fx/PitchShiftEffects.hpp`, `native/engine/src/dsp/fx/PitchShiftEffects.cpp`: added native `PitchShiftEffect` and `FormantShiftEffect` wrappers over the existing Rubber Band pitch backend.
+- `native/engine/src/dsp/fx/EffectProcessorFactory.cpp`: now constructs all 12 Vocal FX catalog entries.
+- `native/engine/tests/fx/EffectProcessorFactoryTest.cpp`, `native/engine/tests/fx/PitchShiftEffectsTest.cpp`: expanded factory coverage to 12/12 effects and verifies +12 semitone pitch shifting from 220 Hz to 440 Hz within tolerance.
+- `native/engine/CMakeLists.txt`, `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: wired build/test evidence and updated remaining-gap wording.
+
+Implemented behavior:
+- `pitch_shift` and `formant_shift` are no longer registry-only entries; they have native `EffectProcessor` wrappers.
+- Factory construction now covers the full 12-effect Vocal FX catalog.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-pitch-shift-effects-tests local-mixer-effect-processor-factory-tests && ctest --test-dir native/engine/build -R 'local-mixer-(pitch-shift-effects|effect-processor-factory)-tests' --output-on-failure`
+- exit/result: `0`; focused factory and pitch-shift wrapper tests passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 19/19, native CTest 41/41, engine self-test, device enumeration smoke, protocol smoke, and UI/desktop build passed.
+
+Known limitations:
+- The wrappers use the existing Rubber Band backend and inherit its latency; this does not satisfy low-latency live-singing Harmony acceptance by itself.
+- The Vocal FX rack still needs live channel insertion, UI slot state sync into native graph, and real vocal listening QA.

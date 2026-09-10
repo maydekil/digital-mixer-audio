@@ -5,6 +5,7 @@
 #include "dsp/fx/HarmonyEffect.hpp"
 #include "dsp/fx/ModulationEffects.hpp"
 #include "dsp/fx/PitchCorrectionEffect.hpp"
+#include "dsp/fx/PitchShiftEffects.hpp"
 #include "dsp/fx/ReverbEffect.hpp"
 #include "dsp/fx/VocoderEffect.hpp"
 
@@ -15,6 +16,8 @@ std::unique_ptr<EffectProcessor> createNativeEffectProcessor(std::string_view ef
   if (effectType == "delay") return std::make_unique<DelayEffect>();
   if (effectType == "chorus") return std::make_unique<ChorusEffect>();
   if (effectType == "doubler") return std::make_unique<DoublerEffect>();
+  if (effectType == "pitch_shift") return std::make_unique<PitchShiftEffect>();
+  if (effectType == "formant_shift") return std::make_unique<FormantShiftEffect>();
   if (effectType == "pitch_correct") return std::make_unique<PitchCorrectionEffect>();
   if (effectType == "harmony") return std::make_unique<HarmonyEffect>();
   if (effectType == "saturation") return std::make_unique<SaturationEffect>();

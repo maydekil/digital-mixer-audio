@@ -20,11 +20,13 @@ bool near(float actual, float expected) {
 }  // namespace
 
 int main() {
-  constexpr std::array<std::string_view, 10> constructible{
+  constexpr std::array<std::string_view, 12> constructible{
     "reverb",
     "delay",
     "chorus",
     "doubler",
+    "pitch_shift",
+    "formant_shift",
     "pitch_correct",
     "harmony",
     "saturation",
@@ -45,9 +47,6 @@ int main() {
     auto block = localmixer::dsp::fx::AudioBlockView{.left = left, .right = right};
     processor->process(block, localmixer::dsp::fx::ProcessContext{.sampleRate = 48000.0});
   }
-
-  if (!expect(factory("pitch_shift") == nullptr, "pitch_shift wrapper should remain explicit pending work")) return 1;
-  if (!expect(factory("formant_shift") == nullptr, "formant_shift wrapper should remain explicit pending work")) return 1;
 
   localmixer::dsp::fx::EffectRack rack(2);
   rack.prepare(localmixer::dsp::fx::ProcessSpec{.sampleRate = 48000.0, .maximumBlockFrames = 16, .channels = 2});

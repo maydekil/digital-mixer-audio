@@ -16,7 +16,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 | File size | PASS | `npm run check:file-size` passes with all first-party code files under the 1,000-line hard limit. |
 | Architecture | PASS | `npm run check:architecture` rejects browser audio/Web Audio production paths. |
 | UI tests | PASS | Vitest 19/19 in `npm run verify`. |
-| Native tests | PASS | CTest 40/40 in `npm run verify`. |
+| Native tests | PASS | CTest 41/41 in `npm run verify`. |
 | Dev package smoke | PASS_PARTIAL | `docs/reports/int02-package-smoke.md` proves unsigned `.app` resources/binaries, not GUI/TCC acceptance. |
 
 ## E2E 8E.11 Status
@@ -48,7 +48,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 
 ## Critical Unresolved Work
 
-- Native realtime insert graph and monitor selection have channel processor wiring plus FX A/B send-return state carried into the Core Audio monitor runtime; factory FX recipes now have native wet processors and a focused render runtime, and 10 Vocal FX processor classes now have a production factory, but still need pitch/formant wrappers, live Vocal FX insertion, 99-program auditory QA, Harmony, export parity, callback metrics, and live listening QA.
+- Native realtime insert graph and monitor selection have channel processor wiring plus FX A/B send-return state carried into the Core Audio monitor runtime; factory FX recipes now have native wet processors and a focused render runtime, and 12 Vocal FX catalog entries now have production factory coverage, but still need live Vocal FX insertion, 99-program auditory QA, Harmony, export parity, callback metrics, and live listening QA.
 - AU/VST3 runtime hosting/editor/latency compensation is not complete; Phase17 is scanner/registry/state foundation.
 - Per-app Core Audio tap capture is not complete; Phase18 is capability/assignment foundation.
 - Live recording to timeline and replay through desktop workflow are not complete.

@@ -19,6 +19,7 @@ add_library(local_mixer_dsp STATIC
   src/dsp/fx/PitchBackend.cpp
   src/dsp/fx/PitchCorrectionEffect.cpp
   src/dsp/fx/PitchDetector.cpp
+  src/dsp/fx/PitchShiftEffects.cpp
   src/dsp/fx/ReverbEffect.cpp
   src/dsp/fx/VocoderEffect.cpp
   src/engine/Automation.cpp
@@ -424,6 +425,15 @@ target_link_libraries(local-mixer-pitch-correction-tests PRIVATE local_mixer_dsp
 target_compile_features(local-mixer-pitch-correction-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-pitch-correction-tests COMMAND local-mixer-pitch-correction-tests)
+
+add_executable(local-mixer-pitch-shift-effects-tests
+  tests/fx/PitchShiftEffectsTest.cpp
+)
+
+target_link_libraries(local-mixer-pitch-shift-effects-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-pitch-shift-effects-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-pitch-shift-effects-tests COMMAND local-mixer-pitch-shift-effects-tests)
 
 add_executable(local-mixer-harmony-effect-tests
   tests/fx/HarmonyEffectTest.cpp
