@@ -202,7 +202,7 @@
 .sound-pad strong { font-size: 10px; line-height: 1.05; font-weight: 430; overflow-wrap: anywhere; }
 
 .modal-backdrop { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: rgba(0, 0, 0, 0.38); }
-.hardware-monitor-modal { width: min(620px, calc(100vw - 48px)); display: grid; grid-template-rows: 28px 40px 36px; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 7px; background: rgba(10, 28, 36, 0.98); box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5); overflow: hidden; }
+.hardware-monitor-modal { width: min(660px, calc(100vw - 48px)); display: grid; grid-template-rows: 28px 40px 36px 30px; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 7px; background: rgba(10, 28, 36, 0.98); box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5); overflow: hidden; }
 .hardware-monitor-modal header { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .hardware-monitor-modal header div { display: flex; align-items: baseline; gap: 8px; min-width: 0; margin-right: auto; }
 .hardware-monitor-modal header strong { font-size: 11px; font-weight: 480; white-space: nowrap; }
@@ -211,10 +211,13 @@
 .hardware-monitor-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; min-width: 0; }
 .hardware-monitor-fields label { display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: 5px; min-width: 0; font-size: 10px; }
 .hardware-monitor-fields select { min-width: 0; width: 100%; min-height: 26px; color: var(--text); background: #102b34; border: 1px solid #315966; border-radius: 5px; padding: 0 6px; font-size: 10px; }
-.hardware-monitor-actions { display: grid; grid-template-columns: 58px 52px 86px minmax(80px, 1fr); gap: 6px; align-items: center; min-width: 0; }
+.hardware-monitor-actions { display: grid; grid-template-columns: 58px 52px 86px 92px minmax(80px, 1fr); gap: 6px; align-items: center; min-width: 0; }
 .hardware-monitor-actions .ui-button { min-height: 25px; padding: 1px 6px; font-size: 10px; }
 .hardware-peak { height: 9px; border: 1px solid #244a55; background: #071015; overflow: hidden; }
 .hardware-peak span { display: block; height: 100%; background: linear-gradient(90deg, #12edc7 0 66%, #f5e739 76%, #f15845 100%); }
+.hardware-route-status { display: grid; grid-template-columns: 50px minmax(0, 1fr); align-items: center; gap: 6px; min-width: 0; border: 1px solid #244a55; border-radius: 5px; padding: 0 8px; background: rgba(8, 22, 28, 0.72); }
+.hardware-route-status span { color: #9fc2cc; font-size: 9px; }
+.hardware-route-status strong { min-width: 0; color: #dff4f8; font-size: 10px; font-weight: 430; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .footer-bar { border-top: 1px solid var(--border); border-bottom: 0; font-size: 12px; }
 .footer-bar label { display: flex; align-items: center; gap: 8px; }
@@ -280,7 +283,7 @@
   .sound-pad { padding: 3px 4px; gap: 2px; }
   .sound-pad span { font-size: 7px; }
   .sound-pad strong { font-size: 9px; }
-  .hardware-monitor-modal { width: min(560px, calc(100vw - 32px)); padding: 9px; grid-template-rows: 26px 38px 34px; gap: 6px; }
-  .hardware-monitor-actions { grid-template-columns: 50px 46px 76px minmax(60px, 1fr); gap: 5px; }
+  .hardware-monitor-modal { width: min(600px, calc(100vw - 32px)); padding: 9px; grid-template-rows: 26px 38px 34px 28px; gap: 6px; }
+  .hardware-monitor-actions { grid-template-columns: 50px 46px 76px 82px minmax(60px, 1fr); gap: 5px; }
   .hardware-monitor-fields label { grid-template-columns: 32px minmax(0, 1fr); }
 }

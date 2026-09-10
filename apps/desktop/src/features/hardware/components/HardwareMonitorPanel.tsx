@@ -20,6 +20,16 @@ interface EngineResult {
   played?: boolean;
   peak?: number;
   inputPeak?: number;
+  routeValid?: boolean;
+  blackHoleAvailable?: boolean;
+  blackHoleUid?: string;
+  physicalOutputUid?: string;
+  selectedInputStart?: number;
+  selectedInputEnd?: number;
+  selectedOutputStart?: number;
+  selectedOutputEnd?: number;
+  blackHoleSampleRate?: number;
+  outputSampleRate?: number;
 }
 
 interface HardwareMonitorPanelProps {
@@ -32,6 +42,7 @@ export function HardwareMonitorPanel({ open, onClose }: HardwareMonitorPanelProp
   const [inputUid, setInputUid] = useState("");
   const [outputUid, setOutputUid] = useState("");
   const [status, setStatus] = useState("Native engine required");
+  const [routeStatus, setRouteStatus] = useState("System route not checked");
   const [peak, setPeak] = useState(0);
   const [busy, setBusy] = useState(false);
 
@@ -88,6 +99,27 @@ export function HardwareMonitorPanel({ open, onClose }: HardwareMonitorPanelProp
     setStatus(result?.monitored ? `Monitor peak ${value.toFixed(3)}` : result?.error ?? "Monitor failed");
   }
 
+  async function checkSystemRoute() {
+    setBusy(true);
+    const result = await send("routing-system-diagnostics", {
+      physicalOutputUid: outputUid,
+      sampleRate: 48000,
+      blackHoleInputStartChannel: 0,
+      physicalOutputStartChannel: 0
+    });
+    setBusy(false);
+    if (!result) return;
+    const inputRange = `${Number(result.selectedInputStart ?? 0) + 1}-${Number(result.selectedInputEnd ?? 0) + 1}`;
+    const outputRange = `${Number(result.selectedOutputStart ?? 0) + 1}-${Number(result.selectedOutputEnd ?? 0) + 1}`;
+    if (result.routeValid) {
+      setRouteStatus(`Ready · ${result.blackHoleUid || "BlackHole"} In ${inputRange} -> Out ${outputRange}`);
+      setStatus("System route ready");
+    } else {
+      setRouteStatus(`${result.error ?? "Route rejected"} · BlackHole ${result.blackHoleAvailable ? "found" : "missing"}`);
+      setStatus("System route not ready");
+    }
+  }
+
   useEffect(() => {
     if (open) void refreshDevices();
   }, [open]);
@@ -125,7 +157,12 @@ export function HardwareMonitorPanel({ open, onClose }: HardwareMonitorPanelProp
           <Button tone="cyan" onClick={() => void meterInput()} disabled={busy}>Meter</Button>
           <Button tone="amber" onClick={() => void testTone()} disabled={busy}>Tone</Button>
           <Button tone="green" onClick={() => void monitor()} disabled={busy}>Monitor 3s</Button>
+          <Button onClick={() => void checkSystemRoute()} disabled={busy}>Route Check</Button>
           <div className="hardware-peak"><span style={{ width: `${Math.min(100, peak * 100)}%` }} /></div>
+        </div>
+        <div className="hardware-route-status">
+          <span>System</span>
+          <strong>{routeStatus}</strong>
         </div>
       </div>
     </div>

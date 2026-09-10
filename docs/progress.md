@@ -590,6 +590,28 @@ Known limitations:
 - System route transaction/restore is not implemented yet; no OS default output is changed by this checkpoint.
 - Aggregate channel mapping wizard UI is not implemented yet.
 
+### Phase04 Checkpoint — Desktop Route Diagnostics UI
+
+Changed files:
+- `apps/desktop/src/features/hardware/components/HardwareMonitorPanel.tsx`: hardware modal now exposes read-only system route diagnostics through the native `routing-system-diagnostics` command.
+- `apps/desktop/src/styles/app.css`: compact modal layout updated with a route status row while keeping labels small and bounded.
+
+Implemented behavior:
+- User can run `Route Check` from the desktop hardware modal to see BlackHole readiness, selected stereo channel ranges, and route rejection reason.
+- Diagnostics remain read-only and do not change macOS default output, install drivers, create aggregate devices, or route audio by themselves.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui`
+- exit/result: `0`; 14 UI/Electron tests passed.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture/typecheck/UI tests/native tests/UI build/Electron main build passed.
+
+Known limitations:
+- Modal diagnostics depend on running desktop engine mode; browser/UI preview still cannot query native audio devices.
+- No screenshot QA was run for this modal change in this turn.
+
 ## Native Sound Pad Spike — Early User-Requested
 Status: IMPLEMENTED_UNVERIFIED_PLAYBACK
 Prerequisites: user explicitly requested this before UI-04
