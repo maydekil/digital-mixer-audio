@@ -2299,3 +2299,23 @@ Validation:
 Known limitations:
 - The graph accepts wet processors, but compact FX A/B program IDs are not yet mapped to the 99 program-specific native DSP recipes in the realtime graph.
 - Vocal FX rack insertion, Harmony insertion, export parity, live listening, callback timing metrics, and stress QA remain partial.
+
+### Phase19 Hardening Checkpoint — Factory FX Program Wet Renderer
+
+Changed files:
+- `native/engine/src/engine/FxProgramWetProcessor.hpp`, `native/engine/src/engine/FxProgramWetProcessor.cpp`: added a native wet processor adapter that configures program recipes from `FxProgramRegistry` into bounded reverb, delay, delay+plate, and modulation-style wet output.
+- `native/engine/tests/FxProgramWetProcessorTest.cpp`: verifies program 12 Vocal Plate, program 50 Stereo 320, invalid program rejection, and use as a `MixerGraph::processWithFx` callback.
+- `native/engine/CMakeLists.txt`, `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: wired build/test evidence and updated remaining-gap wording.
+
+Implemented behavior:
+- Factory FX program IDs can now produce native wet audio through a reusable processor instead of only being registry metadata.
+- The wet processor can be passed directly to `MixerGraph::processWithFx`, connecting the 99-program recipe layer to the native FX send-return graph surface.
+- Scratch buffers are preallocated with `prepare`; the processor does not allocate for the tested steady callback path.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-fx-program-wet-processor-tests && ctest --test-dir native/engine/build -R local-mixer-fx-program-wet-processor-tests --output-on-failure`
+- exit/result: `0`; factory FX wet processor test passed.
+
+Known limitations:
+- The desktop/native runtime still needs persistent FX program processor instances bound to FX A/B unit snapshots during live graph processing.
+- Full 99-program rendered fixture comparison, audible QA, transition crossfade listening, export parity, callback timing metrics, and stress QA remain partial.

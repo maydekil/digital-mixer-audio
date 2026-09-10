@@ -31,6 +31,7 @@ add_library(local_mixer_dsp STATIC
   src/engine/FxProgramController.cpp
   src/engine/FxProgramRegistry.cpp
   src/engine/FxProgramRegistryJson.cpp
+  src/engine/FxProgramWetProcessor.cpp
   src/engine/FxSendReturnBus.cpp
   src/engine/JsonProtocol.cpp
   src/engine/Metronome.cpp
@@ -178,6 +179,15 @@ target_link_libraries(local-mixer-fx-program-controller-tests PRIVATE local_mixe
 target_compile_features(local-mixer-fx-program-controller-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-fx-program-controller-tests COMMAND local-mixer-fx-program-controller-tests)
+
+add_executable(local-mixer-fx-program-wet-processor-tests
+  tests/FxProgramWetProcessorTest.cpp
+)
+
+target_link_libraries(local-mixer-fx-program-wet-processor-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-fx-program-wet-processor-tests PRIVATE cxx_std_20)
+
+add_test(NAME local-mixer-fx-program-wet-processor-tests COMMAND local-mixer-fx-program-wet-processor-tests)
 
 add_executable(local-mixer-fx-send-return-bus-tests
   tests/FxSendReturnBusTest.cpp

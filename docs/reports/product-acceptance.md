@@ -48,7 +48,7 @@ The project has substantial UI, native contract, DSP unit, package-smoke, and do
 
 ## Critical Unresolved Work
 
-- Native realtime insert graph and monitor selection have initial channel processor wiring plus FX A/B send-return rendering, but still need program-specific FX DSP recipes, Vocal FX, Harmony, export parity, and live callback/listening QA.
+- Native realtime insert graph and monitor selection have initial channel processor wiring plus FX A/B send-return rendering; factory FX recipes now have native wet processors, but still need full live callback binding, 99-program auditory QA, Vocal FX, Harmony, export parity, and live listening QA.
 - AU/VST3 runtime hosting/editor/latency compensation is not complete; Phase17 is scanner/registry/state foundation.
 - Per-app Core Audio tap capture is not complete; Phase18 is capability/assignment foundation.
 - Live recording to timeline and replay through desktop workflow are not complete.
