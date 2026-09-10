@@ -22,6 +22,7 @@ add_library(local_mixer_dsp STATIC
   src/dsp/fx/VocoderEffect.cpp
   src/engine/Automation.cpp
   src/engine/ChannelHarmonyController.cpp
+  src/engine/ChannelProcessorChain.cpp
   src/engine/DeviceService.cpp
   src/engine/EngineResponseJson.cpp
   src/engine/EngineRuntime.cpp

@@ -2136,3 +2136,29 @@ Validation:
 Known limitations:
 - `native/engine/src/main.cpp` still reports a file-size warning at 812 lines and should be split further before adding more command handlers.
 - This checkpoint does not resolve the remaining product gaps in realtime DSP graph wiring, plugin hosting, per-app taps, record/replay/export, packaged TCC, or stress QA.
+
+### Phase19 Hardening Checkpoint — Native Channel Processor Chain Wiring
+
+Changed files:
+- `native/engine/src/engine/ChannelProcessorChain.hpp`, `native/engine/src/engine/ChannelProcessorChain.cpp`: added a reusable native channel processor chain using the existing EQ, noise gate, compressor, and de-esser DSP modules.
+- `native/engine/src/engine/MixerGraph.hpp`, `native/engine/src/engine/MixerGraph.cpp`: added per-strip processor configuration and invoked the processor chain inside graph processing before fader/pan/meter output.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: sends `EQ`, `COMP`, and `NOISE` processor flags through `sync-mixer-graph`.
+- `native/engine/tests/MixerGraphTest.cpp`: added in-graph native processor evidence proving bypassed processors preserve signal and active native noise processing attenuates below-threshold audio.
+- `native/engine/CMakeLists.txt`, `docs/task-plan.json`, `docs/feature-traceability.md`, `docs/reports/product-acceptance.md`, `docs/progress.md`: wired build evidence and updated remaining-gap wording.
+
+Implemented behavior:
+- Channel strip processor buttons now reach native `MixerGraph` state instead of being UI-only flags.
+- The first realtime channel processor path is exercised in native tests without Web Audio, renderer DSP, browser capture, or PCM IPC.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-engine local-mixer-graph-tests`
+- exit/result: `0`; native engine and mixer graph test target built.
+- command: `ctest --test-dir native/engine/build -R local-mixer-graph-tests --output-on-failure`
+- exit/result: `0`; focused mixer graph test passed, including native processor bypass/active behavior.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size gate passed with warning `native/engine/src/main.cpp 818`.
+
+Known limitations:
+- EQ still uses the default approved-UI curve; per-band parameter values from the right processing panel are not synced to native yet.
+- De-esser has native DSP and chain support but no dedicated mixer UI toggle/parameter sync in this checkpoint.
+- Vocal FX rack, FX A/B return processing, Harmony insertion, record/export parity, hardware listening, and stress QA remain partial.

@@ -334,6 +334,11 @@ std::string syncMixerGraphResultJson(
     const auto muted = readJsonBoolField(line, indexedField(index, "Mute")).value_or(false);
     const auto solo = readJsonBoolField(line, indexedField(index, "Solo")).value_or(false);
     const auto monitor = readJsonBoolField(line, indexedField(index, "Monitor")).value_or(false);
+    auto processors = localmixer::engine::defaultChannelProcessorConfig();
+    processors.eqEnabled = readJsonBoolField(line, indexedField(index, "ProcessorEq")).value_or(false);
+    processors.compressorEnabled = readJsonBoolField(line, indexedField(index, "ProcessorComp")).value_or(false);
+    processors.noiseEnabled = readJsonBoolField(line, indexedField(index, "ProcessorNoise")).value_or(false);
+    processors.deEsserEnabled = readJsonBoolField(line, indexedField(index, "ProcessorDeEsser")).value_or(false);
 
     prepared.setSourceUid(created.id, sourceUid);
     prepared.setAssignment(created.id, assignment, 0, assignment == localmixer::engine::SourceAssignment::stereo);
@@ -342,6 +347,7 @@ std::string syncMixerGraphResultJson(
     prepared.setMute(created.id, muted);
     prepared.setSolo(created.id, solo);
     prepared.setInputMonitoring(created.id, monitor);
+    prepared.setProcessors(created.id, processors);
     stripCount += 1;
     if (monitor && enabled && !sourceUid.empty() && kind == "source") {
       monitorCount += 1;

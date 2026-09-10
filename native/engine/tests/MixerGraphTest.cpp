@@ -179,6 +179,40 @@ int main() {
   }
   if (!expect(rampGraph.applyQueuedControls(4), MixerError::staleStripId, "stale queued control should be rejected")) return 1;
 
+  MixerGraph processorGraph;
+  const auto processorStrip = processorGraph.createStrip("Processor", "#18d6e7");
+  if (processorStrip.error != MixerError::none) return 1;
+  std::array<float, 16> processorSource{};
+  processorSource.fill(0.001f);
+  std::array<float, 16> processorLeft{};
+  std::array<float, 16> processorRight{};
+  std::array<SourceBuffer, 1> processorSources{SourceBuffer{.stripId = processorStrip.id, .samples = processorSource, .channels = 1}};
+  auto processorConfig = localmixer::engine::defaultChannelProcessorConfig();
+  processorConfig.noiseEnabled = false;
+  if (!expect(processorGraph.setProcessors(processorStrip.id, processorConfig), MixerError::none, "processor bypass set failed")) return 1;
+  if (!expect(processorGraph.process(processorSources, StereoOutput{.left = processorLeft, .right = processorRight}),
+              MixerError::none,
+              "processor bypass process failed")) {
+    return 1;
+  }
+  if (!near(processorLeft[0], 0.001f) || !near(processorRight[0], 0.001f)) {
+    std::cerr << "bypassed channel processors should keep source level\n";
+    return 1;
+  }
+  processorConfig.noiseEnabled = true;
+  processorConfig.noise.thresholdDb = -20.0f;
+  processorConfig.noise.rangeDb = -80.0f;
+  processorGraph.setProcessors(processorStrip.id, processorConfig);
+  if (!expect(processorGraph.process(processorSources, StereoOutput{.left = processorLeft, .right = processorRight}),
+              MixerError::none,
+              "processor active process failed")) {
+    return 1;
+  }
+  if (!(processorLeft[0] < 0.00001f && processorRight[0] < 0.00001f)) {
+    std::cerr << "active native noise processor should attenuate below-threshold source\n";
+    return 1;
+  }
+
   rampGraph.setMute(rampStrip.id, true);
   if (!expect(rampGraph.process(rampSources, StereoOutput{.left = rampLeft, .right = rampRight}),
               MixerError::none,

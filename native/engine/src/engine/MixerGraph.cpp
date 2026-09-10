@@ -29,6 +29,7 @@ MixerGraph::MixerGraph() : controlQueue_(128) {
   strips_.reserve(kMaxMixerStrips);
   meters_.reserve(kMaxMixerStrips);
   runtimes_.reserve(kMaxMixerStrips);
+  processors_.reserve(kMaxMixerStrips);
 }
 
 CreateStripResult MixerGraph::createStrip(std::string name, std::string color) {
@@ -37,6 +38,7 @@ CreateStripResult MixerGraph::createStrip(std::string name, std::string color) {
   strips_.push_back(StripConfig{.id = id, .name = std::move(name), .color = std::move(color)});
   meters_.push_back({});
   runtimes_.push_back({});
+  processors_.push_back({});
   return {.id = id};
 }
 
@@ -46,6 +48,7 @@ MixerError MixerGraph::removeStrip(StripId id) {
   strips_.erase(strips_.begin() + static_cast<std::ptrdiff_t>(*index));
   meters_.erase(meters_.begin() + static_cast<std::ptrdiff_t>(*index));
   runtimes_.erase(runtimes_.begin() + static_cast<std::ptrdiff_t>(*index));
+  processors_.erase(processors_.begin() + static_cast<std::ptrdiff_t>(*index));
   return MixerError::none;
 }
 
@@ -113,6 +116,14 @@ MixerError MixerGraph::setInputMonitoring(StripId id, bool enabled) {
   return MixerError::none;
 }
 
+MixerError MixerGraph::setProcessors(StripId id, ChannelProcessorConfig config) {
+  const auto index = indexOf(id);
+  if (!index.has_value()) return MixerError::staleStripId;
+  strips_[*index].processors = config;
+  processors_[*index].configure(config);
+  return MixerError::none;
+}
+
 MixerError MixerGraph::enqueueControl(MixerCommand command) {
   return controlQueue_.push(command);
 }
@@ -161,6 +172,7 @@ MixerError MixerGraph::process(std::span<const SourceBuffer> sources, StereoOutp
     const auto& strip = strips_[*index];
     auto& meter = meters_[*index];
     auto& runtime = runtimes_[*index];
+    auto& processor = processors_[*index];
     const bool active = strip.enabled && !strip.mute && (!soloActive || strip.solo);
 
     for (std::uint32_t frame = 0; frame < output.left.size(); frame += 1) {
@@ -181,6 +193,7 @@ MixerError MixerGraph::process(std::span<const SourceBuffer> sources, StereoOutp
         continue;
       }
 
+      processor.processFrame(left, right);
       const auto gain = runtime.currentGain;
       const auto pan = runtime.currentPan;
       const auto leftPan = strip.assignment == SourceAssignment::mono ? std::min(1.0f, 1.0f - pan) : 1.0f;

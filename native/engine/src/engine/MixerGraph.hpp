@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "engine/ChannelProcessorChain.hpp"
 #include "engine/MixerControlQueue.hpp"
 
 namespace localmixer::engine {
@@ -33,6 +34,7 @@ struct StripConfig {
   float trimDb = 0.0f;
   float faderDb = 0.0f;
   float pan = 0.0f;
+  ChannelProcessorConfig processors{};
 };
 
 struct StripMeters {
@@ -72,6 +74,7 @@ class MixerGraph {
   MixerError setSolo(StripId id, bool solo);
   MixerError setEnabled(StripId id, bool enabled);
   MixerError setInputMonitoring(StripId id, bool enabled);
+  MixerError setProcessors(StripId id, ChannelProcessorConfig config);
   MixerError enqueueControl(MixerCommand command);
   MixerError applyQueuedControls(std::uint32_t rampFrames);
   MixerError process(std::span<const SourceBuffer> sources, StereoOutput output);
@@ -102,6 +105,7 @@ class MixerGraph {
   std::vector<StripConfig> strips_;
   std::vector<StripMeters> meters_;
   std::vector<StripRuntime> runtimes_;
+  std::vector<ChannelProcessorChain> processors_;
 };
 
 const char* mixerErrorName(MixerError error);

@@ -343,6 +343,10 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}Mute`] = channel.mute;
     payload[`${prefix}Solo`] = channel.solo;
     payload[`${prefix}Monitor`] = Boolean(channel.monitor);
+    payload[`${prefix}ProcessorEq`] = channel.processing.eq;
+    payload[`${prefix}ProcessorComp`] = channel.processing.comp;
+    payload[`${prefix}ProcessorNoise`] = channel.processing.noise;
+    payload[`${prefix}ProcessorDeEsser`] = false;
     payload[`${prefix}TrimDb`] = channel.trimDb;
     payload[`${prefix}FaderDb`] = channel.faderDb;
     payload[`${prefix}Pan`] = channel.pan / 100;
