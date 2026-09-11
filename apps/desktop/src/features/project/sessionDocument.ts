@@ -218,7 +218,7 @@ function applyChannelSession(channel: ChannelState, saved: ProjectSessionChannel
     monitor: Boolean(saved.monitor),
     recordArm: Boolean(saved.recordArm),
     trimDb: Number(saved.gainDb),
-    faderDb: clamp(Number(saved.faderDb), -10, 10),
+    faderDb: clamp(Number(saved.faderDb), -60, 0),
     pan: Number(saved.pan) * 100,
     processing: {
       ...channel.processing,

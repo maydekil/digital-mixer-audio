@@ -3226,3 +3226,30 @@ Validation:
 
 Known limitations:
 - This changes the UI fader operating range; deep attenuation below `-10 dB` now requires mute/off rather than fader travel.
+
+### Phase19 Hardening Checkpoint — Zero To Twenty Volume Fader
+
+Changed files:
+- `apps/desktop/src/components/audio/VerticalFader.tsx`: changed the visible fader scale from dB labels to volume units `0..20`; `0` maps to silence and `20` maps to unity `0 dB` internally.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: restored internal fader clamp to the native dB range `-60..0` so the UI volume floor can produce silence.
+- `apps/desktop/src/features/project/sessionDocument.ts`: restored project fader clamp to `-60..0` and kept missing channel defaults at unity.
+- `tests/ui/preview-adapter.test.ts`, `tests/ui/project-session.test.ts`: restored expectations for saved/restored dB values.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- The fader bottom now displays `0` and sends a silent internal gain.
+- The fader top now displays `20` and sends unity/original-level internal gain.
+- The user-facing fader number is no longer labeled as dB, while native/project state still stores dB gain for DSP correctness.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 47/47 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size guard passed with `MixerPage.tsx` warning at 833 lines.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 47/47, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- The underlying project/session field is still named `faderDb`; the UI now presents it as volume units while converting to dB for native DSP.

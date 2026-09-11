@@ -78,7 +78,7 @@ export class PreviewAdapter implements MixerControlPort {
   }
 
   setChannelFader(channelId: string, valueDb: number): void {
-    this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? { ...channel, faderDb: clamp(valueDb, -10, 10) } : channel);
+    this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? { ...channel, faderDb: clamp(valueDb, -60, 0) } : channel);
   }
 
   setChannelSend(channelId: string, unitId: FxUnitId, gainDb: number): void {
