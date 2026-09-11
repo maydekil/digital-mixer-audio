@@ -4,7 +4,12 @@ import { snapshotToExportRequest } from "../../apps/desktop/src/features/export/
 
 describe("export workflow request", () => {
   it("builds a native export preflight payload from the mixer snapshot", () => {
-    const request = snapshotToExportRequest(approvedMixerSession, "/tmp/mix.wav");
+    const snapshot = structuredClone(approvedMixerSession);
+    const music = snapshot.channels.find((channel) => channel.id === "music");
+    const voice = snapshot.channels.find((channel) => channel.id === "voice");
+    if (music) music.enabled = true;
+    if (voice) voice.enabled = true;
+    const request = snapshotToExportRequest(snapshot, "/tmp/mix.wav");
 
     expect(request).toMatchObject({
       schemaVersion: 1,

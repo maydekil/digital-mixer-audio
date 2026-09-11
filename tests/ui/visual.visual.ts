@@ -10,6 +10,10 @@ for (const viewport of viewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Local Audio Mixer" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "SYS" })).toHaveCount(0);
+    await expect(page.locator(".channel-strip").filter({ hasText: "SYSTEM" }).getByRole("button", { name: "OFF", exact: true })).toBeVisible();
+    await expect(page.locator(".channel-strip").filter({ hasText: "VOICE" }).getByRole("button", { name: "OFF", exact: true })).toBeVisible();
+    await expect(page.locator(".channel-strip").filter({ hasText: "MASTER" }).getByRole("button", { name: "ON", exact: true })).toBeVisible();
     await expect(page.getByText("FX A")).toHaveCount(0);
     await expect(page.getByText("FX B")).toHaveCount(0);
     await expect(page.getByText("VOICE · HARMONY")).toBeVisible();

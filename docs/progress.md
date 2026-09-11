@@ -3930,3 +3930,33 @@ Validation:
 Known limitations:
 - Manual live listening confirmation for each channel's strip compressor behavior is `NOT_RUN`; automated coverage verifies UI state and the native sync/control path.
 - True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.
+
+### Phase19 UX Checkpoint — Default Channels Off And Move System Trigger To Strip
+
+Changed files:
+- `apps/desktop/src/fixtures/approvedMixerSession.ts`: changed startup channel state so SYSTEM, VOICE, GUITAR, MUSIC, and GROUP 1 begin OFF while MASTER remains ON.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: removed the header SYS control path and routed SYSTEM channel ON/OFF through the existing native BlackHole/system routing enable-disable flow.
+- `apps/desktop/src/styles/app.css`: removed the now-unused header SYS toggle styling.
+- `tests/ui/preview-adapter.test.ts`: covered the new default enabled state contract.
+- `tests/ui/export-document.test.ts`: made export media tests explicitly enable channels that participate in export, matching the new startup-off default.
+- `tests/ui/visual.visual.ts`: verified the header SYS button is absent and startup strips show SYSTEM/VOICE OFF with MASTER ON.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Opening the app now starts with all mixer channels OFF except MASTER output.
+- SYSTEM audio routing is no longer triggered from the header; clicking ON on the SYSTEM strip now performs the guarded BlackHole route check/enable flow.
+- Clicking OFF on the SYSTEM strip stops the native monitor, attempts route restore, clears SYSTEM monitor, and leaves the SYSTEM channel OFF.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 51/51 passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed and refreshed the current UI screenshots.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 51/51, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual BlackHole route enable/disable from the SYSTEM strip is `NOT_RUN`; automated coverage verifies UI/default state and the control-path wiring, not physical macOS routing.
+- True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.

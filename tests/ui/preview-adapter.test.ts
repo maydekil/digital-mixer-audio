@@ -15,6 +15,19 @@ describe("PreviewAdapter", () => {
     ]);
   });
 
+  it("starts with only the master output channel enabled", () => {
+    const adapter = new PreviewAdapter();
+    const snapshot = adapter.getSnapshot();
+    expect(snapshot.channels.map((channel) => [channel.id, channel.enabled])).toEqual([
+      ["system", false],
+      ["voice", false],
+      ["guitar", false],
+      ["music", false],
+      ["group1", false],
+      ["master", true]
+    ]);
+  });
+
   it("keeps selected channel send A linked to the same state", () => {
     const adapter = new PreviewAdapter();
     adapter.setChannelSend("voice", "fx-a", -12);

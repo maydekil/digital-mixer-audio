@@ -38,7 +38,6 @@ export function MixerPage() {
   const [transportState, setTransportState] = useState("stopped");
   const [projectPath, setProjectPath] = useState("");
   const [systemAudioEnabled, setSystemAudioEnabled] = useState(false);
-  const [systemAudioStatus, setSystemAudioStatus] = useState("System Audio");
   const [systemMeter, setSystemMeter] = useState<MeterLevel>({ left: -60, right: -60, clip: false });
   const autosaveReady = useRef(false);
   const liveMonitorRefreshTimer = useRef<number | undefined>(undefined);
@@ -129,23 +128,31 @@ export function MixerPage() {
     void refreshActiveMonitor(adapter.getSnapshot(), uid);
   }
 
-  async function toggleSystemAudio() {
+  async function setSystemChannelEnabled(enabled: boolean) {
     const engineCommand = window.localMixer?.engineCommand;
-    if (!engineCommand) return;
-
-    if (systemAudioEnabled) {
-      await engineCommand("stop-mixer-monitor");
-      const result = await engineCommand("routing-system-disable");
-      refresh(() => adapter.setChannelMonitor("system", false));
+    if (!enabled) {
+      if (engineCommand && systemAudioEnabled) {
+        await engineCommand("stop-mixer-monitor");
+        const result = await engineCommand("routing-system-disable");
+        if (result?.ok === false) window.alert(String(result.error ?? "Route restore failed"));
+      }
+      refresh(() => {
+        adapter.setChannelEnabled("system", false);
+        adapter.setChannelMonitor("system", false);
+      });
       setSystemAudioEnabled(false);
-      setSystemAudioStatus(result?.ok === false ? String(result.error ?? "Route restore failed") : "System Audio");
+      return;
+    }
+
+    if (!engineCommand) {
+      const nextSnapshot = refresh(() => adapter.setChannelEnabled("system", true));
+      void refreshActiveMonitor(nextSnapshot);
       return;
     }
 
     const blackHole = devices.find((device) => isBlackHoleDevice(device) && (device.inputChannels ?? 0) >= 2);
     const physicalOutput = physicalOutputDevice(devices, outputUid);
     if (!blackHole || !physicalOutput) {
-      setSystemAudioStatus(!blackHole ? "BlackHole missing" : "Choose output");
       window.alert(!blackHole ? "BlackHole 2ch belum terdeteksi." : "Pilih output fisik, bukan Default/BlackHole.");
       return;
     }
@@ -159,13 +166,12 @@ export function MixerPage() {
       physicalOutputStartChannel: 0
     });
     if (route.routeValid !== true) {
-      setSystemAudioStatus(String(route.error ?? "Route rejected"));
       window.alert(`Route belum siap: ${String(route.error ?? "Route rejected")}`);
       return;
     }
 
     if (!window.confirm("Switch macOS output to BlackHole and monitor SYSTEM through the mixer?")) return;
-    const enabled = await engineCommand("routing-system-enable", {
+    const routeEnabled = await engineCommand("routing-system-enable", {
       blackHoleUid: blackHole.uid,
       physicalOutputUid: physicalOutput.uid,
       sampleRate: 48000,
@@ -173,8 +179,8 @@ export function MixerPage() {
       physicalOutputStartChannel: 0,
       allowOsRouteChange: true
     });
-    if (enabled.ok === false) {
-      setSystemAudioStatus(String(enabled.error ?? "Route failed"));
+    if (routeEnabled.ok === false) {
+      window.alert(String(routeEnabled.error ?? "Route failed"));
       return;
     }
 
@@ -189,7 +195,6 @@ export function MixerPage() {
     await syncMixerGraph(adapter.getSnapshot(), physicalOutput.uid);
     await engineCommand("start-mixer-monitor", { sampleRate: 48000, monitorGainDb: monitorSafetyGainDb });
     setSystemAudioEnabled(true);
-    setSystemAudioStatus("System ON");
   }
 
   async function sendTransport(type: "transport-play" | "transport-pause" | "transport-stop") {
@@ -471,10 +476,7 @@ export function MixerPage() {
         onSave={() => void saveProject()}
         onCollect={() => void collectProject()}
         onExport={() => void exportProject()}
-        systemAudioEnabled={systemAudioEnabled}
-        systemAudioStatus={systemAudioStatus}
         vocalFxEnabled={selected.role !== "system"}
-        onSystemAudio={() => void toggleSystemAudio()}
         onAddChannel={addChannel}
         onRenameChannel={renameSelectedChannel}
         onRemoveChannel={removeSelectedChannel}
@@ -488,6 +490,10 @@ export function MixerPage() {
             vocalFxPresets={snapshot.vocalFx.presets}
             onSelect={(id) => refresh(() => adapter.selectChannel(id))}
             onEnabled={(id, enabled) => {
+              if (id === "system") {
+                void setSystemChannelEnabled(enabled);
+                return;
+              }
               const nextSnapshot = refresh(() => adapter.setChannelEnabled(id, enabled));
               void refreshActiveMonitor(nextSnapshot);
             }}
@@ -701,13 +707,11 @@ function parseFxPrograms(programs: unknown[]): FxProgram[] {
   });
 }
 
-function TopBar({ projectName, time, rate, transportState, systemAudioEnabled, systemAudioStatus, vocalFxEnabled, onVocalFx, onTimeline, onPlay, onStop, onRecord, onOpen, onSave, onCollect, onExport, onSystemAudio, onAddChannel, onRenameChannel, onRemoveChannel }: {
+function TopBar({ projectName, time, rate, transportState, vocalFxEnabled, onVocalFx, onTimeline, onPlay, onStop, onRecord, onOpen, onSave, onCollect, onExport, onAddChannel, onRenameChannel, onRemoveChannel }: {
   projectName: string;
   time: string;
   rate: string;
   transportState: string;
-  systemAudioEnabled: boolean;
-  systemAudioStatus: string;
   vocalFxEnabled: boolean;
   onVocalFx(): void;
   onTimeline(): void;
@@ -718,7 +722,6 @@ function TopBar({ projectName, time, rate, transportState, systemAudioEnabled, s
   onSave(): void;
   onCollect(): void;
   onExport(): void;
-  onSystemAudio(): void;
   onAddChannel(): void;
   onRenameChannel(): void;
   onRemoveChannel(): void;
@@ -740,14 +743,6 @@ function TopBar({ projectName, time, rate, transportState, systemAudioEnabled, s
       <button className="settings" aria-label="Save Project" title="Save Project" onClick={onSave}>▣</button>
       <button className="settings" aria-label="Collect Media" title="Collect Media" onClick={onCollect}>◇</button>
       <button className="settings" aria-label="Export Mix" title="Export Mix" onClick={onExport}>⇩</button>
-      <button
-        className={`settings system-audio-toggle${systemAudioEnabled ? " is-active" : ""}`}
-        aria-label={systemAudioStatus}
-        title={systemAudioStatus}
-        onClick={onSystemAudio}
-      >
-        SYS
-      </button>
       <button className="settings" aria-label="Add Channel" title="Add Channel" onClick={onAddChannel}>＋</button>
       <button className="settings" aria-label="Rename Channel" title="Rename Channel" onClick={onRenameChannel}>✎</button>
       <button className="settings" aria-label="Remove Channel" title="Remove Channel" onClick={onRemoveChannel}>−</button>

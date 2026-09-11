@@ -66,7 +66,7 @@ export const approvedMixerSession: MixerSnapshot = {
 function channel(id: string, name: string, source: string, role: "system" | "vocal" | "instrument" | "music" | "group", faderDb: number, sendA: number, sendB: number, mon: boolean, rec: boolean) {
   return {
     id, name, source, kind: role === "group" ? "group" as const : "source" as const, role,
-    selected: id === "voice", enabled: true, trimDb: 0, pan: 0, faderDb, mute: false, solo: false,
+    selected: id === "voice", enabled: false, trimDb: 0, pan: 0, faderDb, mute: false, solo: false,
     monitor: mon, recordArm: rec, harmonyVisible: role === "vocal", harmonyEnabled: false,
     processing: { eq: true, comp: role === "vocal", noise: role === "vocal", deEsser: false, insertFx: role === "vocal" },
     dynamics: cloneDynamics(),
