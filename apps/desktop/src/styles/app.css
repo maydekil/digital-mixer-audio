@@ -86,6 +86,13 @@
 .channel-tone-controls .rotary-face { width: 26px; height: 26px; }
 .channel-tone-controls .rotary-tick { height: 10px; transform-origin: 50% 10px; }
 .channel-tone-controls .rotary-value { font-size: 9px; margin-top: 2px; }
+.channel-noise-section { display: grid; place-items: center; padding: 3px 4px; border: 1px solid #214957; border-radius: 5px; background: rgba(8, 30, 38, 0.72); }
+.channel-noise-section.is-bypassed { opacity: 0.58; }
+.channel-noise-section .rotary { min-width: 0; }
+.channel-noise-section .rotary-label { font-size: 8.5px; margin-bottom: 1px; }
+.channel-noise-section .rotary-face { width: 25px; height: 25px; }
+.channel-noise-section .rotary-tick { height: 9px; transform-origin: 50% 9px; }
+.channel-noise-section .rotary-value { font-size: 8.5px; margin-top: 1px; }
 .channel-compressor-section { display: grid; gap: 4px; padding: 4px; border: 1px solid #214957; border-radius: 5px; background: rgba(8, 30, 38, 0.72); }
 .channel-compressor-section.is-bypassed { opacity: 0.58; }
 .channel-compressor-section > .ui-button { min-height: 20px; padding: 1px 5px; font-size: 9px; }

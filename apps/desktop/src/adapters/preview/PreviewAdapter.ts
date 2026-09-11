@@ -142,6 +142,19 @@ export class PreviewAdapter implements MixerControlPort {
     } : channel);
   }
 
+  setChannelNoiseAmount(channelId: string, amount: number): void {
+    const nextAmount = clamp(amount, 0, 100);
+    const noise = noiseSettingsFromAmount(nextAmount);
+    this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? {
+      ...channel,
+      processing: {
+        ...channel.processing,
+        noise: isProcessorAvailable(channel, "noise") && nextAmount > 0
+      },
+      dynamics: { ...channel.dynamics, noise }
+    } : channel);
+  }
+
   setChannelNoiseParam(channelId: string, field: keyof ChannelDynamicsState["noise"], value: number): void {
     this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? {
       ...channel,
@@ -373,7 +386,7 @@ function newSourceChannel(id: string, name: string, role: Exclude<ChannelRole, "
     recordArm: false,
     harmonyVisible: role === "vocal",
     harmonyEnabled: false,
-    processing: { eq: true, comp: role === "vocal", noise: role === "vocal", deEsser: false, insertFx: false },
+    processing: { eq: true, comp: role === "vocal", noise: false, deEsser: false, insertFx: false },
     dynamics: defaultDynamics(),
     sends: { "fx-a": { enabled: false, gainDb: -60 }, "fx-b": { enabled: false, gainDb: -60 } },
     eqBands: defaultEqBands(),
@@ -461,6 +474,16 @@ function clampCompressor(field: keyof ChannelDynamicsState["compressor"], value:
   return clamp(value, 10, 3000);
 }
 
+function noiseSettingsFromAmount(amount: number): ChannelDynamicsState["noise"] {
+  const normalized = clamp(amount, 0, 100) / 100;
+  return {
+    thresholdDb: roundTo(-75 + normalized * 45, 1),
+    rangeDb: roundTo(-15 - normalized * 55, 1),
+    holdMs: Math.round(120 - normalized * 85),
+    releaseMs: Math.round(260 - normalized * 170)
+  };
+}
+
 function isProcessorAvailable(channel: ChannelState, processorId: ProcessorId) {
   if (processorId === "noise") return channel.role !== "system";
   if (processorId === "insertFx") return channel.role !== "system";
@@ -473,6 +496,11 @@ function clampNoise(field: keyof ChannelDynamicsState["noise"], value: number) {
   if (field === "rangeDb") return clamp(value, -90, 0);
   if (field === "holdMs") return clamp(value, 0, 1000);
   return clamp(value, 5, 3000);
+}
+
+function roundTo(value: number, decimals: number) {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
 }
 
 function clampDeEsser(field: keyof ChannelDynamicsState["deEsser"], value: number) {

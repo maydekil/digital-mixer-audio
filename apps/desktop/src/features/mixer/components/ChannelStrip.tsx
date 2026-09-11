@@ -17,6 +17,7 @@ interface ChannelStripProps {
   onPan(value: number): void;
   onFader(value: number): void;
   onEqBand(bandId: EqBandState["id"], gainDb: number): void;
+  onNoiseAmount(amount: number): void;
   onCompressorParam(field: keyof ChannelState["dynamics"]["compressor"], value: number): void;
   onCompressorEnabled(enabled: boolean): void;
   onMute(muted: boolean): void;
@@ -27,7 +28,7 @@ interface ChannelStripProps {
   onHarmonySettings?(): void;
 }
 
-export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onCompressorParam, onCompressorEnabled, onMute, onRecordArm, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
+export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onNoiseAmount, onCompressorParam, onCompressorEnabled, onMute, onRecordArm, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
   const isMaster = channel.kind === "master";
   const meter = channel.enabled ? channel.meter : { left: -60, right: -60, clip: false };
 
@@ -46,6 +47,7 @@ export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxP
       </header>
       <RotaryKnob label="Gain" value={`${channel.trimDb.toFixed(1)} dB`} numericValue={channel.trimDb} min={-24} max={24} step={0.5} onChange={onTrim} />
       {isMaster ? <MasterUpperControls /> : <ChannelToneControls channel={channel} vocalFxPresetId={vocalFxPresetId} vocalFxPresets={vocalFxPresets} onEqBand={onEqBand} onVocalFxPreset={onVocalFxPreset} />}
+      {channel.role === "vocal" ? <ChannelNoiseControl channel={channel} onAmount={onNoiseAmount} /> : null}
       {!isMaster ? <ChannelCompressorControls channel={channel} onParam={onCompressorParam} onEnabled={onCompressorEnabled} /> : null}
       {channel.harmonyVisible ? (
         <div className="harmony-shortcut">
@@ -68,6 +70,31 @@ export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxP
       </div>
     </article>
   );
+}
+
+function ChannelNoiseControl({ channel, onAmount }: {
+  channel: ChannelState;
+  onAmount(amount: number): void;
+}) {
+  const amount = channel.processing.noise ? noiseAmountFromThreshold(channel.dynamics.noise.thresholdDb) : 0;
+  return (
+    <div className={`channel-noise-section ${channel.processing.noise ? "is-active" : "is-bypassed"}`}>
+      <RotaryKnob
+        label="NOISE"
+        value={amount > 0 ? `${amount}` : "OFF"}
+        numericValue={amount}
+        min={0}
+        max={100}
+        step={5}
+        size="sm"
+        onChange={onAmount}
+      />
+    </div>
+  );
+}
+
+function noiseAmountFromThreshold(thresholdDb: number) {
+  return Math.round(Math.max(0, Math.min(100, ((thresholdDb + 75) / 45) * 100)) / 5) * 5;
 }
 
 function ChannelCompressorControls({ channel, onParam, onEnabled }: {

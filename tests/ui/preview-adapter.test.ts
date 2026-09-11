@@ -125,6 +125,30 @@ describe("PreviewAdapter", () => {
     expect(voice?.dynamics.deEsser.frequencyHz).toBe(7200);
   });
 
+  it("maps one vocal noise knob onto safe gate parameters", () => {
+    const adapter = new PreviewAdapter();
+    adapter.setChannelNoiseAmount("voice", 70);
+    let voice = adapter.getSnapshot().channels.find((channel) => channel.id === "voice");
+
+    expect(voice?.processing.noise).toBe(true);
+    expect(voice?.dynamics.noise).toEqual({
+      thresholdDb: -43.5,
+      rangeDb: -53.5,
+      holdMs: 61,
+      releaseMs: 141
+    });
+
+    adapter.setChannelNoiseAmount("voice", 0);
+    voice = adapter.getSnapshot().channels.find((channel) => channel.id === "voice");
+    expect(voice?.processing.noise).toBe(false);
+    expect(voice?.dynamics.noise).toEqual({
+      thresholdDb: -75,
+      rangeDb: -15,
+      holdMs: 120,
+      releaseMs: 260
+    });
+  });
+
   it("loads a native FX bank without changing existing unit choices", () => {
     const adapter = new PreviewAdapter();
     adapter.setPrograms([

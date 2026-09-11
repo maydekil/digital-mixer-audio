@@ -4065,3 +4065,39 @@ Validation:
 Known limitations:
 - No manual visual QA beyond automated screenshots was run.
 - True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.
+
+### Phase19 UX Checkpoint — Add Single-Knob Vocal Noise Gate
+
+Changed files:
+- `apps/desktop/src/adapters/MixerControlPort.ts`: added the `setChannelNoiseAmount` control port method for a simplified gate/noise amount.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: maps a 0-100 vocal noise amount to threshold/range/hold/release and leaves new vocal channels noise-bypassed by default.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: wires the strip noise amount control through live-processing refresh and native sync.
+- `apps/desktop/src/features/mixer/components/ChannelBank.tsx`: passes per-channel noise amount changes into each strip.
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: adds one compact `NOISE` knob on the VOICE strip only.
+- `apps/desktop/src/styles/app.css`: styles the compact one-knob noise section without reintroducing selected-strip focus.
+- `tests/ui/preview-adapter.test.ts`: verifies one-knob amount mapping and bypass-at-zero behavior.
+- `tests/ui/visual.visual.ts`: verifies the visible mixer control can mutate the noise amount.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- VOICE now exposes one `NOISE` knob instead of separate gate parameters in the strip workflow.
+- `NOISE=OFF` bypasses the gate; raising the knob enables noise processing and automatically adjusts threshold, range, hold, and release together.
+- Newly created vocal channels no longer start with noise/gate enabled, preventing unintended mic coloration when the user has not requested noise reduction.
+- SYSTEM remains blocked from noise/gate, insert FX, and FX sends.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; first-party file-size limits passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 53/53 passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed after narrowing an ambiguous test locator.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 53/53, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual mic listening validation for the single-knob gate curve is `NOT_RUN`.
+- The current gate model does not expose a ratio field; the one-knob mapping controls the available threshold/range/hold/release parameters.
+- True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.

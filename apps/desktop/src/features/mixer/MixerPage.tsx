@@ -490,6 +490,7 @@ export function MixerPage() {
             onPan={(id, value) => refreshLiveProcessing(() => adapter.setChannelPan(id, value))}
             onFader={(id, value) => refreshLiveProcessing(() => adapter.setChannelFader(id, value))}
             onEqBand={(id, bandId, gainDb) => refreshLiveProcessing(() => adapter.setChannelEqBand(id, bandId, "gainDb", gainDb))}
+            onNoiseAmount={(id, amount) => refreshLiveProcessing(() => adapter.setChannelNoiseAmount(id, amount))}
             onCompressorParam={(id, field, value) => refreshLiveProcessing(() => adapter.setChannelCompressorParam(id, field, value))}
             onCompressorEnabled={(id, enabled) => refreshLiveProcessing(() => adapter.setChannelProcessor(id, "comp", enabled))}
             onMute={(id, muted) => {
