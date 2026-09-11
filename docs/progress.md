@@ -3445,3 +3445,28 @@ Validation:
 
 Known limitations:
 - This reduces restart/dropout frequency by debouncing graph re-prepare. Truly sample-smooth live EQ/fader automation still requires a native realtime parameter-update path instead of monitor reprepare, and live listening confirmation is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Stereo Pan Processing
+
+Changed files:
+- `native/engine/src/engine/MixerGraph.cpp`: applied channel pan gain to stereo assignments as balance control instead of bypassing pan for stereo sources.
+- `native/engine/tests/MixerGraphTest.cpp`: added coverage for stereo source pan hard-right and hard-left attenuation.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Pan now affects stereo sources such as SYSTEM and MUSIC, not only mono channels.
+- Hard-right pan attenuates the left side of a stereo source; hard-left pan attenuates the right side.
+- Existing mono pan behavior is preserved.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-graph-tests local-mixer-engine`
+- exit/result: `0`; graph test binary and native engine rebuilt. Linker emitted the existing macOS/libsamplerate deployment-version warning only.
+- command: `ctest --test-dir native/engine/build -R local-mixer-graph-tests --output-on-failure`
+- exit/result: `0`; graph test passed.
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 48/48, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual confirmation that SYSTEM/BlackHole pan is audible on the user's hardware setup is `NOT_RUN` in automated verification.

@@ -106,6 +106,19 @@ int main() {
     return 1;
   }
 
+  graph.setLevel(music.id, 0.0f, 0.0f, 1.0f);
+  if (!expect(graph.process(sources, StereoOutput{.left = left, .right = right}), MixerError::none, "stereo pan right process failed")) return 1;
+  if (!near(left[0], 0.0f) || !near(right[0], 0.5f)) {
+    std::cerr << "stereo source pan right should attenuate left channel\n";
+    return 1;
+  }
+  graph.setLevel(music.id, 0.0f, 0.0f, -1.0f);
+  if (!expect(graph.process(sources, StereoOutput{.left = left, .right = right}), MixerError::none, "stereo pan left process failed")) return 1;
+  if (!near(left[0], 0.25f) || !near(right[0], 0.0f)) {
+    std::cerr << "stereo source pan left should attenuate right channel\n";
+    return 1;
+  }
+
   if (!expect(graph.removeStrip(vocal.id), MixerError::none, "remove failed")) return 1;
   if (!expect(graph.removeStrip(vocal.id), MixerError::staleStripId, "stale remove should be rejected")) return 1;
   if (!expect(graph.process(sources, StereoOutput{.left = left, .right = right}), MixerError::staleStripId, "stale source should be rejected")) return 1;

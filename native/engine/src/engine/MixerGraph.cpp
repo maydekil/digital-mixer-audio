@@ -256,8 +256,8 @@ MixerError MixerGraph::processWithFx(
       }
       const auto gain = runtime.currentGain;
       const auto pan = runtime.currentPan;
-      const auto leftPan = strip.assignment == SourceAssignment::mono ? std::min(1.0f, 1.0f - pan) : 1.0f;
-      const auto rightPan = strip.assignment == SourceAssignment::mono ? std::min(1.0f, 1.0f + pan) : 1.0f;
+      const auto leftPan = std::min(1.0f, 1.0f - pan);
+      const auto rightPan = std::min(1.0f, 1.0f + pan);
       left *= gain * leftPan;
       right *= gain * rightPan;
       output.left[frame] += left;
