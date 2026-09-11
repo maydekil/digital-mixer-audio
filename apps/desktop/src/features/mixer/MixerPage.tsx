@@ -94,7 +94,7 @@ export function MixerPage() {
     });
   }
 
-  async function refreshActiveMonitor(nextSnapshot: MixerSnapshot) {
+  async function refreshActiveMonitor(nextSnapshot: MixerSnapshot, nextOutputUid = outputUid) {
     if (liveMonitorRefreshTimer.current !== undefined) {
       window.clearTimeout(liveMonitorRefreshTimer.current);
       liveMonitorRefreshTimer.current = undefined;
@@ -103,7 +103,7 @@ export function MixerPage() {
     const activeSource = nextSnapshot.channels.find((channel) => (
       channel.kind === "source" && channel.monitor && channel.enabled && !channel.mute && Boolean(channel.source)
     ));
-    await syncMixerGraph(nextSnapshot, outputUid);
+    await syncMixerGraph(nextSnapshot, nextOutputUid);
     if (!activeSource || !isMasterAudible(nextSnapshot)) {
       await window.localMixer.engineCommand("stop-mixer-monitor");
       return;
@@ -125,6 +125,11 @@ export function MixerPage() {
   function refreshLiveProcessing(action: () => void) {
     const nextSnapshot = refresh(action);
     scheduleActiveMonitorRefresh(nextSnapshot);
+  }
+
+  function changeOutput(uid: string) {
+    setOutputUid(uid);
+    void refreshActiveMonitor(adapter.getSnapshot(), uid);
   }
 
   async function toggleSystemAudio() {
@@ -570,7 +575,10 @@ export function MixerPage() {
               const nextSnapshot = refresh(() => adapter.setChannelEnabled(id, enabled));
               void refreshActiveMonitor(nextSnapshot);
             }}
-            onSource={(id, source) => refresh(() => adapter.setChannelSource(id, source))}
+            onSource={(id, source) => {
+              const nextSnapshot = refresh(() => adapter.setChannelSource(id, source));
+              void refreshActiveMonitor(nextSnapshot);
+            }}
             onTrim={(id, value) => refreshLiveProcessing(() => adapter.setChannelTrim(id, value))}
             onPan={(id, value) => refreshLiveProcessing(() => adapter.setChannelPan(id, value))}
             onFader={(id, value) => refreshLiveProcessing(() => adapter.setChannelFader(id, value))}
@@ -628,7 +636,7 @@ export function MixerPage() {
           <SoundPadPanel />
         </div>
       </section>
-      <Footer outputUid={outputUid} outputOptions={outputOptions} onOutput={setOutputUid} onHardware={() => setHardwareOpen(true)} />
+      <Footer outputUid={outputUid} outputOptions={outputOptions} onOutput={changeOutput} onHardware={() => setHardwareOpen(true)} />
       <HardwareMonitorPanel open={hardwareOpen} onClose={() => setHardwareOpen(false)} />
       <MediaImportPanel open={mediaImportOpen} onClose={() => setMediaImportOpen(false)} />
       <VocalFxPanel

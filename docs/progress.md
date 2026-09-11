@@ -3669,3 +3669,21 @@ Validation:
 
 Known limitations:
 - Manual listening confirmation of subtle attack/release differences on the user's current material is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Refresh Monitor On Source And Output Changes
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: restarted the active native monitor when a channel source changes and when the selected output device changes.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- If VOICE monitoring is already enabled and the user changes the input source to `External Microphone`, the native monitor is re-synced and restarted against the new input device.
+- If the output selector changes while a monitor is active, the native monitor restarts against the new physical output device.
+- Existing fader/processor debounce behavior remains unchanged.
+
+Validation:
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 49/49, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation with the user's `External Microphone` and `External Headphones` is `NOT_RUN` in automated verification.
