@@ -139,9 +139,13 @@ describe("PreviewAdapter", () => {
   it("keeps system channel insert FX disabled", () => {
     const adapter = new PreviewAdapter();
     adapter.setChannelProcessor("system", "insertFx", true);
+    adapter.setChannelSend("system", "fx-a", -6);
+    adapter.setChannelSend("system", "fx-b", -6);
 
     const system = adapter.getSnapshot().channels.find((channel) => channel.id === "system");
     expect(system?.processing.insertFx).toBe(false);
+    expect(system?.sends["fx-a"]).toEqual({ enabled: false, gainDb: -60 });
+    expect(system?.sends["fx-b"]).toEqual({ enabled: false, gainDb: -60 });
   });
 
   it("keeps source monitoring exclusive until aggregate routing is available", () => {

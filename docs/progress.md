@@ -3492,3 +3492,25 @@ Validation:
 
 Known limitations:
 - Manual visual confirmation of post-pan meter behavior in the running desktop app is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Disable System FX Sends
+
+Changed files:
+- `apps/desktop/src/components/audio/RotaryKnob.tsx`: added a disabled state for rotary controls.
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: disabled SYSTEM SEND A and SEND B controls and displayed them as `OFF`.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: rejected SYSTEM send changes by forcing FX A/B sends off.
+- `apps/desktop/src/styles/app.css`: added disabled rotary styling.
+- `tests/ui/preview-adapter.test.ts`: covered SYSTEM send rejection.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- SYSTEM can no longer be sent to FX A or FX B from the UI.
+- SYSTEM send knobs are visually disabled and cannot be dragged.
+- Preview/control state keeps SYSTEM sends at `{ enabled: false, gainDb: -60 }` even if a command attempts to change them.
+
+Validation:
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 48/48, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual visual confirmation in the running desktop app is `NOT_RUN` in automated verification.

@@ -84,7 +84,10 @@ export class PreviewAdapter implements MixerControlPort {
   setChannelSend(channelId: string, unitId: FxUnitId, gainDb: number): void {
     this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? {
       ...channel,
-      sends: { ...channel.sends, [unitId]: { enabled: gainDb > -60, gainDb: clamp(gainDb, -60, 10) } }
+      sends: {
+        ...channel.sends,
+        [unitId]: channel.role === "system" ? { enabled: false, gainDb: -60 } : { enabled: gainDb > -60, gainDb: clamp(gainDb, -60, 10) }
+      }
     } : channel);
   }
 

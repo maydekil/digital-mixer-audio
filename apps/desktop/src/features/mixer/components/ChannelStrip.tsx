@@ -102,10 +102,11 @@ function MasterUpperControls() {
 function SendPair({ channel, onSend }: { channel: ChannelState; onSend(unitId: FxUnitId, value: number): void }) {
   const sendA = channel.sends["fx-a"];
   const sendB = channel.sends["fx-b"];
+  const disabled = channel.role === "system";
   return (
     <div className="send-pair">
-      <RotaryKnob label="SEND A" value={sendA.enabled ? `${sendA.gainDb} dB` : "OFF"} numericValue={sendA.gainDb} min={-60} max={10} tone="amber" size="sm" onChange={(value) => onSend("fx-a", value)} />
-      <RotaryKnob label="SEND B" value={sendB.enabled ? `${sendB.gainDb} dB` : "OFF"} numericValue={sendB.gainDb} min={-60} max={10} tone="cyan" size="sm" onChange={(value) => onSend("fx-b", value)} />
+      <RotaryKnob label="SEND A" value={disabled || !sendA.enabled ? "OFF" : `${sendA.gainDb} dB`} numericValue={disabled ? -60 : sendA.gainDb} min={-60} max={10} tone="amber" size="sm" disabled={disabled} onChange={(value) => onSend("fx-a", value)} />
+      <RotaryKnob label="SEND B" value={disabled || !sendB.enabled ? "OFF" : `${sendB.gainDb} dB`} numericValue={disabled ? -60 : sendB.gainDb} min={-60} max={10} tone="cyan" size="sm" disabled={disabled} onChange={(value) => onSend("fx-b", value)} />
     </div>
   );
 }

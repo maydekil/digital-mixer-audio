@@ -131,6 +131,8 @@
 .rotary.sm .rotary-face { width: 31px; height: 31px; }
 .rotary-tick { position: absolute; width: 3px; height: 13px; left: 50%; top: 4px; background: currentColor; transform-origin: 50% 12px; pointer-events: none; }
 .rotary-face input { position: absolute; inset: -8px; opacity: 0; cursor: ns-resize; }
+.rotary.is-disabled { opacity: 0.42; cursor: not-allowed; }
+.rotary.is-disabled .rotary-face input { cursor: not-allowed; }
 .rotary-value { margin-top: 4px; font-variant-numeric: tabular-nums; font-size: 11px; line-height: 1.1; font-weight: 400; }
 .rotary.tone-amber { color: var(--amber); }
 .rotary.tone-violet { color: var(--violet); }

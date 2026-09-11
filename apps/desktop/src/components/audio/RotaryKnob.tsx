@@ -7,16 +7,17 @@ interface RotaryKnobProps {
   min?: number;
   max?: number;
   step?: number;
+  disabled?: boolean;
   onChange?(value: number): void;
 }
 
-export function RotaryKnob({ label, value, tone = "cyan", size = "md", numericValue, min = 0, max = 100, step = 1, onChange }: RotaryKnobProps) {
+export function RotaryKnob({ label, value, tone = "cyan", size = "md", numericValue, min = 0, max = 100, step = 1, disabled = false, onChange }: RotaryKnobProps) {
   const current = numericValue ?? min;
   const normalized = Math.max(0, Math.min(1, (current - min) / (max - min)));
   const rotation = -135 + normalized * 270;
 
   return (
-    <label className={`rotary ${size} tone-${tone}`}>
+    <label className={`rotary ${size} tone-${tone}${disabled ? " is-disabled" : ""}`}>
       <div className="rotary-label">{label}</div>
       <div className="rotary-face">
         <span className="rotary-tick" style={{ transform: `translateX(-50%) rotate(${rotation}deg)` }} />
@@ -28,6 +29,7 @@ export function RotaryKnob({ label, value, tone = "cyan", size = "md", numericVa
             step={step}
             value={current}
             onChange={(event) => onChange(Number(event.target.value))}
+            disabled={disabled}
             aria-label={label}
             aria-valuetext={value}
           />
