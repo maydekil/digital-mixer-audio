@@ -3280,3 +3280,27 @@ Validation:
 
 Known limitations:
 - Hard silence is now represented by mute/off, not by the fader bottom, consistent with the restored mixer-style dB fader behavior.
+
+### Phase19 Hardening Checkpoint — Unity System Monitor Metering
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: removed the extra `-18 dB` system monitor safety gain so `0.0 dB` channel/master faders route at unity level; SYSTEM/MASTER meter polling now follows the active SYSTEM monitor state instead of only the topbar SYS toggle.
+- `native/engine/src/platform/macos/CoreAudioPassthrough.hpp`: made persistent monitor status mutable so status reads can consume native peak windows.
+- `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: changed persistent monitor status reporting to return the peak since the previous status poll and reset it atomically, allowing UI meters to animate with live input.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- SYSTEM monitor audio no longer receives the hidden `-18 dB` attenuation; with SYSTEM and MASTER faders at `0.0 dB`, the monitor path is unity apart from OS/device differences.
+- SYSTEM and MASTER meters poll when SYSTEM channel monitoring is active, including monitor state started from the channel/hardware flow.
+- Native `mixer-monitor-status` reports a moving peak window for UI metering rather than a stale accumulated max.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `cmake --build native/engine/build --target local-mixer-engine`
+- exit/result: `0`; native engine rebuilt. Linker emitted the existing macOS/libsamplerate deployment-version warning only.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 47/47, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Hardware listening/meter movement on the user's Mac remains `NOT_RUN` in automated verification; the code path is verified by build/tests and must be confirmed manually with BlackHole/system audio input.

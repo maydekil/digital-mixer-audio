@@ -370,8 +370,9 @@ PersistentMonitorStatus statusFromContext(
   const DeviceContext& context,
   bool running,
   const std::string& error,
-  const RingBuffer& ring
+  RingBuffer& ring
 ) {
+  const auto peak = ring.peakScaled.exchange(0, std::memory_order_relaxed);
   return {
     .running = running,
     .error = error,
@@ -379,7 +380,7 @@ PersistentMonitorStatus statusFromContext(
     .outputChannels = context.outputChannels,
     .inputSampleRate = context.inputRate,
     .outputSampleRate = context.outputRate,
-    .inputPeak = static_cast<float>(ring.peakScaled.load(std::memory_order_relaxed)) / 1'000'000.0f,
+    .inputPeak = static_cast<float>(peak) / 1'000'000.0f,
   };
 }
 
@@ -387,7 +388,7 @@ PersistentMonitorStatus statusFromContext(
   const DeviceContext& context,
   bool running,
   const std::string& error,
-  const RingBuffer& ring,
+  RingBuffer& ring,
   const localmixer::engine::RealtimeMetrics& metrics
 ) {
   auto status = statusFromContext(context, running, error, ring);
@@ -454,7 +455,7 @@ struct PersistentPassthroughMonitor::Impl {
     return statusFromContext(context, false, "", state.ring, state.metrics);
   }
 
-  PersistentMonitorStatus currentStatus() const {
+  PersistentMonitorStatus currentStatus() {
     return statusFromContext(context, running, "", state.ring, state.metrics);
   }
 
@@ -488,7 +489,7 @@ PersistentMonitorStatus PersistentPassthroughMonitor::stop() {
   return impl_->stop();
 }
 
-PersistentMonitorStatus PersistentPassthroughMonitor::status() const {
+PersistentMonitorStatus PersistentPassthroughMonitor::status() {
   return impl_->currentStatus();
 }
 

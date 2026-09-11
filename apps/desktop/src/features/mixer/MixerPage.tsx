@@ -25,7 +25,7 @@ interface HardwareDevice {
   outputChannels?: number;
 }
 
-const monitorSafetyGainDb = -18;
+const monitorSafetyGainDb = 0;
 
 export function MixerPage() {
   const adapter = useMemo(() => new PreviewAdapter(), []);
@@ -448,8 +448,12 @@ export function MixerPage() {
     void syncMixerGraph(snapshot, outputUid);
   }, [snapshot, outputUid]);
 
+  const systemMonitorActive = systemAudioEnabled || snapshot.channels.some((channel) => (
+    channel.id === "system" && channel.enabled && !channel.mute && Boolean(channel.monitor)
+  ));
+
   useEffect(() => {
-    if (!systemAudioEnabled || !window.localMixer?.engineCommand) {
+    if (!systemMonitorActive || !window.localMixer?.engineCommand) {
       setSystemMeter({ left: -60, right: -60, clip: false });
       return;
     }
@@ -467,7 +471,7 @@ export function MixerPage() {
       canceled = true;
       window.clearInterval(interval);
     };
-  }, [systemAudioEnabled]);
+  }, [systemMonitorActive]);
 
   const selected = snapshot.channels.find((channel) => channel.id === snapshot.selectedChannelId) ?? snapshot.channels[0];
   useEffect(() => {
@@ -491,7 +495,7 @@ export function MixerPage() {
       : [{ value: channel.source, label: channel.source }, ...inputOptions];
     return [channel.id, options];
   }));
-  const masterMeter = systemAudioEnabled ? masterMeterFromSystem(snapshot, systemMeter) : undefined;
+  const masterMeter = systemMonitorActive ? masterMeterFromSystem(snapshot, systemMeter) : undefined;
   const displayChannels = snapshot.channels.map((channel) => {
     if (channel.id === "system") return { ...channel, meter: systemMeter };
     if (channel.kind === "master" && masterMeter) return { ...channel, meter: masterMeter };

@@ -65,7 +65,7 @@ class PersistentPassthroughMonitor {
 
   PersistentMonitorStatus start(const PassthroughMonitorRequest& request);
   PersistentMonitorStatus stop();
-  PersistentMonitorStatus status() const;
+  PersistentMonitorStatus status();
 
  private:
   struct Impl;
