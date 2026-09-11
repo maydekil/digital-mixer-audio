@@ -3329,3 +3329,25 @@ Validation:
 
 Known limitations:
 - Visual confirmation of L/R divergence with real YouTube/BlackHole audio is `NOT_RUN` in automated verification and should be checked manually on the user's Mac.
+
+### Phase19 Hardening Checkpoint — Live Processing Monitor Refresh
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: added a shared live-processing refresh path that syncs the mixer graph and restarts the active native monitor whenever channel processing changes.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- EQ node moves and EQ parameter edits now re-prepare the active native passthrough monitor with the updated band frequency/gain values.
+- Channel EQ/COMP/NOISE/INSERT-FX toggles now refresh the active native monitor graph immediately.
+- Processing-panel send A, noise, compressor, and de-esser parameter changes also refresh the active monitor path instead of waiting for a later monitor restart.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 47/47 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 47/47, native CTest 43/43 including EQ tests, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Real-time audible EQ movement on BlackHole/YouTube is `NOT_RUN` in automated verification and should be confirmed manually on the user's Mac.

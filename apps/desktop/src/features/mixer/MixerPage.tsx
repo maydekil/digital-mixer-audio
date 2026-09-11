@@ -109,6 +109,11 @@ export function MixerPage() {
     });
   }
 
+  function refreshLiveProcessing(action: () => void) {
+    const nextSnapshot = refresh(action);
+    void refreshActiveMonitor(nextSnapshot);
+  }
+
   async function toggleSystemAudio() {
     const engineCommand = window.localMixer?.engineCommand;
     if (!engineCommand) return;
@@ -573,7 +578,7 @@ export function MixerPage() {
             onProcessor={(id, processorId, enabled) => {
               const channel = adapter.getSnapshot().channels.find((item) => item.id === id);
               if (channel?.role === "system" && processorId === "insertFx") return;
-              refresh(() => adapter.setChannelProcessor(id, processorId, enabled));
+              refreshLiveProcessing(() => adapter.setChannelProcessor(id, processorId, enabled));
               if (processorId === "insertFx" && enabled) {
                 refresh(() => {
                   adapter.selectChannel(id);
@@ -603,11 +608,11 @@ export function MixerPage() {
             channel={selected}
             eqBands={selected.eqBands}
             linkedProgram={programA}
-            onSendA={(value) => refresh(() => adapter.setChannelSend(selected.id, "fx-a", value))}
-            onEqChange={(bandId, field, value) => refresh(() => adapter.updateEqBand(bandId, field, value))}
-            onNoiseChange={(field, value) => refresh(() => adapter.setChannelNoiseParam(selected.id, field, value))}
-            onCompressorChange={(field, value) => refresh(() => adapter.setChannelCompressorParam(selected.id, field, value))}
-            onDeEsserChange={(field, value) => refresh(() => adapter.setChannelDeEsserParam(selected.id, field, value))}
+            onSendA={(value) => refreshLiveProcessing(() => adapter.setChannelSend(selected.id, "fx-a", value))}
+            onEqChange={(bandId, field, value) => refreshLiveProcessing(() => adapter.updateEqBand(bandId, field, value))}
+            onNoiseChange={(field, value) => refreshLiveProcessing(() => adapter.setChannelNoiseParam(selected.id, field, value))}
+            onCompressorChange={(field, value) => refreshLiveProcessing(() => adapter.setChannelCompressorParam(selected.id, field, value))}
+            onDeEsserChange={(field, value) => refreshLiveProcessing(() => adapter.setChannelDeEsserParam(selected.id, field, value))}
           />
           <SoundPadPanel />
         </div>
