@@ -42,6 +42,7 @@ export function MixerPage() {
   const [systemAudioStatus, setSystemAudioStatus] = useState("System Audio");
   const [systemMeter, setSystemMeter] = useState<MeterLevel>({ left: -60, right: -60, clip: false });
   const autosaveReady = useRef(false);
+  const liveMonitorRefreshTimer = useRef<number | undefined>(undefined);
   const fxProgramInFlight = useRef<Record<"fx-a" | "fx-b", boolean>>({ "fx-a": false, "fx-b": false });
   const fxProgramDesired = useRef<Partial<Record<"fx-a" | "fx-b", number>>>({});
 
@@ -94,6 +95,10 @@ export function MixerPage() {
   }
 
   async function refreshActiveMonitor(nextSnapshot: MixerSnapshot) {
+    if (liveMonitorRefreshTimer.current !== undefined) {
+      window.clearTimeout(liveMonitorRefreshTimer.current);
+      liveMonitorRefreshTimer.current = undefined;
+    }
     if (!window.localMixer?.engineCommand) return;
     const activeSource = nextSnapshot.channels.find((channel) => (
       channel.kind === "source" && channel.monitor && channel.enabled && !channel.mute && Boolean(channel.source)
@@ -109,9 +114,17 @@ export function MixerPage() {
     });
   }
 
+  function scheduleActiveMonitorRefresh(nextSnapshot: MixerSnapshot) {
+    if (liveMonitorRefreshTimer.current !== undefined) window.clearTimeout(liveMonitorRefreshTimer.current);
+    liveMonitorRefreshTimer.current = window.setTimeout(() => {
+      liveMonitorRefreshTimer.current = undefined;
+      void refreshActiveMonitor(nextSnapshot);
+    }, 220);
+  }
+
   function refreshLiveProcessing(action: () => void) {
     const nextSnapshot = refresh(action);
-    void refreshActiveMonitor(nextSnapshot);
+    scheduleActiveMonitorRefresh(nextSnapshot);
   }
 
   async function toggleSystemAudio() {
@@ -438,6 +451,10 @@ export function MixerPage() {
     void refreshFxProgramBank();
   }, []);
 
+  useEffect(() => () => {
+    if (liveMonitorRefreshTimer.current !== undefined) window.clearTimeout(liveMonitorRefreshTimer.current);
+  }, []);
+
   useEffect(() => {
     if (!autosaveReady.current) {
       autosaveReady.current = true;
@@ -555,16 +572,10 @@ export function MixerPage() {
               void refreshActiveMonitor(nextSnapshot);
             }}
             onSource={(id, source) => refresh(() => adapter.setChannelSource(id, source))}
-            onTrim={(id, value) => {
-              const nextSnapshot = refresh(() => adapter.setChannelTrim(id, value));
-              void refreshActiveMonitor(nextSnapshot);
-            }}
-            onPan={(id, value) => refresh(() => adapter.setChannelPan(id, value))}
-            onFader={(id, value) => {
-              const nextSnapshot = refresh(() => adapter.setChannelFader(id, value));
-              void refreshActiveMonitor(nextSnapshot);
-            }}
-            onSend={(id, unitId, value) => refresh(() => adapter.setChannelSend(id, unitId, value))}
+            onTrim={(id, value) => refreshLiveProcessing(() => adapter.setChannelTrim(id, value))}
+            onPan={(id, value) => refreshLiveProcessing(() => adapter.setChannelPan(id, value))}
+            onFader={(id, value) => refreshLiveProcessing(() => adapter.setChannelFader(id, value))}
+            onSend={(id, unitId, value) => refreshLiveProcessing(() => adapter.setChannelSend(id, unitId, value))}
             onMute={(id, muted) => {
               const nextSnapshot = refresh(() => adapter.setChannelMute(id, muted));
               void refreshActiveMonitor(nextSnapshot);

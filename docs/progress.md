@@ -3423,3 +3423,25 @@ Validation:
 
 Known limitations:
 - Visual confirmation in the running desktop app is `NOT_RUN` in automated verification and should be checked manually by opening the EQ panel.
+
+### Phase19 Hardening Checkpoint — Debounced Live Monitor Refresh
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: added a debounced native monitor refresh scheduler for continuous live control changes and routed fader, trim, pan, send, EQ, and processing knob edits through it.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Dragging faders, gain knobs, EQ nodes, sends, and processing knobs no longer restarts the native monitor on every pointer movement.
+- The active monitor is re-prepared once after the user pauses movement, reducing audible dropouts during continuous control changes.
+- Immediate actions such as mute/on/off/monitor changes still refresh the monitor immediately.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 48/48 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 48/48, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- This reduces restart/dropout frequency by debouncing graph re-prepare. Truly sample-smooth live EQ/fader automation still requires a native realtime parameter-update path instead of monitor reprepare, and live listening confirmation is `NOT_RUN` in automated verification.
