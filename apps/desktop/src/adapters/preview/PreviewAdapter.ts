@@ -476,11 +476,12 @@ function clampCompressor(field: keyof ChannelDynamicsState["compressor"], value:
 
 function noiseSettingsFromAmount(amount: number): ChannelDynamicsState["noise"] {
   const normalized = clamp(amount, 0, 100) / 100;
+  const curve = normalized ** 0.55;
   return {
-    thresholdDb: roundTo(-75 + normalized * 45, 1),
-    rangeDb: roundTo(-15 - normalized * 55, 1),
-    holdMs: Math.round(120 - normalized * 85),
-    releaseMs: Math.round(260 - normalized * 170)
+    thresholdDb: roundTo(-80 + curve * 58, 1),
+    rangeDb: roundTo(-18 - curve * 72, 1),
+    holdMs: Math.round(160 - curve * 140),
+    releaseMs: Math.round(320 - curve * 275)
   };
 }
 

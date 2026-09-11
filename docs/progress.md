@@ -4101,3 +4101,30 @@ Known limitations:
 - Manual mic listening validation for the single-knob gate curve is `NOT_RUN`.
 - The current gate model does not expose a ratio field; the one-knob mapping controls the available threshold/range/hold/release parameters.
 - True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.
+
+### Phase19 UX Checkpoint — Strengthen Vocal Noise Gate Curve
+
+Changed files:
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: retuned the one-knob vocal noise curve so higher values become much more aggressive, reaching about `-22 dB` threshold and `-90 dB` range at `100`.
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: updated the inverse knob display mapping to match the stronger curve.
+- `tests/ui/preview-adapter.test.ts`: updated the expected safe gate parameters for the stronger one-knob mapping.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- `NOISE=100` is now a strong gate intended to suppress loud room/fan noise while the mic is idle.
+- Mid/high values now ramp faster than the first version, so the useful range is easier to reach without exposing multiple advanced parameters.
+- `NOISE=OFF` still bypasses the gate, and SYSTEM remains blocked from the noise/gate path.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- --run tests/ui/preview-adapter.test.ts`
+- exit/result: `0`; PreviewAdapter suite 19/19 passed.
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43 passed, plus engine self-test, device enumeration smoke, and protocol smoke.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 53/53, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual mic listening validation of the stronger fan-noise curve is `NOT_RUN`.
+- A gate can strongly reduce fan noise while the mic is idle, but it cannot fully remove constant fan noise underneath active speech.

@@ -132,20 +132,20 @@ describe("PreviewAdapter", () => {
 
     expect(voice?.processing.noise).toBe(true);
     expect(voice?.dynamics.noise).toEqual({
-      thresholdDb: -43.5,
-      rangeDb: -53.5,
-      holdMs: 61,
-      releaseMs: 141
+      thresholdDb: -32.3,
+      rangeDb: -77.2,
+      holdMs: 45,
+      releaseMs: 94
     });
 
     adapter.setChannelNoiseAmount("voice", 0);
     voice = adapter.getSnapshot().channels.find((channel) => channel.id === "voice");
     expect(voice?.processing.noise).toBe(false);
     expect(voice?.dynamics.noise).toEqual({
-      thresholdDb: -75,
-      rangeDb: -15,
-      holdMs: 120,
-      releaseMs: 260
+      thresholdDb: -80,
+      rangeDb: -18,
+      holdMs: 160,
+      releaseMs: 320
     });
   });
 

@@ -94,7 +94,8 @@ function ChannelNoiseControl({ channel, onAmount }: {
 }
 
 function noiseAmountFromThreshold(thresholdDb: number) {
-  return Math.round(Math.max(0, Math.min(100, ((thresholdDb + 75) / 45) * 100)) / 5) * 5;
+  const normalized = Math.max(0, Math.min(1, (thresholdDb + 80) / 58));
+  return Math.round((normalized ** (1 / 0.55)) * 100 / 5) * 5;
 }
 
 function ChannelCompressorControls({ channel, onParam, onEnabled }: {
