@@ -3625,3 +3625,20 @@ Validation:
 
 Known limitations:
 - Manual visual confirmation of the final EQ graph proportion in the running desktop app is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Raise EQ Graph Height Again
+
+Changed files:
+- `apps/desktop/src/styles/app.css`: increased the EQ graph height again from `114px` to `122px`, and the narrow viewport height from `104px` to `110px`.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- The EQ response canvas has more vertical space while leaving the compact EQ band controls unchanged.
+- Narrow viewport styling keeps a slightly smaller graph to reduce the chance of right-panel scrolling.
+
+Validation:
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 49/49, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual visual confirmation of the final EQ graph proportion in the running desktop app is `NOT_RUN` in automated verification.
