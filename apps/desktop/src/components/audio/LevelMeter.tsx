@@ -13,15 +13,22 @@ export function LevelMeter({ level, vertical = false, showChannelLabels = false 
   return (
     <div className={`level-meter ${vertical ? "vertical" : "horizontal"}${showChannelLabels ? " has-channel-labels" : ""}`} aria-label="level meter">
       <span className="meter-channel">
-        <span className="meter-bar" style={{ "--meter": `${left}%` } as CSSProperties} />
+        <span className="meter-bar" style={meterStyle(left)} />
         {showChannelLabels ? <b>L</b> : null}
       </span>
       <span className="meter-channel">
-        <span className="meter-bar" style={{ "--meter": `${right}%` } as CSSProperties} />
+        <span className="meter-bar" style={meterStyle(right)} />
         {showChannelLabels ? <b>R</b> : null}
       </span>
     </div>
   );
+}
+
+function meterStyle(value: number) {
+  return {
+    "--meter": `${value}%`,
+    "--meter-ratio": `${value / 100}`
+  } as CSSProperties;
 }
 
 function meterPercent(db: number) {

@@ -42,6 +42,8 @@ struct PassthroughMonitorResult {
   double inputSampleRate = 0.0;
   double outputSampleRate = 0.0;
   float inputPeak = 0.0f;
+  float inputPeakLeft = 0.0f;
+  float inputPeakRight = 0.0f;
 };
 
 struct PersistentMonitorStatus {
@@ -52,6 +54,8 @@ struct PersistentMonitorStatus {
   double inputSampleRate = 0.0;
   double outputSampleRate = 0.0;
   float inputPeak = 0.0f;
+  float inputPeakLeft = 0.0f;
+  float inputPeakRight = 0.0f;
   localmixer::engine::RealtimeMetricsSnapshot metrics;
 };
 

@@ -28,6 +28,8 @@ struct RingBuffer {
   std::atomic<std::uint64_t> writeFrame{0};
   std::atomic<std::uint64_t> readFrame{0};
   std::atomic<int> peakScaled{0};
+  std::atomic<int> peakScaledLeft{0};
+  std::atomic<int> peakScaledRight{0};
 };
 
 struct PassthroughState {
@@ -162,12 +164,18 @@ UInt32 frameCountFor(const AudioBufferList* data) {
   return data->mBuffers[0].mDataByteSize / (sizeof(float) * channels);
 }
 
-void updatePeak(RingBuffer& ring, float sample) {
+void updatePeak(std::atomic<int>& peakScaled, float sample) {
   const auto scaled = static_cast<int>(std::clamp(std::fabs(sample), 0.0f, 1.0f) * 1'000'000.0f);
-  auto current = ring.peakScaled.load(std::memory_order_relaxed);
+  auto current = peakScaled.load(std::memory_order_relaxed);
   while (scaled > current &&
-         !ring.peakScaled.compare_exchange_weak(current, scaled, std::memory_order_relaxed)) {
+         !peakScaled.compare_exchange_weak(current, scaled, std::memory_order_relaxed)) {
   }
+}
+
+void updateStereoPeak(RingBuffer& ring, float left, float right) {
+  updatePeak(ring.peakScaledLeft, left);
+  updatePeak(ring.peakScaledRight, right);
+  updatePeak(ring.peakScaled, std::max(std::fabs(left), std::fabs(right)));
 }
 
 OSStatus inputCallback(
@@ -194,8 +202,7 @@ OSStatus inputCallback(
     state->ring.samples[base] = left;
     if (ringChannels > 1) state->ring.samples[base + 1] = right;
     state->ring.writeFrame.store(write + 1, std::memory_order_release);
-    updatePeak(state->ring, left);
-    updatePeak(state->ring, right);
+    updateStereoPeak(state->ring, left, right);
   }
   return noErr;
 }
@@ -373,6 +380,8 @@ PersistentMonitorStatus statusFromContext(
   RingBuffer& ring
 ) {
   const auto peak = ring.peakScaled.exchange(0, std::memory_order_relaxed);
+  const auto peakLeft = ring.peakScaledLeft.exchange(0, std::memory_order_relaxed);
+  const auto peakRight = ring.peakScaledRight.exchange(0, std::memory_order_relaxed);
   return {
     .running = running,
     .error = error,
@@ -381,6 +390,8 @@ PersistentMonitorStatus statusFromContext(
     .inputSampleRate = context.inputRate,
     .outputSampleRate = context.outputRate,
     .inputPeak = static_cast<float>(peak) / 1'000'000.0f,
+    .inputPeakLeft = static_cast<float>(peakLeft) / 1'000'000.0f,
+    .inputPeakRight = static_cast<float>(peakRight) / 1'000'000.0f,
   };
 }
 
@@ -415,6 +426,8 @@ struct PersistentPassthroughMonitor::Impl {
     state.ring.writeFrame.store(0, std::memory_order_relaxed);
     state.ring.readFrame.store(0, std::memory_order_relaxed);
     state.ring.peakScaled.store(0, std::memory_order_relaxed);
+    state.ring.peakScaledLeft.store(0, std::memory_order_relaxed);
+    state.ring.peakScaledRight.store(0, std::memory_order_relaxed);
     state.metrics.reset();
     prepareMonitorGraph(state, request);
 
@@ -550,6 +563,8 @@ PassthroughMonitorResult monitorPassthrough(const PassthroughMonitorRequest& req
     .inputSampleRate = context.inputRate,
     .outputSampleRate = context.outputRate,
     .inputPeak = static_cast<float>(state.ring.peakScaled.load(std::memory_order_relaxed)) / 1'000'000.0f,
+    .inputPeakLeft = static_cast<float>(state.ring.peakScaledLeft.load(std::memory_order_relaxed)) / 1'000'000.0f,
+    .inputPeakRight = static_cast<float>(state.ring.peakScaledRight.load(std::memory_order_relaxed)) / 1'000'000.0f,
   };
 }
 

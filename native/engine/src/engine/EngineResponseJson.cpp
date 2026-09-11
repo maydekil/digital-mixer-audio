@@ -43,6 +43,8 @@ std::string persistentMonitorStatusJson(
   double inputSampleRate,
   double outputSampleRate,
   float inputPeak,
+  float inputPeakLeft,
+  float inputPeakRight,
   std::uint64_t callbackCount,
   std::uint64_t deadlineMissCount,
   std::uint64_t maxCallbackNanos
@@ -54,6 +56,8 @@ std::string persistentMonitorStatusJson(
   json += ",\"inputSampleRate\":" + std::to_string(inputSampleRate);
   json += ",\"outputSampleRate\":" + std::to_string(outputSampleRate);
   json += ",\"inputPeak\":" + std::to_string(inputPeak);
+  json += ",\"inputPeakLeft\":" + std::to_string(inputPeakLeft);
+  json += ",\"inputPeakRight\":" + std::to_string(inputPeakRight);
   json += ",\"callbackCount\":" + std::to_string(callbackCount);
   json += ",\"deadlineMissCount\":" + std::to_string(deadlineMissCount);
   json += ",\"maxCallbackNanos\":" + std::to_string(maxCallbackNanos);

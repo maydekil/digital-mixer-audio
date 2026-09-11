@@ -3304,3 +3304,28 @@ Validation:
 
 Known limitations:
 - Hardware listening/meter movement on the user's Mac remains `NOT_RUN` in automated verification; the code path is verified by build/tests and must be confirmed manually with BlackHole/system audio input.
+
+### Phase19 Hardening Checkpoint — Stereo System Meter Polish
+
+Changed files:
+- `native/engine/src/platform/macos/CoreAudioPassthrough.hpp`, `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: added independent left/right peak tracking for persistent passthrough monitor status while retaining the legacy combined `inputPeak`.
+- `native/engine/src/engine/EngineResponseJson.hpp`, `native/engine/src/engine/EngineResponseJson.cpp`, `native/engine/src/main.cpp`: exposed `inputPeakLeft` and `inputPeakRight` in `mixer-monitor-status` JSON.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: SYSTEM meter now reads independent L/R peaks and falls back to combined `inputPeak` for older responses.
+- `apps/desktop/src/components/audio/LevelMeter.tsx`, `apps/desktop/src/styles/app.css`: updated meter fill to use a stable ratio and a segmented green/yellow/red level-meter visual for horizontal and vertical meters.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- SYSTEM and MASTER meters can now show different left/right motion for stereo system audio.
+- Mono or older status responses still display both channels safely using the combined peak fallback.
+- Meter bars now use common level-meter color zones with segment dividers instead of a flat one-color fill.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `cmake --build native/engine/build --target local-mixer-engine`
+- exit/result: `0`; native engine rebuilt. Linker emitted the existing macOS/libsamplerate deployment-version warning only.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 47/47, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Visual confirmation of L/R divergence with real YouTube/BlackHole audio is `NOT_RUN` in automated verification and should be checked manually on the user's Mac.

@@ -462,8 +462,13 @@ export function MixerPage() {
       const result = await window.localMixer?.engineCommand?.("mixer-monitor-status");
       if (canceled) return;
       const peak = Number(result?.inputPeak ?? 0);
-      const db = linearPeakToDb(peak);
-      setSystemMeter({ left: db, right: db, clip: peak >= 0.98 });
+      const leftPeak = Number(result?.inputPeakLeft ?? peak);
+      const rightPeak = Number(result?.inputPeakRight ?? peak);
+      setSystemMeter({
+        left: linearPeakToDb(leftPeak),
+        right: linearPeakToDb(rightPeak),
+        clip: Math.max(leftPeak, rightPeak) >= 0.98
+      });
     }
     void refreshSystemMeter();
     const interval = window.setInterval(() => void refreshSystemMeter(), 120);

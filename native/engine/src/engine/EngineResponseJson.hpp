@@ -21,6 +21,8 @@ std::string persistentMonitorStatusJson(
   double inputSampleRate,
   double outputSampleRate,
   float inputPeak,
+  float inputPeakLeft = 0.0f,
+  float inputPeakRight = 0.0f,
   std::uint64_t callbackCount = 0,
   std::uint64_t deadlineMissCount = 0,
   std::uint64_t maxCallbackNanos = 0
