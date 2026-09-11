@@ -3761,3 +3761,25 @@ Validation:
 
 Known limitations:
 - Manual listening confirmation that the user's current VOICE mic sounds fully dry with every processor disabled is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Clear Vocal FX Rack When Insert Is Bypassed
+
+Changed files:
+- `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: explicitly configured the monitor vocal FX rack with an empty slot list whenever INSERT FX is disabled.
+- `native/engine/tests/VocalFxRackRuntimeTest.cpp`: covered the transition from active vocal FX processing back to empty-rack dry pass-through.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Closing or bypassing the INSERT FX workflow can no longer leave a previously-active native vocal FX rack affecting the monitored mic signal.
+- With INSERT FX off, the monitor path forces `vocalFx.active()` false and keeps the mic path dry before the mixer graph.
+
+Validation:
+- command: `cmake --build native/engine/build --target local-mixer-vocal-fx-rack-runtime-tests`
+- exit/result: `0`; target rebuilt.
+- command: `ctest --test-dir native/engine/build -R local-mixer-vocal-fx-rack-runtime-tests --output-on-failure`
+- exit/result: `0`; focused native vocal FX rack runtime test passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 50/50, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual listening confirmation on the user's live microphone after opening/closing the INSERT FX modal is `NOT_RUN` in automated verification.

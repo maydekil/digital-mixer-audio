@@ -45,6 +45,20 @@ int main() {
     return 1;
   }
 
+  const auto bypassed = runtime.configure({});
+  if (!bypassed || runtime.active()) {
+    std::cerr << "empty Vocal FX configuration should bypass the rack\n";
+    return 1;
+  }
+
+  left.fill(0.0f);
+  right.fill(0.0f);
+  runtime.processMonoToStereo(input, left, right);
+  if (!near(left[0], 0.2f) || !near(right[0], 0.2f)) {
+    std::cerr << "bypassed Vocal FX runtime should restore dry pass-through\n";
+    return 1;
+  }
+
   std::cout << "local-mixer-vocal-fx-rack-runtime-tests ok\n";
   return 0;
 }

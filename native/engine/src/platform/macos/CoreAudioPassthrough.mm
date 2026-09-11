@@ -303,7 +303,7 @@ void prepareMonitorGraph(PassthroughState& state, const PassthroughMonitorReques
   const auto scratchFrames = static_cast<std::size_t>(std::max<double>(request.projectSampleRate, 512.0));
   state.runtime.prepare(static_cast<std::uint32_t>(scratchFrames));
   state.vocalFx.prepare(request.projectSampleRate, static_cast<std::uint32_t>(scratchFrames));
-  if (request.insertFxEnabled) state.vocalFx.configure(request.vocalFxSlots);
+  state.vocalFx.configure(request.insertFxEnabled ? request.vocalFxSlots : std::vector<localmixer::dsp::fx::RackSlotState>{});
   graph.setAssignment(created.id, request.stereoInput || state.vocalFx.active() ? localmixer::engine::SourceAssignment::stereo
                                                                                 : localmixer::engine::SourceAssignment::mono,
     0,
