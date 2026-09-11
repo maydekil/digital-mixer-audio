@@ -80,9 +80,7 @@ export function MixerPage() {
       liveMonitorRefreshTimer.current = undefined;
     }
     if (!window.localMixer?.engineCommand) return;
-    const activeSource = nextSnapshot.channels.find((channel) => (
-      channel.kind === "source" && channel.monitor && channel.enabled && !channel.mute && Boolean(channel.source)
-    ));
+    const activeSource = autoMonitorChannel(nextSnapshot);
     await syncMixerGraph(nextSnapshot, nextOutputUid);
     if (!activeSource || !isMasterAudible(nextSnapshot)) {
       await window.localMixer.engineCommand("stop-mixer-monitor");
@@ -554,6 +552,7 @@ export function MixerPage() {
 async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
   if (!window.localMixer?.engineCommand) return;
   const channels = snapshot.channels.slice(0, 32);
+  const autoMonitorId = autoMonitorChannel(snapshot)?.id ?? "";
   const fxA = snapshot.fxUnits.find((unit) => unit.id === "fx-a");
   const fxB = snapshot.fxUnits.find((unit) => unit.id === "fx-b");
   const payload: Record<string, string | number | boolean> = {
@@ -586,7 +585,7 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}Enabled`] = channel.enabled;
     payload[`${prefix}Mute`] = channel.mute;
     payload[`${prefix}Solo`] = channel.solo;
-    payload[`${prefix}Monitor`] = Boolean(channel.monitor);
+    payload[`${prefix}Monitor`] = channel.id === autoMonitorId;
     payload[`${prefix}ProcessorEq`] = channel.processing.eq;
     payload[`${prefix}ProcessorComp`] = channel.processing.comp;
     payload[`${prefix}ProcessorNoise`] = channel.role === "system" ? false : channel.processing.noise;
@@ -618,6 +617,13 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}Pan`] = channel.pan / 100;
   });
   await window.localMixer.engineCommand("sync-mixer-graph", payload);
+}
+
+function autoMonitorChannel(snapshot: MixerSnapshot) {
+  const eligible = snapshot.channels.filter((channel) => (
+    channel.kind === "source" && channel.enabled && !channel.mute && Boolean(channel.source)
+  ));
+  return eligible.find((channel) => Boolean(channel.monitor)) ?? eligible[0];
 }
 
 function channelColor(channel: ChannelState) {

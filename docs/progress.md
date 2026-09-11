@@ -4156,3 +4156,30 @@ Validation:
 Known limitations:
 - Manual hardware listening validation of `NOISE=100` versus `OFF` is `NOT_RUN`.
 - `NOISE=100` may cut softer speech; it is intended as a diagnostic/extreme ceiling as well as an aggressive gate setting.
+
+### Phase19 Fix Checkpoint — Auto Monitor Source Channels Without MON Button
+
+Changed files:
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: channel ON/OFF now drives source monitor state automatically and keeps the currently enabled source monitor exclusive until aggregate live routing is implemented.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: live monitor refresh and native `sync-mixer-graph` payload now compute an automatic monitor source instead of relying on the removed `MON` button state.
+- `tests/ui/preview-adapter.test.ts`: verifies source ON/OFF auto-arms monitor state and clears it when disabled.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- With per-channel `MON` buttons removed, turning a source channel ON now automatically makes that source eligible for the live monitor path.
+- `sync-mixer-graph` sends `Monitor=true` for exactly one eligible source, so the native persistent monitor receives that channel's processors, including the VOICE noise/gate settings.
+- Existing saved projects with `monitor=false` can still auto-monitor an enabled source because the UI computes the monitor source at sync time.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; first-party file-size limits passed.
+- command: `npm run test:ui -- --run tests/ui/preview-adapter.test.ts`
+- exit/result: `0`; PreviewAdapter suite 20/20 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 54/54, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation that VOICE `NOISE=100` audibly differs from `OFF` after auto-monitor sync is `NOT_RUN`.
+- Native persistent monitor still accepts one live source at a time; true aggregate live monitoring for multiple simultaneously ON source channels remains a separate checkpoint.

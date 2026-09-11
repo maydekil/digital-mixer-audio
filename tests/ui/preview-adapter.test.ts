@@ -247,6 +247,20 @@ describe("PreviewAdapter", () => {
     expect(snapshot.channels.find((channel) => channel.id === "music")?.monitor).toBe(false);
   });
 
+  it("auto-arms source monitoring from the channel on/off state", () => {
+    const adapter = new PreviewAdapter();
+    adapter.setChannelEnabled("voice", true);
+    adapter.setChannelEnabled("guitar", true);
+
+    let snapshot = adapter.getSnapshot();
+    expect(snapshot.channels.find((channel) => channel.id === "voice")?.monitor).toBe(false);
+    expect(snapshot.channels.find((channel) => channel.id === "guitar")?.monitor).toBe(true);
+
+    adapter.setChannelEnabled("guitar", false);
+    snapshot = adapter.getSnapshot();
+    expect(snapshot.channels.find((channel) => channel.id === "guitar")?.monitor).toBe(false);
+  });
+
   it("adds, renames, and removes source channels while keeping selection valid", () => {
     const adapter = new PreviewAdapter();
     const channelId = adapter.addSourceChannel("music", "Break Music", "/tmp/break.wav");
