@@ -3124,3 +3124,30 @@ Validation:
 
 Known limitations:
 - Automated verification cannot measure subjective BlackHole listening quality; final confirmation requires user hardware listening with SYSTEM sends off and processors bypassed.
+
+### Phase19 Hardening Checkpoint — Remove System Insert FX Path
+
+Changed files:
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: SYSTEM strips no longer render the `INSERT FX` processor button.
+- `apps/desktop/src/features/processing/components/ChannelProcessingPanel.tsx`: the selected SYSTEM channel no longer renders the Insert FX/send processing card in the right-side panel.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: Vocal FX panel access is disabled while SYSTEM is selected, the panel auto-closes if SYSTEM becomes selected, and native graph sync forces SYSTEM `ProcessorInsertFx` to `false`.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: direct adapter attempts to enable SYSTEM insert FX are ignored.
+- `apps/desktop/src/styles/app.css`: disabled top-bar buttons show a disabled state.
+- `tests/ui/preview-adapter.test.ts`: covers the SYSTEM insert FX guard.
+
+Implemented behavior:
+- SYSTEM channel is kept as a dry system-audio utility path with no Insert FX UI or native insert-FX sync route.
+- Selecting SYSTEM disables Vocal FX panel access so vocal effects cannot be applied to the BlackHole/system monitor path by mistake.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npx vitest run tests/ui/preview-adapter.test.ts`
+- exit/result: `0`; preview adapter tests 13/13 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size guard passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 47/47, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware listening should still confirm that SYSTEM now stays dry with FX sends/processors bypassed.

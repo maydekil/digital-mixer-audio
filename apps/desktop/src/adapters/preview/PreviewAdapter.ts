@@ -129,7 +129,10 @@ export class PreviewAdapter implements MixerControlPort {
   setChannelProcessor(channelId: string, processorId: ProcessorId, enabled: boolean): void {
     this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === channelId ? {
       ...channel,
-      processing: { ...channel.processing, [processorId]: enabled }
+      processing: {
+        ...channel.processing,
+        [processorId]: channel.role === "system" && processorId === "insertFx" ? false : enabled
+      }
     } : channel);
   }
 

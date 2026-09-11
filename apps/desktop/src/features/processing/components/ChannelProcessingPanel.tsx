@@ -21,6 +21,7 @@ export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSend
   const noise = channel.dynamics.noise;
   const compressor = channel.dynamics.compressor;
   const deEsser = channel.dynamics.deEsser;
+  const showInsertFx = channel.role !== "system";
   return (
     <aside className="processing-panel">
       <header className="processing-header">
@@ -75,10 +76,12 @@ export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSend
           <RotaryKnob label="Frequency" value={formatFrequency(deEsser.frequencyHz)} numericValue={deEsser.frequencyHz} min={1000} max={12000} step={100} onChange={(value) => onDeEsserChange("frequencyHz", value)} />
           <RotaryKnob label="Threshold" value={`${deEsser.thresholdDb} dB`} numericValue={deEsser.thresholdDb} min={-80} max={0} onChange={(value) => onDeEsserChange("thresholdDb", value)} />
         </section>
-        <section className={`processor-card ${channel.processing.insertFx ? "is-active" : "is-bypassed"}`}>
-          <div className="processor-title"><span>⏻</span><strong>SEND A · {linkedProgram.name}</strong></div>
-          <RotaryKnob label="Send A" value={sendA.enabled ? `${sendA.gainDb} dB` : "OFF"} numericValue={sendA.gainDb} min={-60} max={10} tone="amber" onChange={onSendA} />
-        </section>
+        {showInsertFx ? (
+          <section className={`processor-card ${channel.processing.insertFx ? "is-active" : "is-bypassed"}`}>
+            <div className="processor-title"><span>⏻</span><strong>SEND A · {linkedProgram.name}</strong></div>
+            <RotaryKnob label="Send A" value={sendA.enabled ? `${sendA.gainDb} dB` : "OFF"} numericValue={sendA.gainDb} min={-60} max={10} tone="amber" onChange={onSendA} />
+          </section>
+        ) : null}
       </div>
     </aside>
   );

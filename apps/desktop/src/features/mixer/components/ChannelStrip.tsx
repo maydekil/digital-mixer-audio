@@ -44,7 +44,7 @@ export function ChannelStrip({ channel, sourceOptions, onSelect, onEnabled, onSo
         ) : <span>{channel.source}</span>}
       </header>
       <RotaryKnob label="Gain" value={`${channel.trimDb.toFixed(1)} dB`} numericValue={channel.trimDb} min={-24} max={24} step={0.5} onChange={onTrim} />
-      {isMaster ? <MasterUpperControls /> : <ProcessingButtons processing={channel.processing} onProcessor={onProcessor} />}
+      {isMaster ? <MasterUpperControls /> : <ProcessingButtons channel={channel} onProcessor={onProcessor} />}
       {channel.harmonyVisible ? (
         <div className="harmony-shortcut">
           <Button tone="violet" active={channel.harmonyEnabled} onClick={onHarmonyToggle}>HARMONY {channel.harmonyEnabled ? "ON" : "OFF"}</Button>
@@ -71,18 +71,18 @@ export function ChannelStrip({ channel, sourceOptions, onSelect, onEnabled, onSo
   );
 }
 
-function ProcessingButtons({ processing, onProcessor }: { processing: ChannelState["processing"]; onProcessor(processorId: ProcessorId, enabled: boolean): void }) {
+function ProcessingButtons({ channel, onProcessor }: { channel: ChannelState; onProcessor(processorId: ProcessorId, enabled: boolean): void }) {
   const buttons: Array<{ id: ProcessorId; label: string }> = [
     { id: "eq", label: "EQ" },
     { id: "comp", label: "COMP" },
-    { id: "noise", label: "NOISE" },
-    { id: "insertFx", label: "INSERT FX" }
+    { id: "noise", label: "NOISE" }
   ];
+  if (channel.role !== "system") buttons.push({ id: "insertFx", label: "INSERT FX" });
 
   return (
     <div className="processing-buttons">
       {buttons.map((button) => (
-        <Button key={button.id} active={processing[button.id]} onClick={() => onProcessor(button.id, !processing[button.id])}>
+        <Button key={button.id} active={channel.processing[button.id]} onClick={() => onProcessor(button.id, !channel.processing[button.id])}>
           {button.label}
         </Button>
       ))}

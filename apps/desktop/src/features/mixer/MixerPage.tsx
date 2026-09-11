@@ -445,6 +445,10 @@ export function MixerPage() {
   }, [snapshot, outputUid]);
 
   const selected = snapshot.channels.find((channel) => channel.id === snapshot.selectedChannelId) ?? snapshot.channels[0];
+  useEffect(() => {
+    if (selected.role === "system" && vocalFxOpen) setVocalFxOpen(false);
+  }, [selected.role, vocalFxOpen]);
+
   const fxA = snapshot.fxUnits[0];
   const fxB = snapshot.fxUnits[1];
   const programA = snapshot.programs.find((program) => program.id === fxA.programId) ?? snapshot.programs[0];
@@ -472,7 +476,9 @@ export function MixerPage() {
         status={snapshot.engineStatus}
         mode={snapshot.modeLabel}
         transportState={transportState}
-        onVocalFx={() => setVocalFxOpen(true)}
+        onVocalFx={() => {
+          if (selected.role !== "system") setVocalFxOpen(true);
+        }}
         onTimeline={() => setMediaImportOpen(true)}
         onPlay={() => void sendTransport(transportState === "playing" ? "transport-pause" : "transport-play")}
         onStop={() => void sendTransport("transport-stop")}
@@ -483,6 +489,7 @@ export function MixerPage() {
         onExport={() => void exportProject()}
         systemAudioEnabled={systemAudioEnabled}
         systemAudioStatus={systemAudioStatus}
+        vocalFxEnabled={selected.role !== "system"}
         onSystemAudio={() => void toggleSystemAudio()}
         onAddChannel={addChannel}
         onRenameChannel={renameSelectedChannel}
@@ -518,6 +525,8 @@ export function MixerPage() {
             }}
             onRecordArm={(id, armed) => refresh(() => adapter.setChannelRecordArm(id, armed))}
             onProcessor={(id, processorId, enabled) => {
+              const channel = adapter.getSnapshot().channels.find((item) => item.id === id);
+              if (channel?.role === "system" && processorId === "insertFx") return;
               refresh(() => adapter.setChannelProcessor(id, processorId, enabled));
               if (processorId === "insertFx" && enabled) {
                 refresh(() => {
@@ -610,7 +619,7 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}ProcessorEq`] = channel.processing.eq;
     payload[`${prefix}ProcessorComp`] = channel.processing.comp;
     payload[`${prefix}ProcessorNoise`] = channel.processing.noise;
-    payload[`${prefix}ProcessorInsertFx`] = channel.processing.insertFx;
+    payload[`${prefix}ProcessorInsertFx`] = channel.role === "system" ? false : channel.processing.insertFx;
     payload[`${prefix}ProcessorDeEsser`] = channel.role === "vocal";
     payload[`${prefix}NoiseThresholdDb`] = channel.dynamics.noise.thresholdDb;
     payload[`${prefix}NoiseRangeDb`] = channel.dynamics.noise.rangeDb;
@@ -672,7 +681,7 @@ function parseFxPrograms(programs: unknown[]): FxProgram[] {
   });
 }
 
-function TopBar({ projectName, time, rate, status, mode, transportState, systemAudioEnabled, systemAudioStatus, onVocalFx, onTimeline, onPlay, onStop, onRecord, onOpen, onSave, onCollect, onExport, onSystemAudio, onAddChannel, onRenameChannel, onRemoveChannel }: {
+function TopBar({ projectName, time, rate, status, mode, transportState, systemAudioEnabled, systemAudioStatus, vocalFxEnabled, onVocalFx, onTimeline, onPlay, onStop, onRecord, onOpen, onSave, onCollect, onExport, onSystemAudio, onAddChannel, onRenameChannel, onRemoveChannel }: {
   projectName: string;
   time: string;
   rate: string;
@@ -681,6 +690,7 @@ function TopBar({ projectName, time, rate, status, mode, transportState, systemA
   transportState: string;
   systemAudioEnabled: boolean;
   systemAudioStatus: string;
+  vocalFxEnabled: boolean;
   onVocalFx(): void;
   onTimeline(): void;
   onPlay(): void;
@@ -699,7 +709,7 @@ function TopBar({ projectName, time, rate, status, mode, transportState, systemA
     <header className="top-bar">
       <div className="window-dots"><span /><span /><span /></div>
       <h1>{projectName}</h1>
-      <nav><button className="active">Mixer</button><button onClick={onVocalFx}>Vocal FX</button><button onClick={onTimeline}>Timeline</button><button>Routing</button></nav>
+      <nav><button className="active">Mixer</button><button onClick={onVocalFx} disabled={!vocalFxEnabled}>Vocal FX</button><button onClick={onTimeline}>Timeline</button><button>Routing</button></nav>
       <div className="transport">
         <button aria-label="Stop" onClick={onStop}>■</button>
         <button aria-label={transportState === "playing" ? "Pause" : "Play"} className="play" onClick={onPlay}>

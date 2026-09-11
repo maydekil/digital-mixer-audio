@@ -120,6 +120,14 @@ describe("PreviewAdapter", () => {
     expect(guitar?.eqBands.find((band) => band.id === "low")?.gain).toBe("+3.0 dB");
   });
 
+  it("keeps system channel insert FX disabled", () => {
+    const adapter = new PreviewAdapter();
+    adapter.setChannelProcessor("system", "insertFx", true);
+
+    const system = adapter.getSnapshot().channels.find((channel) => channel.id === "system");
+    expect(system?.processing.insertFx).toBe(false);
+  });
+
   it("keeps source monitoring exclusive until aggregate routing is available", () => {
     const adapter = new PreviewAdapter();
     adapter.setChannelMonitor("voice", true);
