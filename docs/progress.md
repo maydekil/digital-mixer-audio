@@ -4043,3 +4043,25 @@ Validation:
 Known limitations:
 - Manual listening confirmation that SYSTEM remains dry through hardware routing is `NOT_RUN`.
 - True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.
+
+### Phase19 UX Checkpoint — Remove Channel Selected Border
+
+Changed files:
+- `apps/desktop/src/styles/app.css`: removed the yellow `.channel-strip.is-selected` border and inset highlight.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Channel strips no longer show a yellow selected outline.
+- Internal selected-channel state remains available for existing rename/remove/harmony workflows, but the mixer UI no longer visually focuses a channel strip.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed and refreshed the current UI screenshots.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 52/52, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- No manual visual QA beyond automated screenshots was run.
+- True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.
