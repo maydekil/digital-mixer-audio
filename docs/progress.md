@@ -3608,3 +3608,20 @@ Validation:
 
 Known limitations:
 - Manual confirmation that the running desktop monitoring panel no longer scrolls at the user's current window size is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Tune EQ Graph Height
+
+Changed files:
+- `apps/desktop/src/styles/app.css`: increased the compact EQ graph height from `104px` to `114px`, and the narrow viewport height from `96px` to `104px`.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- The EQ response canvas has a little more vertical room after the compact EQ band pass.
+- EQ band cards remain compact, preserving the reduced right-panel height.
+
+Validation:
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 49/49, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual visual confirmation of the final EQ graph proportion in the running desktop app is `NOT_RUN` in automated verification.
