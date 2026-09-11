@@ -90,6 +90,8 @@ describe("PreviewAdapter", () => {
     const adapter = new PreviewAdapter();
     adapter.setChannelNoiseParam("voice", "thresholdDb", -46);
     adapter.setChannelNoiseParam("voice", "rangeDb", -70);
+    adapter.setChannelNoiseParam("voice", "holdMs", 45);
+    adapter.setChannelNoiseParam("voice", "releaseMs", 180);
     adapter.setChannelCompressorParam("voice", "thresholdDb", -22);
     adapter.setChannelCompressorParam("voice", "ratio", 4);
     adapter.setChannelCompressorParam("voice", "attackMs", 25);
@@ -99,6 +101,8 @@ describe("PreviewAdapter", () => {
     const voice = adapter.getSnapshot().channels.find((channel) => channel.id === "voice");
     expect(voice?.dynamics.noise.thresholdDb).toBe(-46);
     expect(voice?.dynamics.noise.rangeDb).toBe(-70);
+    expect(voice?.dynamics.noise.holdMs).toBe(45);
+    expect(voice?.dynamics.noise.releaseMs).toBe(180);
     expect(voice?.dynamics.compressor.thresholdDb).toBe(-22);
     expect(voice?.dynamics.compressor.ratio).toBe(4);
     expect(voice?.dynamics.compressor.attackMs).toBe(25);

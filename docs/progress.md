@@ -3709,3 +3709,27 @@ Validation:
 
 Known limitations:
 - Manual listening confirmation that VOICE sounds dry with INSERT FX off is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Tune Noise Gate Defaults
+
+Changed files:
+- `apps/desktop/src/fixtures/approvedMixerSession.ts`: changed default noise gate values to a more audible fan-gate starting point.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: aligned default dynamics for newly-added channels.
+- `apps/desktop/src/features/project/sessionDocument.ts`: persisted and restored noise hold/release values.
+- `tests/ui/preview-adapter.test.ts`: covered noise hold/release adapter updates.
+- `tests/ui/project-session.test.ts`: covered noise hold/release project save/restore and updated default expectations.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Default noise gate values are now `Threshold -38 dB`, `Range -50 dB`, `Hold 30 ms`, and `Release 160 ms` instead of the very low/near-invisible previous defaults.
+- Noise hold/release are now preserved in project files.
+- The UI state path covers all four visible noise controls.
+
+Validation:
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 50/50 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 50/50, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual listening confirmation against the user's fan/microphone environment is `NOT_RUN` in automated verification. A gate removes fan noise mostly during pauses; fan will still be audible while voice is actively opening the gate.

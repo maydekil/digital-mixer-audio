@@ -399,7 +399,7 @@ function defaultEqBands(): EqBandState[] {
 
 function defaultDynamics(): ChannelDynamicsState {
   return {
-    noise: { thresholdDb: -50, rangeDb: -80, holdMs: 3, releaseMs: 80 },
+    noise: { thresholdDb: -38, rangeDb: -50, holdMs: 30, releaseMs: 160 },
     compressor: { thresholdDb: -18, ratio: 3, attackMs: 10, releaseMs: 120 },
     deEsser: { frequencyHz: 6000, thresholdDb: -24, maxReductionDb: 6 }
   };

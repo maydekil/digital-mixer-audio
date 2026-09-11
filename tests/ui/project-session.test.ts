@@ -23,7 +23,10 @@ describe("project session serialization", () => {
       recordArm: true,
       noiseEnabled: true,
       insertFxEnabled: true,
-      noiseThresholdDb: -50,
+      noiseThresholdDb: -38,
+      noiseRangeDb: -50,
+      noiseHoldMs: 30,
+      noiseReleaseMs: 160,
       compRatio: 3,
       compAttackMs: 10,
       compReleaseMs: 120
@@ -44,6 +47,8 @@ describe("project session serialization", () => {
     source.channels[1].source = "Headset Mic";
     source.channels[1].faderDb = -12;
     source.channels[1].processing.noise = false;
+    source.channels[1].dynamics.noise.holdMs = 55;
+    source.channels[1].dynamics.noise.releaseMs = 220;
     source.channels[1].dynamics.compressor.ratio = 5;
     source.channels[1].dynamics.compressor.attackMs = 24;
     source.channels[1].dynamics.compressor.releaseMs = 240;
@@ -60,6 +65,8 @@ describe("project session serialization", () => {
     expect(voice?.source).toBe("Headset Mic");
     expect(voice?.faderDb).toBe(-10);
     expect(voice?.processing.noise).toBe(false);
+    expect(voice?.dynamics.noise.holdMs).toBe(55);
+    expect(voice?.dynamics.noise.releaseMs).toBe(220);
     expect(voice?.dynamics.compressor.ratio).toBe(5);
     expect(voice?.dynamics.compressor.attackMs).toBe(24);
     expect(voice?.dynamics.compressor.releaseMs).toBe(240);
@@ -88,8 +95,10 @@ describe("project session serialization", () => {
       gainDb: 0,
       faderDb: -9,
       pan: 0,
-      noiseThresholdDb: -50,
-      noiseRangeDb: -80,
+      noiseThresholdDb: -38,
+      noiseRangeDb: -50,
+      noiseHoldMs: 30,
+      noiseReleaseMs: 160,
       compThresholdDb: -18,
       compRatio: 3,
       compAttackMs: 10,

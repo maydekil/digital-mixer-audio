@@ -32,6 +32,8 @@ export interface ProjectSessionChannel {
   pan: number;
   noiseThresholdDb: number;
   noiseRangeDb: number;
+  noiseHoldMs: number;
+  noiseReleaseMs: number;
   compThresholdDb: number;
   compRatio: number;
   compAttackMs: number;
@@ -204,6 +206,8 @@ function channelToSession(channel: ChannelState): ProjectSessionChannel {
     pan: channel.pan / 100,
     noiseThresholdDb: channel.dynamics.noise.thresholdDb,
     noiseRangeDb: channel.dynamics.noise.rangeDb,
+    noiseHoldMs: channel.dynamics.noise.holdMs,
+    noiseReleaseMs: channel.dynamics.noise.releaseMs,
     compThresholdDb: channel.dynamics.compressor.thresholdDb,
     compRatio: channel.dynamics.compressor.ratio,
     compAttackMs: channel.dynamics.compressor.attackMs,
@@ -236,7 +240,9 @@ function applyChannelSession(channel: ChannelState, saved: ProjectSessionChannel
       noise: {
         ...channel.dynamics.noise,
         thresholdDb: Number(saved.noiseThresholdDb),
-        rangeDb: Number(saved.noiseRangeDb)
+        rangeDb: Number(saved.noiseRangeDb),
+        holdMs: Number.isFinite(Number(saved.noiseHoldMs)) ? Number(saved.noiseHoldMs) : channel.dynamics.noise.holdMs,
+        releaseMs: Number.isFinite(Number(saved.noiseReleaseMs)) ? Number(saved.noiseReleaseMs) : channel.dynamics.noise.releaseMs
       },
       compressor: {
         ...channel.dynamics.compressor,
@@ -282,7 +288,7 @@ function fallbackChannel(): ChannelState {
     recordArm: false,
     processing: { eq: true, comp: false, noise: false, insertFx: false },
     dynamics: {
-      noise: { thresholdDb: -50, rangeDb: -80, holdMs: 3, releaseMs: 80 },
+      noise: { thresholdDb: -38, rangeDb: -50, holdMs: 30, releaseMs: 160 },
       compressor: { thresholdDb: -18, ratio: 3, attackMs: 10, releaseMs: 120 },
       deEsser: { frequencyHz: 6000, thresholdDb: -24, maxReductionDb: 6 }
     },
