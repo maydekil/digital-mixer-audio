@@ -3378,3 +3378,26 @@ Validation:
 
 Known limitations:
 - Audible confirmation of RESET on live BlackHole/YouTube monitoring is `NOT_RUN` in automated verification and should be checked manually on the user's Mac.
+
+### Phase19 Hardening Checkpoint — Flat Startup EQ
+
+Changed files:
+- `apps/desktop/src/fixtures/approvedMixerSession.ts`: changed the initial approved mixer session EQ bands to neutral/flat values on every channel and the selected-channel panel state.
+- `tests/ui/preview-adapter.test.ts`: updated scoped EQ expectations to match the new flat startup baseline.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Opening the desktop app no longer starts with hidden EQ coloration from the UI fixture.
+- Every seeded channel now starts with LOW/MID/HIGH EQ gains at `0.0 dB`.
+- The startup EQ baseline now matches the EQ RESET control's neutral music start point.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 48/48 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 48/48, native CTest 43/43 including EQ tests, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Real listening confirmation that fresh startup audio is uncolored on the user's BlackHole/YouTube setup is `NOT_RUN` in automated verification.

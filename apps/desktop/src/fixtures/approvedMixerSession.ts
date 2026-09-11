@@ -2,10 +2,10 @@ import type { MixerSnapshot } from "../adapters/MixerControlPort";
 import { fxPrograms } from "./fxPrograms";
 
 const baseEqBands = [
-  { id: "low", label: "LOW", color: "#58F28A", freqHz: 100, gainDb: 3, freq: "100 Hz", gain: "+3.0 dB", type: "Shelf" },
-  { id: "mid1", label: "MID 1", color: "#FFB843", freqHz: 350, gainDb: -2.5, qValue: 1.2, freq: "350 Hz", gain: "-2.5 dB", q: "1.20" },
-  { id: "mid2", label: "MID 2", color: "#1FA8FF", freqHz: 2500, gainDb: 2, qValue: 1, freq: "2.5 kHz", gain: "+2.0 dB", q: "1.00" },
-  { id: "high", label: "HIGH", color: "#B862F0", freqHz: 10000, gainDb: 4, freq: "10.0 kHz", gain: "+4.0 dB", type: "Shelf" }
+  { id: "low", label: "LOW", color: "#58F28A", freqHz: 100, gainDb: 0, freq: "100 Hz", gain: "+0.0 dB", type: "Shelf" },
+  { id: "mid1", label: "MID 1", color: "#FFB843", freqHz: 350, gainDb: 0, qValue: 1, freq: "350 Hz", gain: "+0.0 dB", q: "1.00" },
+  { id: "mid2", label: "MID 2", color: "#1FA8FF", freqHz: 2500, gainDb: 0, qValue: 1, freq: "2.5 kHz", gain: "+0.0 dB", q: "1.00" },
+  { id: "high", label: "HIGH", color: "#B862F0", freqHz: 10000, gainDb: 0, freq: "10.0 kHz", gain: "+0.0 dB", type: "Shelf" }
 ] as const;
 
 const defaultDynamics = {
