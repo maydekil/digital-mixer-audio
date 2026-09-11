@@ -3036,3 +3036,34 @@ Validation:
 
 Known limitations:
 - This automated verification does not claim packaged/manual BlackHole listening PASS; user hardware testing is still the evidence for actual YouTube audio.
+
+### Phase19 Hardening Checkpoint — Master Monitor Mute Gate
+
+Changed files:
+- `native/engine/src/engine/EngineGraphSyncJson.hpp`, `native/engine/src/engine/EngineGraphSyncJson.cpp`: synced the master strip enabled/mute/trim/fader state into the native persistent monitor selection, ignored muted source monitors, and cleared stale monitor selections when graph sync is rejected.
+- `native/engine/src/main.cpp`: applies source trim/fader plus master trim/fader as the effective monitor gain, and hard-mutes the native persistent monitor when master is disabled or muted.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: restarts or stops the active native monitor when channel `ON` or `M` changes, so source mute and master mute/off take effect immediately for SYSTEM/BlackHole monitoring.
+- `native/engine/tests/EngineGraphSyncJsonTest.cpp`: covers master output state capture, muted monitor source rejection, and clearing stale monitor state after rejected multi-monitor sync.
+- `scripts/test-native.mjs`: avoids forcing route recovery when a local recovery marker already exists, so automated smoke does not silently alter the user's macOS audio route.
+
+Implemented behavior:
+- Turning MASTER `M` on, or MASTER `ON` off, stops/silences native SYSTEM monitor output instead of letting BlackHole monitor audio bypass the master strip.
+- Muting a monitored source channel also prevents that source from feeding the persistent monitor.
+- A rejected graph sync cannot leave an older monitor source armed behind the scenes.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 45/45 passed.
+- command: `cmake --build native/engine/build --target local-mixer-engine-graph-sync-json-tests`
+- exit/result: `0`; graph sync test target built.
+- command: `ctest --test-dir native/engine/build -R local-mixer-engine-graph-sync-json-tests --output-on-failure`
+- exit/result: `0`; targeted native graph sync test passed.
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43, engine self-test, device enumeration smoke, and protocol smoke passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 45/45, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Automated verification still does not claim a packaged/manual BlackHole listening PASS; user hardware listening remains the evidence for audible SYSTEM route behavior.

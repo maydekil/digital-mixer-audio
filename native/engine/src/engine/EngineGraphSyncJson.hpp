@@ -26,6 +26,10 @@ struct SyncedMonitorSelection {
   float channelTrimDb = 0.0f;
   float channelFaderDb = 0.0f;
   float channelPan = 0.0f;
+  bool masterEnabled = true;
+  bool masterMuted = false;
+  float masterTrimDb = 0.0f;
+  float masterFaderDb = 0.0f;
   ChannelProcessorConfig processors = defaultChannelProcessorConfig();
 };
 

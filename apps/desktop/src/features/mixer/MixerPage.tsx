@@ -43,7 +43,9 @@ export function MixerPage() {
 
   function refresh(action: () => void) {
     action();
-    setSnapshot(structuredClone(adapter.getSnapshot()));
+    const nextSnapshot = structuredClone(adapter.getSnapshot());
+    setSnapshot(nextSnapshot);
+    return nextSnapshot;
   }
 
   async function refreshDevices() {
@@ -75,8 +77,25 @@ export function MixerPage() {
     if (!window.localMixer?.engineCommand) return;
     const channel = adapter.getSnapshot().channels.find((item) => item.id === channelId);
     if (!channel || channel.kind !== "source") return;
-    await syncMixerGraph(adapter.getSnapshot(), outputUid);
-    if (!monitor || !channel.enabled || !channel.source) {
+    const nextSnapshot = adapter.getSnapshot();
+    await syncMixerGraph(nextSnapshot, outputUid);
+    if (!monitor || !channel.enabled || channel.mute || !channel.source || !isMasterAudible(nextSnapshot)) {
+      await window.localMixer.engineCommand("stop-mixer-monitor");
+      return;
+    }
+    await window.localMixer.engineCommand("start-mixer-monitor", {
+      sampleRate: 48000,
+      monitorGainDb: -18
+    });
+  }
+
+  async function refreshActiveMonitor(nextSnapshot: MixerSnapshot) {
+    if (!window.localMixer?.engineCommand) return;
+    const activeSource = nextSnapshot.channels.find((channel) => (
+      channel.kind === "source" && channel.monitor && channel.enabled && !channel.mute && Boolean(channel.source)
+    ));
+    await syncMixerGraph(nextSnapshot, outputUid);
+    if (!activeSource || !isMasterAudible(nextSnapshot)) {
       await window.localMixer.engineCommand("stop-mixer-monitor");
       return;
     }
@@ -478,15 +497,18 @@ export function MixerPage() {
             sourceOptions={sourceOptions}
             onSelect={(id) => refresh(() => adapter.selectChannel(id))}
             onEnabled={(id, enabled) => {
-              refresh(() => adapter.setChannelEnabled(id, enabled));
-              if (!enabled) void window.localMixer?.engineCommand?.("stop-mixer-monitor");
+              const nextSnapshot = refresh(() => adapter.setChannelEnabled(id, enabled));
+              void refreshActiveMonitor(nextSnapshot);
             }}
             onSource={(id, source) => refresh(() => adapter.setChannelSource(id, source))}
             onTrim={(id, value) => refresh(() => adapter.setChannelTrim(id, value))}
             onPan={(id, value) => refresh(() => adapter.setChannelPan(id, value))}
             onFader={(id, value) => refresh(() => adapter.setChannelFader(id, value))}
             onSend={(id, unitId, value) => refresh(() => adapter.setChannelSend(id, unitId, value))}
-            onMute={(id, muted) => refresh(() => adapter.setChannelMute(id, muted))}
+            onMute={(id, muted) => {
+              const nextSnapshot = refresh(() => adapter.setChannelMute(id, muted));
+              void refreshActiveMonitor(nextSnapshot);
+            }}
             onSolo={(id, solo) => refresh(() => adapter.setChannelSolo(id, solo))}
             onMonitor={(id, monitor) => {
               refresh(() => adapter.setChannelMonitor(id, monitor));
@@ -622,6 +644,11 @@ function channelColor(channel: ChannelState) {
   if (channel.role === "group") return "#b568f0";
   if (channel.role === "master") return "#20f0a0";
   return "#6ed6e8";
+}
+
+function isMasterAudible(snapshot: MixerSnapshot) {
+  const master = snapshot.channels.find((channel) => channel.kind === "master" || channel.role === "master");
+  return !master || (master.enabled && !master.mute);
 }
 
 function parseFxPrograms(programs: unknown[]): FxProgram[] {

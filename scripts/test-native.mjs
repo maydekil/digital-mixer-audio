@@ -176,15 +176,18 @@ async function testEngineProtocol() {
       typeof message.recoveryMarkerPresent === "boolean"
     )
   );
-  child.stdin.write(`${JSON.stringify({ id: "native-route-recover", type: "routing-system-recover" })}\n`);
-  await waitFor(() =>
-    messages.some((message) =>
-      message.id === "native-route-recover" &&
-      message.type === "routing-system-recover" &&
-      message.ok === false &&
-      message.error === "NO_RECOVERY_MARKER"
-    )
-  );
+  const routeStatus = messages.find((message) => message.id === "native-route-status" && message.type === "routing-system-status");
+  if (routeStatus?.recoveryMarkerPresent !== true) {
+    child.stdin.write(`${JSON.stringify({ id: "native-route-recover", type: "routing-system-recover" })}\n`);
+    await waitFor(() =>
+      messages.some((message) =>
+        message.id === "native-route-recover" &&
+        message.type === "routing-system-recover" &&
+        message.ok === false &&
+        message.error === "NO_RECOVERY_MARKER"
+      )
+    );
+  }
   child.stdin.write(`${JSON.stringify({ id: "native-route-disable", type: "routing-system-disable" })}\n`);
   await waitFor(() =>
     messages.some((message) =>

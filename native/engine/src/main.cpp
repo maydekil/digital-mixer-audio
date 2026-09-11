@@ -588,6 +588,12 @@ int runStdioProtocol() {
           persistentMonitorStatusJson(false, "NO_MONITOR_SOURCE", 0, 0, 0.0, 0.0, 0.0f));
       } else {
 #if defined(__APPLE__)
+        const auto effectiveMonitorGainDb =
+          monitorSelection.masterEnabled && !monitorSelection.masterMuted
+            ? monitorSelection.channelTrimDb + monitorSelection.channelFaderDb +
+                monitorSelection.masterTrimDb + monitorSelection.masterFaderDb +
+                monitorSelection.monitorGainDb
+            : -120.0f;
         const auto status = persistentMonitor.start({
           .inputUid = monitorSelection.inputUid,
           .outputUid = monitorSelection.outputUid,
@@ -596,7 +602,7 @@ int runStdioProtocol() {
           .outputChannel = static_cast<std::uint32_t>(readJsonNumberField(line, "outputChannel").value_or(0.0)),
           .mirrorToAllOutputChannels = readJsonBoolField(line, "mirrorToAllOutputChannels").value_or(true),
           .durationMs = 0,
-          .monitorGainDb = monitorSelection.channelTrimDb + monitorSelection.channelFaderDb + monitorSelection.monitorGainDb,
+          .monitorGainDb = effectiveMonitorGainDb,
           .monitorPan = monitorSelection.channelPan,
           .processors = monitorSelection.processors,
           .fxAProgramId = monitorSelection.fxAProgramId,

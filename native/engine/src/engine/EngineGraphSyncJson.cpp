@@ -66,6 +66,10 @@ std::string syncGraphError(MixerError error, std::uint32_t stripCount, std::uint
     ",\"retiredGraphCount\":" + std::to_string(retiredCount);
 }
 
+void clearMonitorSelection(SyncedMonitorSelection& monitorSelection) {
+  monitorSelection = SyncedMonitorSelection{};
+}
+
 }  // namespace
 
 std::string syncMixerGraphResultJson(
@@ -75,6 +79,7 @@ std::string syncMixerGraphResultJson(
 ) {
   const auto channelCount = static_cast<std::uint32_t>(readJsonNumberField(line, "channelCount").value_or(0.0));
   if (channelCount > kMaxMixerStrips) {
+    clearMonitorSelection(monitorSelection);
     return "\"synced\":false,\"error\":\"GRAPH_FULL\",\"stripCount\":0,\"activeMonitorCount\":0,\"retiredGraphCount\":" +
       std::to_string(controller.retiredCount());
   }
@@ -92,6 +97,10 @@ std::string syncMixerGraphResultJson(
   float monitorTrimDb = 0.0f;
   float monitorFaderDb = 0.0f;
   float monitorPan = 0.0f;
+  bool masterEnabled = true;
+  bool masterMuted = false;
+  float masterTrimDb = 0.0f;
+  float masterFaderDb = 0.0f;
   auto monitorProcessors = defaultChannelProcessorConfig();
   const auto outputUid = readJsonStringField(line, "outputUid");
   const auto monitorGainDb = static_cast<float>(readJsonNumberField(line, "monitorGainDb").value_or(-18.0));
@@ -111,6 +120,7 @@ std::string syncMixerGraphResultJson(
     const auto color = readJsonStringField(line, indexedField(index, "Color"));
     const auto created = prepared.createStrip(name.empty() ? "Channel" : name, color.empty() ? "#18d6e7" : color);
     if (created.error != MixerError::none) {
+      clearMonitorSelection(monitorSelection);
       return syncGraphError(created.error, stripCount, monitorCount, controller.retiredCount());
     }
 
@@ -173,7 +183,13 @@ std::string syncMixerGraphResultJson(
     prepared.setFxSend(created.id, FxBusId::a, sendA);
     prepared.setFxSend(created.id, FxBusId::b, sendB);
     stripCount += 1;
-    if (monitor && enabled && !sourceUid.empty() && kind == "source") {
+    if (kind == "master") {
+      masterEnabled = enabled;
+      masterMuted = muted;
+      masterTrimDb = trimDb;
+      masterFaderDb = faderDb;
+    }
+    if (monitor && enabled && !muted && !sourceUid.empty() && kind == "source") {
       monitorCount += 1;
       if (monitorInputUid.empty()) monitorInputUid = sourceUid;
       monitorSendA = sendA;
@@ -187,6 +203,7 @@ std::string syncMixerGraphResultJson(
   }
 
   if (monitorCount > 1) {
+    clearMonitorSelection(monitorSelection);
     return "\"synced\":false,\"error\":\"MULTIPLE_MONITOR_SOURCES_UNSUPPORTED\",\"stripCount\":" +
       std::to_string(stripCount) +
       ",\"activeMonitorCount\":" + std::to_string(monitorCount) +
@@ -210,6 +227,10 @@ std::string syncMixerGraphResultJson(
   monitorSelection.channelTrimDb = monitorTrimDb;
   monitorSelection.channelFaderDb = monitorFaderDb;
   monitorSelection.channelPan = monitorPan;
+  monitorSelection.masterEnabled = masterEnabled;
+  monitorSelection.masterMuted = masterMuted;
+  monitorSelection.masterTrimDb = masterTrimDb;
+  monitorSelection.masterFaderDb = masterFaderDb;
   monitorSelection.processors = monitorProcessors;
   return "\"synced\":true,\"error\":\"\",\"stripCount\":" + std::to_string(stripCount) +
     ",\"activeMonitorCount\":" + std::to_string(monitorCount) +
