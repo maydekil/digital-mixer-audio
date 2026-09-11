@@ -570,6 +570,8 @@ export function MixerPage() {
           <ChannelBank
             channels={displayChannels}
             sourceOptions={sourceOptions}
+            vocalFxPresetId={snapshot.vocalFx.activePresetId}
+            vocalFxPresets={snapshot.vocalFx.presets}
             onSelect={(id) => refresh(() => adapter.selectChannel(id))}
             onEnabled={(id, enabled) => {
               const nextSnapshot = refresh(() => adapter.setChannelEnabled(id, enabled));
@@ -604,6 +606,14 @@ export function MixerPage() {
                 });
                 setVocalFxOpen(true);
               }
+            }}
+            onVocalFxPreset={(id, presetId) => {
+              const enabled = presetId !== "default";
+              refreshLiveProcessing(() => {
+                adapter.selectChannel(id);
+                adapter.setChannelProcessor(id, "insertFx", enabled);
+                if (enabled) adapter.applyVocalFxPreset(presetId);
+              });
             }}
             onClipReset={(id) => refresh(() => adapter.resetClip(id))}
             onHarmonyToggle={() => void setHarmonyEnabled(!adapter.getSnapshot().harmony.enabled)}

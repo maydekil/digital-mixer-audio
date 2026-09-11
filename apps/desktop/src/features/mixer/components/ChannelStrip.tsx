@@ -1,4 +1,4 @@
-import type { ChannelState, FxUnitId, ProcessorId } from "../../../adapters/MixerControlPort";
+import type { ChannelState, FxUnitId, ProcessorId, VocalFxPreset } from "../../../adapters/MixerControlPort";
 import { ClipIndicator } from "../../../components/audio/ClipIndicator";
 import { LevelMeter } from "../../../components/audio/LevelMeter";
 import { RotaryKnob } from "../../../components/audio/RotaryKnob";
@@ -8,6 +8,8 @@ import { Button } from "../../../components/ui/Button";
 interface ChannelStripProps {
   channel: ChannelState;
   sourceOptions: Array<{ value: string; label: string }>;
+  vocalFxPresetId: string;
+  vocalFxPresets: VocalFxPreset[];
   onSelect(): void;
   onEnabled(enabled: boolean): void;
   onSource(source: string): void;
@@ -20,12 +22,13 @@ interface ChannelStripProps {
   onMonitor(monitor: boolean): void;
   onRecordArm(armed: boolean): void;
   onProcessor(processorId: ProcessorId, enabled: boolean): void;
+  onVocalFxPreset(presetId: string): void;
   onClipReset(): void;
   onHarmonyToggle?(): void;
   onHarmonySettings?(): void;
 }
 
-export function ChannelStrip({ channel, sourceOptions, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onSend, onMute, onSolo, onMonitor, onRecordArm, onProcessor, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
+export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onSend, onMute, onSolo, onMonitor, onRecordArm, onProcessor, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
   const isMaster = channel.kind === "master";
   const isGroup = channel.kind === "group";
   const meter = channel.enabled ? channel.meter : { left: -60, right: -60, clip: false };
@@ -44,7 +47,7 @@ export function ChannelStrip({ channel, sourceOptions, onSelect, onEnabled, onSo
         ) : <span>{channel.source}</span>}
       </header>
       <RotaryKnob label="Gain" value={`${channel.trimDb.toFixed(1)} dB`} numericValue={channel.trimDb} min={-24} max={24} step={0.5} onChange={onTrim} />
-      {isMaster ? <MasterUpperControls /> : <ProcessingButtons channel={channel} onProcessor={onProcessor} />}
+      {isMaster ? <MasterUpperControls /> : <ProcessingButtons channel={channel} vocalFxPresetId={vocalFxPresetId} vocalFxPresets={vocalFxPresets} onProcessor={onProcessor} onVocalFxPreset={onVocalFxPreset} />}
       {channel.harmonyVisible ? (
         <div className="harmony-shortcut">
           <Button tone="violet" active={channel.harmonyEnabled} onClick={onHarmonyToggle}>HARMONY {channel.harmonyEnabled ? "ON" : "OFF"}</Button>
@@ -71,13 +74,19 @@ export function ChannelStrip({ channel, sourceOptions, onSelect, onEnabled, onSo
   );
 }
 
-function ProcessingButtons({ channel, onProcessor }: { channel: ChannelState; onProcessor(processorId: ProcessorId, enabled: boolean): void }) {
+function ProcessingButtons({ channel, vocalFxPresetId, vocalFxPresets, onProcessor, onVocalFxPreset }: {
+  channel: ChannelState;
+  vocalFxPresetId: string;
+  vocalFxPresets: VocalFxPreset[];
+  onProcessor(processorId: ProcessorId, enabled: boolean): void;
+  onVocalFxPreset(presetId: string): void;
+}) {
   const buttons: Array<{ id: ProcessorId; label: string }> = [
     { id: "eq", label: "EQ" },
     { id: "comp", label: "COMP" },
     { id: "noise", label: "NOISE" }
   ];
-  if (channel.role !== "system") buttons.push({ id: "insertFx", label: "INSERT FX" });
+  if (channel.role !== "system" && channel.role !== "vocal") buttons.push({ id: "insertFx", label: "INSERT FX" });
 
   return (
     <div className="processing-buttons">
@@ -86,6 +95,18 @@ function ProcessingButtons({ channel, onProcessor }: { channel: ChannelState; on
           {button.label}
         </Button>
       ))}
+      {channel.role === "vocal" ? (
+        <select
+          className="channel-insert-preset"
+          value={channel.processing.insertFx ? vocalFxPresetId : "default"}
+          onChange={(event) => onVocalFxPreset(event.target.value)}
+          onClick={(event) => event.stopPropagation()}
+          aria-label="Voice preset"
+        >
+          <option value="default">Default</option>
+          {vocalFxPresets.map((preset) => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
+        </select>
+      ) : null}
       {channel.role === "system" ? <div className="processor-slot-placeholder" aria-hidden="true" /> : null}
     </div>
   );

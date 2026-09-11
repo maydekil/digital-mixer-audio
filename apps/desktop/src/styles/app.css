@@ -80,6 +80,8 @@
 .processing-buttons { display: grid; gap: 5px; }
 .processing-buttons .ui-button:not(.is-active) { color: #8faeb7; border-color: #214957; background: #09222b; box-shadow: inset 3px 0 0 rgba(95, 126, 137, 0.28); }
 .processing-buttons .ui-button.is-active { text-shadow: 0 0 7px rgba(24, 214, 231, 0.36); }
+.channel-insert-preset { width: 100%; min-width: 0; min-height: 25px; color: #dff4f8; background: #102b34; border: 1px solid #315966; border-radius: 5px; padding: 0 6px; font-size: 10px; font-weight: 420; }
+.channel-insert-preset:focus { outline: 1px solid var(--cyan); outline-offset: 1px; }
 .processor-slot-placeholder { min-height: 24px; visibility: hidden; }
 .master-upper { display: grid; grid-template-rows: 24px 1fr; gap: 4px; min-height: 140px; }
 .master-upper-spacer { min-height: 101px; }

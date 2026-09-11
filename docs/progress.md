@@ -3813,3 +3813,31 @@ Validation:
 
 Known limitations:
 - Manual listening confirmation that all 99 preset names produce clearly distinct perceptual voice characters is `NOT_RUN`; current implementation maps the 99 names onto available native rack archetypes until deeper factory parameter authoring is completed.
+
+### Phase19 UX Checkpoint — Put Vocal Preset Selector On Channel Strip
+
+Changed files:
+- `apps/desktop/src/features/mixer/components/ChannelBank.tsx`: passed vocal preset state/options and selection handler into channel strips.
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: replaced the vocal channel `INSERT FX` button with a `Voice preset` combobox containing `Default` plus the 99 vocal presets.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: made `Default` bypass the insert path and made preset selections enable INSERT FX and apply the chosen vocal preset through the existing native sync path.
+- `apps/desktop/src/styles/app.css`: styled the channel-strip voice preset combobox.
+- `tests/ui/visual.visual.ts`: covered switching VOICE to `Default` and back to a concrete preset from the strip.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- The vocal strip no longer exposes INSERT FX as an abstract ON/OFF button for the primary workflow.
+- `Default` means dry voice with vocal insert bypassed.
+- Choosing any named vocal preset from the channel strip turns the vocal insert on and applies that preset without opening the rack modal.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 50/50 passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 50/50, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual live-mic listening confirmation of every channel-strip preset selection is `NOT_RUN`; automated coverage verifies UI state and native sync path.

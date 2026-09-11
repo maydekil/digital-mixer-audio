@@ -49,6 +49,10 @@ test("preview controls mutate visible mixer state", async ({ page }) => {
   await expect(voiceStrip.getByRole("button", { name: "EQ", exact: true })).toHaveClass(/is-active/);
   await voiceStrip.getByRole("button", { name: "NOISE", exact: true }).click();
   await expect(voiceStrip.getByRole("button", { name: "NOISE", exact: true })).not.toHaveClass(/is-active/);
+  await voiceStrip.getByLabel("Voice preset").selectOption("default");
+  await expect(voiceStrip.getByLabel("Voice preset")).toHaveValue("default");
+  await voiceStrip.getByLabel("Voice preset").selectOption("voice-12-robot");
+  await expect(voiceStrip.getByLabel("Voice preset")).toHaveValue("voice-12-robot");
 
   await page.getByLabel("FX program").first().selectOption("50");
   await expect(page.getByLabel("FX program").first()).toHaveValue("50");
