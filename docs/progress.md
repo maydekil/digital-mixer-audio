@@ -3151,3 +3151,27 @@ Validation:
 
 Known limitations:
 - Manual hardware listening should still confirm that SYSTEM now stays dry with FX sends/processors bypassed.
+
+### Phase19 Hardening Checkpoint — System Monitor Meter Bridge
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: added a live SYSTEM meter overlay driven by native `mixer-monitor-status.inputPeak` while the top-bar SYSTEM route is enabled.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- The SYSTEM channel meter now follows the native persistent monitor input peak while BlackHole/SYSTEM monitoring is active.
+- Live meter values are kept out of the mixer snapshot/project/autosave path, so meter polling does not serialize audio state or cause project churn.
+- When SYSTEM routing is disabled or unavailable, the SYSTEM meter returns to silence.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 47/47 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size guard passed with `MixerPage.tsx` at 807 lines.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 47/47, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Automated verification does not confirm real BlackHole meter motion; user hardware playback should confirm the SYSTEM strip meter moves with browser/system audio.

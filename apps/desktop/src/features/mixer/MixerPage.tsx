@@ -11,6 +11,7 @@ import { VocalFxPanel } from "../vocal-fx/components/VocalFxPanel";
 import { plannedTakeFromResponse, replayChannelFromTake, snapshotToRecordingPlan } from "../recording/recordingDocument";
 import { ChannelBank } from "./components/ChannelBank";
 import type { ChannelState, FxProgram, MixerSnapshot } from "../../adapters/MixerControlPort";
+import type { MeterLevel } from "../../components/audio/types";
 import type { ProjectMediaStatus } from "../project/projectMediaWorkflow";
 import { relinkMissingProjectMedia } from "../project/projectMediaWorkflow";
 import { projectSessionToSnapshot, serializeProjectSession } from "../project/sessionDocument";
@@ -37,6 +38,7 @@ export function MixerPage() {
   const [projectPath, setProjectPath] = useState("");
   const [systemAudioEnabled, setSystemAudioEnabled] = useState(false);
   const [systemAudioStatus, setSystemAudioStatus] = useState("System Audio");
+  const [systemMeter, setSystemMeter] = useState<MeterLevel>({ left: -60, right: -60, clip: false });
   const autosaveReady = useRef(false);
   const fxProgramInFlight = useRef<Record<"fx-a" | "fx-b", boolean>>({ "fx-a": false, "fx-b": false });
   const fxProgramDesired = useRef<Partial<Record<"fx-a" | "fx-b", number>>>({});
@@ -444,6 +446,27 @@ export function MixerPage() {
     void syncMixerGraph(snapshot, outputUid);
   }, [snapshot, outputUid]);
 
+  useEffect(() => {
+    if (!systemAudioEnabled || !window.localMixer?.engineCommand) {
+      setSystemMeter({ left: -60, right: -60, clip: false });
+      return;
+    }
+    let canceled = false;
+    async function refreshSystemMeter() {
+      const result = await window.localMixer?.engineCommand?.("mixer-monitor-status");
+      if (canceled) return;
+      const peak = Number(result?.inputPeak ?? 0);
+      const db = linearPeakToDb(peak);
+      setSystemMeter({ left: db, right: db, clip: peak >= 0.98 });
+    }
+    void refreshSystemMeter();
+    const interval = window.setInterval(() => void refreshSystemMeter(), 120);
+    return () => {
+      canceled = true;
+      window.clearInterval(interval);
+    };
+  }, [systemAudioEnabled]);
+
   const selected = snapshot.channels.find((channel) => channel.id === snapshot.selectedChannelId) ?? snapshot.channels[0];
   useEffect(() => {
     if (selected.role === "system" && vocalFxOpen) setVocalFxOpen(false);
@@ -466,6 +489,9 @@ export function MixerPage() {
       : [{ value: channel.source, label: channel.source }, ...inputOptions];
     return [channel.id, options];
   }));
+  const displayChannels = snapshot.channels.map((channel) => (
+    channel.id === "system" ? { ...channel, meter: systemMeter } : channel
+  ));
 
   return (
     <main className="mixer-app">
@@ -502,7 +528,7 @@ export function MixerPage() {
       <section className="workspace">
         <div className="left-zone">
           <ChannelBank
-            channels={snapshot.channels}
+            channels={displayChannels}
             sourceOptions={sourceOptions}
             onSelect={(id) => refresh(() => adapter.selectChannel(id))}
             onEnabled={(id, enabled) => {
@@ -660,6 +686,11 @@ function channelColor(channel: ChannelState) {
 function isMasterAudible(snapshot: MixerSnapshot) {
   const master = snapshot.channels.find((channel) => channel.kind === "master" || channel.role === "master");
   return !master || (master.enabled && !master.mute);
+}
+
+function linearPeakToDb(peak: number) {
+  if (!Number.isFinite(peak) || peak <= 0.000001) return -60;
+  return Math.max(-60, Math.min(6, 20 * Math.log10(peak)));
 }
 
 function parseFxPrograms(programs: unknown[]): FxProgram[] {
