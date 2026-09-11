@@ -105,7 +105,7 @@
 .send-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; }
 .fader-meter-row { display: grid; grid-template-columns: 1fr 38px; align-items: end; min-height: 96px; margin-top: auto; }
 .strip-meter-stack { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.strip-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; min-height: 54px; align-content: end; }
+.strip-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; min-height: 25px; align-content: end; }
 .master-spacer { flex: 1 1 auto; min-height: 60px; }
 .channel-strip.is-master .master-spacer { display: none; }
 .channel-strip.is-master .fader-meter-row {
@@ -371,7 +371,7 @@
   .fader-scale { font-size: 10px; }
   .fader-scale span:nth-child(2), .fader-scale span:nth-child(4) { display: none; }
   .fader-readout { margin-top: 1px; }
-  .strip-actions { gap: 4px; }
+  .strip-actions { gap: 4px; min-height: 22px; }
   .strip-actions .ui-button { min-height: 22px; padding: 1px 6px; }
   .master-spacer { min-height: 46px; }
   .channel-strip.is-master .master-spacer { display: none; }

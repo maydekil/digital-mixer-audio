@@ -20,8 +20,6 @@ interface ChannelStripProps {
   onCompressorParam(field: keyof ChannelState["dynamics"]["compressor"], value: number): void;
   onCompressorEnabled(enabled: boolean): void;
   onMute(muted: boolean): void;
-  onSolo(solo: boolean): void;
-  onMonitor(monitor: boolean): void;
   onRecordArm(armed: boolean): void;
   onVocalFxPreset(presetId: string): void;
   onClipReset(): void;
@@ -29,9 +27,8 @@ interface ChannelStripProps {
   onHarmonySettings?(): void;
 }
 
-export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onCompressorParam, onCompressorEnabled, onMute, onSolo, onMonitor, onRecordArm, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
+export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onCompressorParam, onCompressorEnabled, onMute, onRecordArm, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
   const isMaster = channel.kind === "master";
-  const isGroup = channel.kind === "group";
   const meter = channel.enabled ? channel.meter : { left: -60, right: -60, clip: false };
 
   return (
@@ -67,9 +64,7 @@ export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxP
       </div>
       <div className="strip-actions">
         <Button active={channel.mute} onClick={() => onMute(!channel.mute)}>M</Button>
-        <Button active={channel.solo} onClick={() => onSolo(!channel.solo)}>S</Button>
-        {!isGroup && !isMaster ? <Button active={channel.monitor} onClick={() => onMonitor(!channel.monitor)}>MON</Button> : null}
-        {!isGroup && !isMaster ? <Button tone="danger" active={channel.recordArm} onClick={() => onRecordArm(!channel.recordArm)}>REC</Button> : null}
+        {!isMaster ? <Button tone="danger" active={channel.recordArm} onClick={() => onRecordArm(!channel.recordArm)}>REC</Button> : null}
       </div>
     </article>
   );

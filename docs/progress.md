@@ -3989,3 +3989,32 @@ Validation:
 Known limitations:
 - Manual listening confirmation that master-output EQ/COMP/NOISE changes affect the post-mix hardware output is `NOT_RUN`.
 - True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.
+
+### Phase19 UX Checkpoint — Remove Per-Channel Solo And Monitor Buttons
+
+Changed files:
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: removed the per-strip `S` and `MON` buttons, leaving channel ON/OFF plus M/REC as the visible strip action controls.
+- `apps/desktop/src/features/mixer/components/ChannelBank.tsx`: removed solo/monitor handler props from the channel strip wiring.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: removed the obsolete per-channel monitor click handler path from the mixer bank.
+- `apps/desktop/src/styles/app.css`: reduced strip action row height now that solo/monitor controls are no longer shown.
+- `tests/ui/visual.visual.ts`: verifies VOICE strip no longer exposes `S` or `MON`.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Users now solo a channel by turning other channels OFF, matching the simplified mixer workflow.
+- Per-channel monitor buttons are no longer exposed; SYSTEM monitoring remains triggered from the SYSTEM channel ON/OFF route flow, and master monitoring remains handled by the output path.
+- Existing solo/monitor state fields remain in the data model and native sync for compatibility with saved sessions and current engine contracts.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 52/52 passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed after a transient dev-server connection retry.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 52/52, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual live workflow validation after removing `S`/`MON` is `NOT_RUN`.
+- True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.

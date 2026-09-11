@@ -74,22 +74,6 @@ export function MixerPage() {
     await window.localMixer.clearProjectAutosave?.();
   }
 
-  async function runChannelMonitor(channelId: string, monitor: boolean) {
-    if (!window.localMixer?.engineCommand) return;
-    const channel = adapter.getSnapshot().channels.find((item) => item.id === channelId);
-    if (!channel || channel.kind !== "source") return;
-    const nextSnapshot = adapter.getSnapshot();
-    await syncMixerGraph(nextSnapshot, outputUid);
-    if (!monitor || !channel.enabled || channel.mute || !channel.source || !isMasterAudible(nextSnapshot)) {
-      await window.localMixer.engineCommand("stop-mixer-monitor");
-      return;
-    }
-    await window.localMixer.engineCommand("start-mixer-monitor", {
-      sampleRate: 48000,
-      monitorGainDb: monitorSafetyGainDb
-    });
-  }
-
   async function refreshActiveMonitor(nextSnapshot: MixerSnapshot, nextOutputUid = outputUid) {
     if (liveMonitorRefreshTimer.current !== undefined) {
       window.clearTimeout(liveMonitorRefreshTimer.current);
@@ -511,11 +495,6 @@ export function MixerPage() {
             onMute={(id, muted) => {
               const nextSnapshot = refresh(() => adapter.setChannelMute(id, muted));
               void refreshActiveMonitor(nextSnapshot);
-            }}
-            onSolo={(id, solo) => refresh(() => adapter.setChannelSolo(id, solo))}
-            onMonitor={(id, monitor) => {
-              refresh(() => adapter.setChannelMonitor(id, monitor));
-              void runChannelMonitor(id, monitor);
             }}
             onRecordArm={(id, armed) => refresh(() => adapter.setChannelRecordArm(id, armed))}
             onVocalFxPreset={(id, presetId) => {

@@ -16,8 +16,6 @@ interface ChannelBankProps {
   onCompressorParam(channelId: string, field: keyof ChannelState["dynamics"]["compressor"], value: number): void;
   onCompressorEnabled(channelId: string, enabled: boolean): void;
   onMute(channelId: string, muted: boolean): void;
-  onSolo(channelId: string, solo: boolean): void;
-  onMonitor(channelId: string, monitor: boolean): void;
   onRecordArm(channelId: string, armed: boolean): void;
   onVocalFxPreset(channelId: string, presetId: string): void;
   onClipReset(channelId: string): void;
@@ -25,7 +23,7 @@ interface ChannelBankProps {
   onHarmonySettings(channelId: string): void;
 }
 
-export function ChannelBank({ channels, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onCompressorParam, onCompressorEnabled, onMute, onSolo, onMonitor, onRecordArm, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelBankProps) {
+export function ChannelBank({ channels, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onCompressorParam, onCompressorEnabled, onMute, onRecordArm, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelBankProps) {
   return (
     <section className="channel-bank">
       {channels.map((channel) => (
@@ -45,8 +43,6 @@ export function ChannelBank({ channels, sourceOptions, vocalFxPresetId, vocalFxP
           onCompressorParam={(field, value) => onCompressorParam(channel.id, field, value)}
           onCompressorEnabled={(enabled) => onCompressorEnabled(channel.id, enabled)}
           onMute={(muted) => onMute(channel.id, muted)}
-          onSolo={(solo) => onSolo(channel.id, solo)}
-          onMonitor={(monitor) => onMonitor(channel.id, monitor)}
           onRecordArm={(armed) => onRecordArm(channel.id, armed)}
           onVocalFxPreset={(presetId) => onVocalFxPreset(channel.id, presetId)}
           onClipReset={() => onClipReset(channel.id)}

@@ -45,7 +45,8 @@ test("preview controls mutate visible mixer state", async ({ page }) => {
   await expect(voiceStrip.locator('input[aria-label="SEND A"]')).toHaveCount(0);
   await expect(page.getByLabel("FX A return")).toHaveCount(0);
 
-  await voiceStrip.getByRole("button", { name: "MON", exact: true }).click();
+  await expect(voiceStrip.getByRole("button", { name: "MON", exact: true })).toHaveCount(0);
+  await expect(voiceStrip.getByRole("button", { name: "S", exact: true })).toHaveCount(0);
   await expect(page.getByText("MONITOR ON")).toHaveCount(0);
   await voiceStrip.getByRole("button", { name: "REC", exact: true }).click();
   await expect(voiceStrip.getByRole("button", { name: "REC", exact: true })).not.toHaveClass(/is-active/);
