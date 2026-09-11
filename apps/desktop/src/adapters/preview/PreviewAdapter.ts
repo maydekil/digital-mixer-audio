@@ -230,21 +230,26 @@ export class PreviewAdapter implements MixerControlPort {
   }
 
   updateEqBand(bandId: EqBandState["id"], field: "freqHz" | "gainDb" | "qValue" | "type", value: number | string): void {
-    const updatedBands = this.snapshot.eqBands.map((band) => {
-      if (band.id !== bandId) return band;
-      if (field === "type") return { ...band, type: String(value) };
-
-      const next = { ...band, [field]: Number(value) };
-      next.freqHz = clamp(next.freqHz, 20, 20_000);
-      next.gainDb = clamp(next.gainDb, -12, 12);
-      if (next.qValue !== undefined) next.qValue = clamp(next.qValue, 0.1, 12);
-      return formatEqBand(next);
-    });
+    const updatedBands = updateEqBands(this.snapshot.eqBands, bandId, field, value);
     this.snapshot.eqBands = updatedBands;
     this.snapshot.channels = this.snapshot.channels.map((channel) => channel.id === this.snapshot.selectedChannelId ? {
       ...channel,
+      processing: { ...channel.processing, eq: true },
       eqBands: structuredClone(updatedBands)
     } : channel);
+  }
+
+  setChannelEqBand(channelId: string, bandId: EqBandState["id"], field: "freqHz" | "gainDb" | "qValue" | "type", value: number | string): void {
+    this.snapshot.channels = this.snapshot.channels.map((channel) => {
+      if (channel.id !== channelId) return channel;
+      const eqBands = updateEqBands(channel.eqBands, bandId, field, value);
+      if (channel.id === this.snapshot.selectedChannelId) this.snapshot.eqBands = structuredClone(eqBands);
+      return {
+        ...channel,
+        processing: { ...channel.processing, eq: true },
+        eqBands
+      };
+    });
   }
 
   resetEqBands(): void {
@@ -421,6 +426,19 @@ function selectedSlotForPreset(presetId: string, fallback: string) {
   if (enabled.includes("saturation")) return "saturation";
   if (enabled.includes("formant_shift")) return "formant-shift";
   return fallback;
+}
+
+function updateEqBands(bands: EqBandState[], bandId: EqBandState["id"], field: "freqHz" | "gainDb" | "qValue" | "type", value: number | string) {
+  return bands.map((band) => {
+    if (band.id !== bandId) return band;
+    if (field === "type") return { ...band, type: String(value) };
+
+    const next = { ...band, [field]: Number(value) };
+    next.freqHz = clamp(next.freqHz, 20, 20_000);
+    next.gainDb = clamp(next.gainDb, -12, 12);
+    if (next.qValue !== undefined) next.qValue = clamp(next.qValue, 0.1, 12);
+    return formatEqBand(next);
+  });
 }
 
 function clamp(value: number, min: number, max: number) {

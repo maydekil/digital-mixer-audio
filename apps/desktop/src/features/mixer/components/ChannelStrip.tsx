@@ -1,4 +1,4 @@
-import type { ChannelState, FxUnitId, ProcessorId, VocalFxPreset } from "../../../adapters/MixerControlPort";
+import type { ChannelState, EqBandState, FxUnitId, VocalFxPreset } from "../../../adapters/MixerControlPort";
 import { ClipIndicator } from "../../../components/audio/ClipIndicator";
 import { LevelMeter } from "../../../components/audio/LevelMeter";
 import { RotaryKnob } from "../../../components/audio/RotaryKnob";
@@ -16,19 +16,19 @@ interface ChannelStripProps {
   onTrim(value: number): void;
   onPan(value: number): void;
   onFader(value: number): void;
+  onEqBand(bandId: EqBandState["id"], gainDb: number): void;
   onSend(unitId: FxUnitId, value: number): void;
   onMute(muted: boolean): void;
   onSolo(solo: boolean): void;
   onMonitor(monitor: boolean): void;
   onRecordArm(armed: boolean): void;
-  onProcessor(processorId: ProcessorId, enabled: boolean): void;
   onVocalFxPreset(presetId: string): void;
   onClipReset(): void;
   onHarmonyToggle?(): void;
   onHarmonySettings?(): void;
 }
 
-export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onSend, onMute, onSolo, onMonitor, onRecordArm, onProcessor, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
+export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onSend, onMute, onSolo, onMonitor, onRecordArm, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
   const isMaster = channel.kind === "master";
   const isGroup = channel.kind === "group";
   const meter = channel.enabled ? channel.meter : { left: -60, right: -60, clip: false };
@@ -47,7 +47,7 @@ export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxP
         ) : <span>{channel.source}</span>}
       </header>
       <RotaryKnob label="Gain" value={`${channel.trimDb.toFixed(1)} dB`} numericValue={channel.trimDb} min={-24} max={24} step={0.5} onChange={onTrim} />
-      {isMaster ? <MasterUpperControls /> : <ProcessingButtons channel={channel} vocalFxPresetId={vocalFxPresetId} vocalFxPresets={vocalFxPresets} onProcessor={onProcessor} onVocalFxPreset={onVocalFxPreset} />}
+      {isMaster ? <MasterUpperControls /> : <ChannelToneControls channel={channel} vocalFxPresetId={vocalFxPresetId} vocalFxPresets={vocalFxPresets} onEqBand={onEqBand} onVocalFxPreset={onVocalFxPreset} />}
       {channel.harmonyVisible ? (
         <div className="harmony-shortcut">
           <Button tone="violet" active={channel.harmonyEnabled} onClick={onHarmonyToggle}>HARMONY {channel.harmonyEnabled ? "ON" : "OFF"}</Button>
@@ -74,27 +74,41 @@ export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxP
   );
 }
 
-function ProcessingButtons({ channel, vocalFxPresetId, vocalFxPresets, onProcessor, onVocalFxPreset }: {
+function ChannelToneControls({ channel, vocalFxPresetId, vocalFxPresets, onEqBand, onVocalFxPreset }: {
   channel: ChannelState;
   vocalFxPresetId: string;
   vocalFxPresets: VocalFxPreset[];
-  onProcessor(processorId: ProcessorId, enabled: boolean): void;
+  onEqBand(bandId: EqBandState["id"], gainDb: number): void;
   onVocalFxPreset(presetId: string): void;
 }) {
-  const buttons: Array<{ id: ProcessorId; label: string }> = [
-    { id: "eq", label: "EQ" },
-    { id: "comp", label: "COMP" },
-    { id: "noise", label: "NOISE" }
+  const toneBands: Array<{ id: EqBandState["id"]; label: string }> = [
+    { id: "low", label: "LOW" },
+    { id: "mid1", label: "MID 1" },
+    { id: "mid2", label: "MID 2" },
+    { id: "high", label: "HIGH" }
   ];
-  if (channel.role !== "system" && channel.role !== "vocal") buttons.push({ id: "insertFx", label: "INSERT FX" });
 
   return (
-    <div className="processing-buttons">
-      {buttons.map((button) => (
-        <Button key={button.id} active={channel.processing[button.id]} onClick={() => onProcessor(button.id, !channel.processing[button.id])}>
-          {button.label}
-        </Button>
-      ))}
+    <div className="channel-tone-section">
+      <div className="channel-tone-controls">
+        {toneBands.map((tone) => {
+          const band = channel.eqBands.find((item) => item.id === tone.id);
+          const gainDb = band?.gainDb ?? 0;
+          return (
+            <RotaryKnob
+              key={tone.id}
+              label={tone.label}
+              value={`${gainDb >= 0 ? "+" : ""}${gainDb.toFixed(1)}`}
+              numericValue={gainDb}
+              min={-12}
+              max={12}
+              step={0.5}
+              size="sm"
+              onChange={(value) => onEqBand(tone.id, value)}
+            />
+          );
+        })}
+      </div>
       {channel.role === "vocal" ? (
         <select
           className="channel-insert-preset"
@@ -107,7 +121,6 @@ function ProcessingButtons({ channel, vocalFxPresetId, vocalFxPresets, onProcess
           {vocalFxPresets.map((preset) => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
         </select>
       ) : null}
-      {channel.role === "system" ? <div className="processor-slot-placeholder" aria-hidden="true" /> : null}
     </div>
   );
 }

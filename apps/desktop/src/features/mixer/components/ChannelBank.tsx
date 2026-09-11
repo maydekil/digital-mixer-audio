@@ -1,4 +1,4 @@
-import type { ChannelState, ProcessorId, VocalFxPreset } from "../../../adapters/MixerControlPort";
+import type { ChannelState, EqBandState, VocalFxPreset } from "../../../adapters/MixerControlPort";
 import { ChannelStrip } from "./ChannelStrip";
 
 interface ChannelBankProps {
@@ -12,19 +12,19 @@ interface ChannelBankProps {
   onTrim(channelId: string, value: number): void;
   onPan(channelId: string, value: number): void;
   onFader(channelId: string, value: number): void;
+  onEqBand(channelId: string, bandId: EqBandState["id"], gainDb: number): void;
   onSend(channelId: string, unitId: "fx-a" | "fx-b", value: number): void;
   onMute(channelId: string, muted: boolean): void;
   onSolo(channelId: string, solo: boolean): void;
   onMonitor(channelId: string, monitor: boolean): void;
   onRecordArm(channelId: string, armed: boolean): void;
-  onProcessor(channelId: string, processorId: ProcessorId, enabled: boolean): void;
   onVocalFxPreset(channelId: string, presetId: string): void;
   onClipReset(channelId: string): void;
   onHarmonyToggle(): void;
   onHarmonySettings(channelId: string): void;
 }
 
-export function ChannelBank({ channels, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onSend, onMute, onSolo, onMonitor, onRecordArm, onProcessor, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelBankProps) {
+export function ChannelBank({ channels, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onSend, onMute, onSolo, onMonitor, onRecordArm, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelBankProps) {
   return (
     <section className="channel-bank">
       {channels.map((channel) => (
@@ -40,12 +40,12 @@ export function ChannelBank({ channels, sourceOptions, vocalFxPresetId, vocalFxP
           onTrim={(value) => onTrim(channel.id, value)}
           onPan={(value) => onPan(channel.id, value)}
           onFader={(value) => onFader(channel.id, value)}
+          onEqBand={(bandId, gainDb) => onEqBand(channel.id, bandId, gainDb)}
           onSend={(unitId, value) => onSend(channel.id, unitId, value)}
           onMute={(muted) => onMute(channel.id, muted)}
           onSolo={(solo) => onSolo(channel.id, solo)}
           onMonitor={(monitor) => onMonitor(channel.id, monitor)}
           onRecordArm={(armed) => onRecordArm(channel.id, armed)}
-          onProcessor={(processorId, enabled) => onProcessor(channel.id, processorId, enabled)}
           onVocalFxPreset={(presetId) => onVocalFxPreset(channel.id, presetId)}
           onClipReset={() => onClipReset(channel.id)}
           onHarmonyToggle={onHarmonyToggle}

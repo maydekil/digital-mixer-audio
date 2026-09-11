@@ -584,6 +584,7 @@ export function MixerPage() {
             onTrim={(id, value) => refreshLiveProcessing(() => adapter.setChannelTrim(id, value))}
             onPan={(id, value) => refreshLiveProcessing(() => adapter.setChannelPan(id, value))}
             onFader={(id, value) => refreshLiveProcessing(() => adapter.setChannelFader(id, value))}
+            onEqBand={(id, bandId, gainDb) => refreshLiveProcessing(() => adapter.setChannelEqBand(id, bandId, "gainDb", gainDb))}
             onSend={(id, unitId, value) => refreshLiveProcessing(() => adapter.setChannelSend(id, unitId, value))}
             onMute={(id, muted) => {
               const nextSnapshot = refresh(() => adapter.setChannelMute(id, muted));
@@ -595,18 +596,6 @@ export function MixerPage() {
               void runChannelMonitor(id, monitor);
             }}
             onRecordArm={(id, armed) => refresh(() => adapter.setChannelRecordArm(id, armed))}
-            onProcessor={(id, processorId, enabled) => {
-              const channel = adapter.getSnapshot().channels.find((item) => item.id === id);
-              if (channel?.role === "system" && processorId === "insertFx") return;
-              refreshLiveProcessing(() => adapter.setChannelProcessor(id, processorId, enabled));
-              if (processorId === "insertFx" && enabled) {
-                refresh(() => {
-                  adapter.selectChannel(id);
-                  adapter.applyVocalFxPreset(adapter.getSnapshot().vocalFx.activePresetId);
-                });
-                setVocalFxOpen(true);
-              }
-            }}
             onVocalFxPreset={(id, presetId) => {
               const enabled = presetId !== "default";
               refreshLiveProcessing(() => {

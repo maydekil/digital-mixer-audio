@@ -3841,3 +3841,33 @@ Validation:
 
 Known limitations:
 - Manual live-mic listening confirmation of every channel-strip preset selection is `NOT_RUN`; automated coverage verifies UI state and native sync path.
+
+### Phase19 UX Checkpoint — Add Direct Four-Band Channel Tone Controls
+
+Changed files:
+- `apps/desktop/src/adapters/MixerControlPort.ts`: added channel-scoped EQ band updates for controls that are not tied to the selected inspector channel.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: implemented `setChannelEqBand` and factored EQ band formatting/clamping into a reusable helper.
+- `apps/desktop/src/features/mixer/components/ChannelBank.tsx`: passed channel-scoped tone updates into each strip.
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: replaced per-strip EQ/COMP/NOISE processor buttons with direct `LOW`, `MID 1`, `MID 2`, and `HIGH` gain knobs.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: wired strip tone knobs to native sync via channel EQ band payloads.
+- `apps/desktop/src/styles/app.css`: added compact tone-knob layout styles for channel strips.
+- `tests/ui/preview-adapter.test.ts`, `tests/ui/visual.visual.ts`: covered channel-scoped tone edits and updated visual interaction checks.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Mixer channel strips now expose direct four-band tone controls instead of requiring the right-side EQ panel for common tonal changes.
+- Moving a strip tone knob enables that channel's native EQ processor and updates the corresponding LOW/MID 1/MID 2/HIGH band in the existing native graph payload.
+- Per-strip EQ/COMP buttons are no longer the primary mixer workflow.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 50/50 passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 50/50, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- This checkpoint does not yet implement true simultaneous native live capture/mixing for SYSTEM plus VOICE. The current persistent monitor path is still single-source; full multi-source native mixer monitoring remains required for the user's target workflow.

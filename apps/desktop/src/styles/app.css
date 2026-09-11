@@ -82,6 +82,13 @@
 .processing-buttons .ui-button.is-active { text-shadow: 0 0 7px rgba(24, 214, 231, 0.36); }
 .channel-insert-preset { width: 100%; min-width: 0; min-height: 25px; color: #dff4f8; background: #102b34; border: 1px solid #315966; border-radius: 5px; padding: 0 6px; font-size: 10px; font-weight: 420; }
 .channel-insert-preset:focus { outline: 1px solid var(--cyan); outline-offset: 1px; }
+.channel-tone-section { display: grid; gap: 5px; }
+.channel-tone-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 6px; }
+.channel-tone-controls .rotary { min-width: 0; }
+.channel-tone-controls .rotary-label { font-size: 8.5px; margin-bottom: 2px; }
+.channel-tone-controls .rotary-face { width: 26px; height: 26px; }
+.channel-tone-controls .rotary-tick { height: 10px; transform-origin: 50% 10px; }
+.channel-tone-controls .rotary-value { font-size: 9px; margin-top: 2px; }
 .processor-slot-placeholder { min-height: 24px; visibility: hidden; }
 .master-upper { display: grid; grid-template-rows: 24px 1fr; gap: 4px; min-height: 140px; }
 .master-upper-spacer { min-height: 101px; }

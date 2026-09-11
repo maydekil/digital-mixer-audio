@@ -134,6 +134,7 @@ describe("PreviewAdapter", () => {
 
     expect(adapter.getSnapshot().eqBands.find((band) => band.id === "low")?.gain).toBe("+0.0 dB");
     adapter.setChannelProcessor("guitar", "eq", false);
+    adapter.setChannelEqBand("guitar", "mid2", "gainDb", -3.5);
 
     const snapshot = adapter.getSnapshot();
     const voice = snapshot.channels.find((channel) => channel.id === "voice");
@@ -141,8 +142,9 @@ describe("PreviewAdapter", () => {
     expect(voice?.processing.noise).toBe(false);
     expect(voice?.processing.deEsser).toBe(true);
     expect(voice?.eqBands.find((band) => band.id === "low")?.gain).toBe("+8.0 dB");
-    expect(guitar?.processing.eq).toBe(false);
+    expect(guitar?.processing.eq).toBe(true);
     expect(guitar?.eqBands.find((band) => band.id === "low")?.gain).toBe("+0.0 dB");
+    expect(guitar?.eqBands.find((band) => band.id === "mid2")?.gain).toBe("-3.5 dB");
   });
 
   it("resets selected channel EQ bands to the neutral music start point", () => {
