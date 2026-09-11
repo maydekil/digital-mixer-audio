@@ -113,6 +113,7 @@ export interface VocalFxSlot {
 export interface VocalFxPreset {
   id: string;
   name: string;
+  archetypeId?: string;
 }
 
 export interface VocalFxState {

@@ -1,5 +1,6 @@
 import type { MixerSnapshot } from "../adapters/MixerControlPort";
 import { fxPrograms } from "./fxPrograms";
+import { vocalFxPresets } from "./vocalFxPresets";
 
 const baseEqBands = [
   { id: "low", label: "LOW", color: "#58F28A", freqHz: 100, gainDb: 0, freq: "100 Hz", gain: "+0.0 dB", type: "Shelf" },
@@ -47,21 +48,8 @@ export const approvedMixerSession: MixerSnapshot = {
   recording: { status: "idle", activeTap: "master", takeDirectory: "", error: "", armedChannelIds: ["voice"], takes: [] },
   vocalFx: {
     selectedSlotId: "pitch-correct",
-    activePresetId: "studio-pop",
-    presets: [
-      { id: "clean-voice", name: "Clean Voice" },
-      { id: "warm-broadcast", name: "Warm Broadcast" },
-      { id: "studio-pop", name: "Studio Pop" },
-      { id: "karaoke-hall", name: "Karaoke Hall" },
-      { id: "slapback", name: "Slapback" },
-      { id: "wide-double", name: "Wide Double" },
-      { id: "low-character", name: "Low Character" },
-      { id: "bright-character", name: "Bright Character" },
-      { id: "hard-tune", name: "Hard Tune" },
-      { id: "harmony-duo", name: "Harmony Duo" },
-      { id: "telephone", name: "Telephone" },
-      { id: "robot", name: "Robot" }
-    ],
+    activePresetId: "voice-03-studio-pop",
+    presets: vocalFxPresets,
     slots: [
       slot("pitch-correct", "pitch_correct", "Pitch Correction", "Pitch", true, 92, [["Key", "C"], ["Scale", "Major"], ["Retune", "80 ms"], ["Amount", "70%"]]),
       slot("formant-shift", "formant_shift", "Formant Shift", "Pitch", false, 58, [["Shift", "+0 st"], ["Mix", "100%"]]),

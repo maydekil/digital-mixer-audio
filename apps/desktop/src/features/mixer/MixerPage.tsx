@@ -600,7 +600,7 @@ export function MixerPage() {
               if (processorId === "insertFx" && enabled) {
                 refresh(() => {
                   adapter.selectChannel(id);
-                  adapter.selectVocalFxSlot("pitch-correct");
+                  adapter.applyVocalFxPreset(adapter.getSnapshot().vocalFx.activePresetId);
                 });
                 setVocalFxOpen(true);
               }

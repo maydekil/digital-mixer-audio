@@ -1,5 +1,6 @@
 import type { ChannelDynamicsState, ChannelRole, ChannelState, EqBandState, FxProgram, FxUnitId, HarmonyState, MixerControlPort, MixerSnapshot, ProcessorId, RecordedTakeState, RecordingWorkflowStatus } from "../MixerControlPort";
 import { approvedMixerSession } from "../../fixtures/approvedMixerSession";
+import { vocalFxPresetEffectTypes } from "../../fixtures/vocalFxPresets";
 
 export class PreviewAdapter implements MixerControlPort {
   private snapshot: MixerSnapshot = structuredClone(approvedMixerSession);
@@ -310,10 +311,10 @@ export class PreviewAdapter implements MixerControlPort {
     this.snapshot.vocalFx = {
       ...this.snapshot.vocalFx,
       activePresetId: presetId,
-      selectedSlotId: presetId === "robot" ? "robot" : presetId === "harmony-duo" ? "harmony" : this.snapshot.vocalFx.selectedSlotId,
+      selectedSlotId: selectedSlotForPreset(presetId, this.snapshot.vocalFx.selectedSlotId),
       slots: this.snapshot.vocalFx.slots.map((slot) => ({
         ...slot,
-        enabled: presetEnabled(presetId, slot.effectType, slot.enabled)
+        enabled: presetEnabled(presetId, slot.effectType)
       }))
     };
   }
@@ -405,22 +406,21 @@ function defaultDynamics(): ChannelDynamicsState {
   };
 }
 
-function presetEnabled(presetId: string, effectType: string, fallback: boolean) {
-  const enabledByPreset: Record<string, string[]> = {
-    "clean-voice": [],
-    "warm-broadcast": ["saturation", "reverb"],
-    "studio-pop": ["pitch_correct", "doubler", "reverb"],
-    "karaoke-hall": ["reverb", "delay"],
-    "slapback": ["delay"],
-    "wide-double": ["doubler", "chorus"],
-    "low-character": ["pitch_shift", "formant_shift"],
-    "bright-character": ["pitch_shift", "formant_shift"],
-    "hard-tune": ["pitch_correct"],
-    "harmony-duo": ["harmony", "reverb"],
-    "telephone": ["saturation"],
-    "robot": ["vocoder"]
-  };
-  return enabledByPreset[presetId]?.includes(effectType) ?? fallback;
+function presetEnabled(presetId: string, effectType: string) {
+  return vocalFxPresetEffectTypes(presetId)?.includes(effectType) ?? false;
+}
+
+function selectedSlotForPreset(presetId: string, fallback: string) {
+  const enabled = vocalFxPresetEffectTypes(presetId) ?? [];
+  if (enabled.includes("vocoder")) return "robot";
+  if (enabled.includes("harmony")) return "harmony";
+  if (enabled.includes("pitch_correct")) return "pitch-correct";
+  if (enabled.includes("reverb")) return "plate";
+  if (enabled.includes("delay")) return "stereo-delay";
+  if (enabled.includes("doubler")) return "doubler";
+  if (enabled.includes("saturation")) return "saturation";
+  if (enabled.includes("formant_shift")) return "formant-shift";
+  return fallback;
 }
 
 function clamp(value: number, min: number, max: number) {

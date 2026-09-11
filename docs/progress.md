@@ -3783,3 +3783,33 @@ Validation:
 
 Known limitations:
 - Manual listening confirmation on the user's live microphone after opening/closing the INSERT FX modal is `NOT_RUN` in automated verification.
+
+### Phase19 UX Checkpoint — Make Vocal Insert FX Preset-Driven
+
+Changed files:
+- `apps/desktop/src/fixtures/vocalFxPresets.ts`: added a 99-entry vocal preset catalog with preset archetypes mapped to native rack effect types.
+- `apps/desktop/src/fixtures/approvedMixerSession.ts`: switched the vocal FX preset bank to the 99-entry catalog and defaulted to `03 · Studio Pop`.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: made vocal preset selection one-click, replacing the enabled rack slot set from the selected preset archetype.
+- `apps/desktop/src/features/vocal-fx/components/VocalFxPanel.tsx`: made the default modal a simple voice preset selector and kept the detailed rack behind an Advanced toggle.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: changed INSERT FX enable behavior to apply the active vocal preset instead of selecting a rack slot directly.
+- `apps/desktop/src/styles/app.css`: added the compact/simple vocal preset modal styles.
+- `tests/ui/preview-adapter.test.ts`, `tests/ui/visual.visual.ts`: covered the 99-preset bank, preset-to-rack behavior, and simple/advanced modal flow.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Vocal INSERT FX now behaves as a preset-first workflow: the user can choose one of 99 voice characters and the app applies the corresponding native insert chain automatically.
+- The detailed Vocal FX rack is still available through Advanced, but it is no longer the default surface shown to users who only want a finished voice sound.
+- Selecting robot/harmony/pop/etc. presets updates the native rack slot enable state through the existing native sync path; no browser audio fallback was added.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 50/50 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 50/50, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed after updating tests to current compact mixer UI.
+
+Known limitations:
+- Manual listening confirmation that all 99 preset names produce clearly distinct perceptual voice characters is `NOT_RUN`; current implementation maps the 99 names onto available native rack archetypes until deeper factory parameter authoring is completed.

@@ -9,7 +9,7 @@ for (const viewport of viewports) {
   test(`mixer layout ${viewport.name}`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.goto("/");
-    await expect(page.getByText("UI PREVIEW · Audio engine not connected")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Local Audio Mixer" })).toBeVisible();
     await expect(page.getByText("FX A")).toBeVisible();
     await expect(page.getByText("FX B")).toBeVisible();
     await expect(page.getByText("VOICE · HARMONY")).toBeVisible();
@@ -32,8 +32,8 @@ test("preview controls mutate visible mixer state", async ({ page }) => {
   await voiceStrip.locator('input[aria-label="Pan"]').fill("-40");
   await expect(voiceStrip.getByText("L 40")).toBeVisible();
 
-  await voiceStrip.getByLabel("VOICE fader").fill("-15");
-  await expect(voiceStrip.getByText("-15.0 dB")).toBeVisible();
+  await voiceStrip.locator('label[aria-label="VOICE fader"] input').fill("25");
+  await expect(voiceStrip.getByText("-5.0 dB")).toBeVisible();
 
   await voiceStrip.locator('input[aria-label="SEND A"]').fill("-9");
   await expect(voiceStrip.getByText("-9 dB")).toBeVisible();
@@ -50,9 +50,8 @@ test("preview controls mutate visible mixer state", async ({ page }) => {
   await voiceStrip.getByRole("button", { name: "NOISE", exact: true }).click();
   await expect(voiceStrip.getByRole("button", { name: "NOISE", exact: true })).not.toHaveClass(/is-active/);
 
-  await page.getByLabel("FX program").first().fill("Stereo");
-  await page.keyboard.press("Enter");
-  await expect(page.getByLabel("FX program").first()).toHaveValue(/Stereo/);
+  await page.getByLabel("FX program").first().selectOption("50");
+  await expect(page.getByLabel("FX program").first()).toHaveValue("50");
 
   await page.locator(".compact-fx-row").first().getByRole("button", { name: "Edit" }).click();
   await expect(page.getByRole("dialog", { name: "FX A editor" })).toBeVisible();
@@ -86,8 +85,11 @@ test("vocal fx tab opens rack editor surface", async ({ page }) => {
 
   await page.getByRole("button", { name: "Vocal FX" }).click();
   await expect(page.getByRole("dialog", { name: "Vocal FX rack" })).toBeVisible();
+  await expect(page.getByLabel("Voice preset selector")).toContainText("03 · Studio Pop");
+  await page.getByLabel("Vocal FX preset").selectOption("voice-80-robot-modern");
+  await expect(page.getByLabel("Voice preset selector")).toContainText("80 · Robot Modern");
+  await page.getByRole("button", { name: "Advanced", exact: true }).click();
   await expect(page.getByLabel("Effect Library")).toContainText("Pitch Correction");
   await expect(page.getByLabel("Rack slots")).toContainText("Robot Voice");
-  await page.getByLabel("Vocal FX preset").selectOption("robot");
   await expect(page.getByLabel("Effect editor")).toContainText("Robot Voice");
 });

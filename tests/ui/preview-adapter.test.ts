@@ -244,11 +244,12 @@ describe("PreviewAdapter", () => {
     const adapter = new PreviewAdapter();
     adapter.selectVocalFxSlot("robot");
     adapter.setVocalFxSlotEnabled("robot", true);
-    adapter.applyVocalFxPreset("harmony-duo");
+    adapter.applyVocalFxPreset("voice-10-harmony-duo");
 
     const snapshot = adapter.getSnapshot();
+    expect(snapshot.vocalFx.presets).toHaveLength(99);
     expect(snapshot.vocalFx.selectedSlotId).toBe("harmony");
-    expect(snapshot.vocalFx.activePresetId).toBe("harmony-duo");
+    expect(snapshot.vocalFx.activePresetId).toBe("voice-10-harmony-duo");
     expect(snapshot.vocalFx.slots.find((slot) => slot.id === "harmony")?.enabled).toBe(true);
     expect(snapshot.vocalFx.slots.find((slot) => slot.id === "robot")?.enabled).toBe(false);
   });
