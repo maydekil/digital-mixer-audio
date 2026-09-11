@@ -3253,3 +3253,30 @@ Validation:
 
 Known limitations:
 - The underlying project/session field is still named `faderDb`; the UI now presents it as volume units while converting to dB for native DSP.
+
+### Phase19 Hardening Checkpoint — Restore Center Unity Db Faders
+
+Changed files:
+- `apps/desktop/src/components/audio/VerticalFader.tsx`: restored mixer-style fader labels and readout to `-10 dB` through `+10 dB`, with `0 dB` centered as unity/original level.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: restored channel fader clamps to `-10..+10`.
+- `apps/desktop/src/features/project/sessionDocument.ts`: restored project fader restore clamp to `-10..+10`.
+- `tests/ui/preview-adapter.test.ts`, `tests/ui/project-session.test.ts`: updated expectations for the restored symmetric dB clamp.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Every channel fader is again a mixer dB fader: `0.0 dB` is centered and means original/unity level.
+- The lower end is `-10 dB`; the upper end is `+10 dB`, matching the user's requested symmetric channel fader range.
+- Values restored from older projects are clamped into the visible fader range.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 47/47 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size guard passed with `MixerPage.tsx` warning at 833 lines.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 47/47, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Hard silence is now represented by mute/off, not by the fader bottom, consistent with the restored mixer-style dB fader behavior.
