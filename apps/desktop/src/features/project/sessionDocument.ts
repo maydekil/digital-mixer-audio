@@ -26,6 +26,7 @@ export interface ProjectSessionChannel {
   eqEnabled: boolean;
   noiseEnabled: boolean;
   compEnabled: boolean;
+  deEsserEnabled: boolean;
   insertFxEnabled: boolean;
   gainDb: number;
   faderDb: number;
@@ -200,6 +201,7 @@ function channelToSession(channel: ChannelState): ProjectSessionChannel {
     eqEnabled: channel.processing.eq,
     noiseEnabled: channel.processing.noise,
     compEnabled: channel.processing.comp,
+    deEsserEnabled: channel.processing.deEsser,
     insertFxEnabled: channel.processing.insertFx,
     gainDb: channel.trimDb,
     faderDb: channel.faderDb,
@@ -233,6 +235,7 @@ function applyChannelSession(channel: ChannelState, saved: ProjectSessionChannel
       eq: Boolean(saved.eqEnabled),
       noise: Boolean(saved.noiseEnabled),
       comp: Boolean(saved.compEnabled),
+      deEsser: Boolean(saved.deEsserEnabled),
       insertFx: Boolean(saved.insertFxEnabled)
     },
     dynamics: {
@@ -286,7 +289,7 @@ function fallbackChannel(): ChannelState {
     solo: false,
     monitor: false,
     recordArm: false,
-    processing: { eq: true, comp: false, noise: false, insertFx: false },
+    processing: { eq: true, comp: false, noise: false, deEsser: false, insertFx: false },
     dynamics: {
       noise: { thresholdDb: -38, rangeDb: -50, holdMs: 30, releaseMs: 160 },
       compressor: { thresholdDb: -18, ratio: 3, attackMs: 10, releaseMs: 120 },

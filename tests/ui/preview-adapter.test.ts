@@ -96,6 +96,7 @@ describe("PreviewAdapter", () => {
     adapter.setChannelCompressorParam("voice", "ratio", 4);
     adapter.setChannelCompressorParam("voice", "attackMs", 25);
     adapter.setChannelCompressorParam("voice", "releaseMs", 250);
+    adapter.setChannelProcessor("voice", "deEsser", true);
     adapter.setChannelDeEsserParam("voice", "frequencyHz", 7200);
 
     const voice = adapter.getSnapshot().channels.find((channel) => channel.id === "voice");
@@ -107,6 +108,7 @@ describe("PreviewAdapter", () => {
     expect(voice?.dynamics.compressor.ratio).toBe(4);
     expect(voice?.dynamics.compressor.attackMs).toBe(25);
     expect(voice?.dynamics.compressor.releaseMs).toBe(250);
+    expect(voice?.processing.deEsser).toBe(true);
     expect(voice?.dynamics.deEsser.frequencyHz).toBe(7200);
   });
 
@@ -126,6 +128,7 @@ describe("PreviewAdapter", () => {
   it("keeps EQ edits and processor toggles scoped to the selected channel", () => {
     const adapter = new PreviewAdapter();
     adapter.setChannelProcessor("voice", "noise", false);
+    adapter.setChannelProcessor("voice", "deEsser", true);
     adapter.updateEqBand("low", "gainDb", 8);
     adapter.selectChannel("guitar");
 
@@ -136,6 +139,7 @@ describe("PreviewAdapter", () => {
     const voice = snapshot.channels.find((channel) => channel.id === "voice");
     const guitar = snapshot.channels.find((channel) => channel.id === "guitar");
     expect(voice?.processing.noise).toBe(false);
+    expect(voice?.processing.deEsser).toBe(true);
     expect(voice?.eqBands.find((band) => band.id === "low")?.gain).toBe("+8.0 dB");
     expect(guitar?.processing.eq).toBe(false);
     expect(guitar?.eqBands.find((band) => band.id === "low")?.gain).toBe("+0.0 dB");

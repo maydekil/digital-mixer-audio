@@ -3733,3 +3733,31 @@ Validation:
 
 Known limitations:
 - Manual listening confirmation against the user's fan/microphone environment is `NOT_RUN` in automated verification. A gate removes fan noise mostly during pauses; fan will still be audible while voice is actively opening the gate.
+
+### Phase19 Hardening Checkpoint — Make Vocal De-Esser Explicitly Bypassable
+
+Changed files:
+- `apps/desktop/src/adapters/MixerControlPort.ts`: added `deEsser` to the channel processor toggle IDs.
+- `apps/desktop/src/fixtures/approvedMixerSession.ts`: made de-esser default off instead of implicit-on for vocal channels.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: allowed vocal de-esser toggling and rejected de-esser activation on non-vocal channels.
+- `apps/desktop/src/features/processing/components/ChannelProcessingPanel.tsx`: added an explicit de-esser power button and disabled its knobs while bypassed.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: sent `ProcessorDeEsser` to native from the explicit channel processing state.
+- `apps/desktop/src/features/project/sessionDocument.ts`: persisted and restored `deEsserEnabled`.
+- `tests/ui/preview-adapter.test.ts`, `tests/ui/project-session.test.ts`: covered de-esser toggle state and project roundtrip.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Turning off EQ, COMP, NOISE, INSERT FX, and DE-ESSER now leaves the vocal channel dry except for routing, fader/gain, pan, and master output.
+- De-esser is no longer silently enabled just because the selected channel role is vocal.
+- Saved projects preserve the explicit de-esser bypass state.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 50/50 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 50/50, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual listening confirmation that the user's current VOICE mic sounds fully dry with every processor disabled is `NOT_RUN` in automated verification.

@@ -136,7 +136,7 @@ export class PreviewAdapter implements MixerControlPort {
       ...channel,
       processing: {
         ...channel.processing,
-        [processorId]: channel.role === "system" && processorId === "insertFx" ? false : enabled
+        [processorId]: isProcessorAvailable(channel, processorId) ? enabled : false
       }
     } : channel);
   }
@@ -358,7 +358,7 @@ function newSourceChannel(id: string, name: string, role: Exclude<ChannelRole, "
     recordArm: false,
     harmonyVisible: role === "vocal",
     harmonyEnabled: false,
-    processing: { eq: true, comp: role === "vocal", noise: role === "vocal", insertFx: false },
+    processing: { eq: true, comp: role === "vocal", noise: role === "vocal", deEsser: false, insertFx: false },
     dynamics: defaultDynamics(),
     sends: { "fx-a": { enabled: false, gainDb: -60 }, "fx-b": { enabled: false, gainDb: -60 } },
     eqBands: defaultEqBands(),
@@ -432,6 +432,12 @@ function clampCompressor(field: keyof ChannelDynamicsState["compressor"], value:
   if (field === "ratio") return clamp(value, 1, 20);
   if (field === "attackMs") return clamp(value, 0.1, 200);
   return clamp(value, 10, 3000);
+}
+
+function isProcessorAvailable(channel: ChannelState, processorId: ProcessorId) {
+  if (processorId === "insertFx") return channel.role !== "system";
+  if (processorId === "deEsser") return channel.role === "vocal";
+  return true;
 }
 
 function clampNoise(field: keyof ChannelDynamicsState["noise"], value: number) {

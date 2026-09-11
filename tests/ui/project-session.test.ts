@@ -22,6 +22,7 @@ describe("project session serialization", () => {
       sourceUid: "USB Mic",
       recordArm: true,
       noiseEnabled: true,
+      deEsserEnabled: false,
       insertFxEnabled: true,
       noiseThresholdDb: -38,
       noiseRangeDb: -50,
@@ -46,7 +47,8 @@ describe("project session serialization", () => {
     const source = structuredClone(approvedMixerSession);
     source.channels[1].source = "Headset Mic";
     source.channels[1].faderDb = -12;
-    source.channels[1].processing.noise = false;
+      source.channels[1].processing.noise = false;
+    source.channels[1].processing.deEsser = true;
     source.channels[1].dynamics.noise.holdMs = 55;
     source.channels[1].dynamics.noise.releaseMs = 220;
     source.channels[1].dynamics.compressor.ratio = 5;
@@ -65,6 +67,7 @@ describe("project session serialization", () => {
     expect(voice?.source).toBe("Headset Mic");
     expect(voice?.faderDb).toBe(-10);
     expect(voice?.processing.noise).toBe(false);
+    expect(voice?.processing.deEsser).toBe(true);
     expect(voice?.dynamics.noise.holdMs).toBe(55);
     expect(voice?.dynamics.noise.releaseMs).toBe(220);
     expect(voice?.dynamics.compressor.ratio).toBe(5);
@@ -91,6 +94,7 @@ describe("project session serialization", () => {
       eqEnabled: true,
       noiseEnabled: false,
       compEnabled: false,
+      deEsserEnabled: false,
       insertFxEnabled: false,
       gainDb: 0,
       faderDb: -9,

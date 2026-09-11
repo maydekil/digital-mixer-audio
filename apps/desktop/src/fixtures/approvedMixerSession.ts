@@ -35,7 +35,7 @@ export const approvedMixerSession: MixerSnapshot = {
     {
       id: "master", name: "MASTER", source: "Output 1-2", kind: "master", role: "master",
       enabled: true, trimDb: 0, pan: 0, faderDb: 0, mute: false, solo: false,
-      processing: { eq: true, comp: false, noise: false, insertFx: false },
+      processing: { eq: true, comp: false, noise: false, deEsser: false, insertFx: false },
       dynamics: cloneDynamics(),
       sends: { "fx-a": { enabled: false, gainDb: 0 }, "fx-b": { enabled: false, gainDb: 0 } },
       eqBands: cloneEqBands(),
@@ -80,7 +80,7 @@ function channel(id: string, name: string, source: string, role: "system" | "voc
     id, name, source, kind: role === "group" ? "group" as const : "source" as const, role,
     selected: id === "voice", enabled: true, trimDb: 0, pan: 0, faderDb, mute: false, solo: false,
     monitor: mon, recordArm: rec, harmonyVisible: role === "vocal", harmonyEnabled: false,
-    processing: { eq: true, comp: role === "vocal", noise: role === "vocal", insertFx: role === "vocal" },
+    processing: { eq: true, comp: role === "vocal", noise: role === "vocal", deEsser: false, insertFx: role === "vocal" },
     dynamics: cloneDynamics(),
     sends: {
       "fx-a": { enabled: sendA !== 0, gainDb: sendA },

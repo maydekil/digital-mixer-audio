@@ -629,6 +629,7 @@ export function MixerPage() {
             onSendA={(value) => refreshLiveProcessing(() => adapter.setChannelSend(selected.id, "fx-a", value))}
             onEqChange={(bandId, field, value) => refreshLiveProcessing(() => adapter.updateEqBand(bandId, field, value))}
             onEqReset={() => refreshLiveProcessing(() => adapter.resetEqBands())}
+            onProcessor={(processorId, enabled) => refreshLiveProcessing(() => adapter.setChannelProcessor(selected.id, processorId, enabled))}
             onNoiseChange={(field, value) => refreshLiveProcessing(() => adapter.setChannelNoiseParam(selected.id, field, value))}
             onCompressorChange={(field, value) => refreshLiveProcessing(() => adapter.setChannelCompressorParam(selected.id, field, value))}
             onDeEsserChange={(field, value) => refreshLiveProcessing(() => adapter.setChannelDeEsserParam(selected.id, field, value))}
@@ -691,7 +692,7 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}ProcessorComp`] = channel.processing.comp;
     payload[`${prefix}ProcessorNoise`] = channel.processing.noise;
     payload[`${prefix}ProcessorInsertFx`] = channel.role === "system" ? false : channel.processing.insertFx;
-    payload[`${prefix}ProcessorDeEsser`] = channel.role === "vocal";
+    payload[`${prefix}ProcessorDeEsser`] = channel.role === "vocal" && channel.processing.deEsser;
     payload[`${prefix}NoiseThresholdDb`] = channel.dynamics.noise.thresholdDb;
     payload[`${prefix}NoiseRangeDb`] = channel.dynamics.noise.rangeDb;
     payload[`${prefix}NoiseHoldMs`] = channel.dynamics.noise.holdMs;

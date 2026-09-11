@@ -3,7 +3,7 @@ import type { EqBandDisplay, MeterLevel } from "../components/audio/types";
 export type ChannelKind = "source" | "group" | "master";
 export type ChannelRole = "system" | "vocal" | "instrument" | "music" | "group" | "master";
 export type FxUnitId = "fx-a" | "fx-b";
-export type ProcessorId = "eq" | "comp" | "noise" | "insertFx";
+export type ProcessorId = "eq" | "comp" | "noise" | "deEsser" | "insertFx";
 
 export interface SendState {
   enabled: boolean;

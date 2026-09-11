@@ -207,6 +207,9 @@
 .processor-title { display: flex; align-items: center; gap: 9px; margin-bottom: 6px; font-size: 11px; }
 .processor-title strong { font-weight: 470; }
 .processor-title > span { color: var(--cyan); font-size: 16px; }
+.processor-power { appearance: none; border: 0; background: transparent; color: var(--cyan); font: inherit; font-size: 16px; line-height: 1; padding: 0; cursor: pointer; }
+.processor-power:disabled { color: #6f8790; cursor: default; }
+.processor-power[aria-pressed="false"] { color: #6f8790; }
 .processor-title .processor-reset { min-height: 22px; padding: 0 8px; font-size: 10px; }
 .processor-title label { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .processor-title input { accent-color: var(--cyan); }
