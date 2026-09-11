@@ -26,6 +26,7 @@ struct SyncedMonitorSelection {
   float channelTrimDb = 0.0f;
   float channelFaderDb = 0.0f;
   float channelPan = 0.0f;
+  bool channelStereo = false;
   bool masterEnabled = true;
   bool masterMuted = false;
   float masterTrimDb = 0.0f;

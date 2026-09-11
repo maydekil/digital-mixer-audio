@@ -19,6 +19,7 @@ struct PassthroughMonitorRequest {
   std::uint32_t inputChannel = 0;
   std::uint32_t outputChannel = 0;
   bool mirrorToAllOutputChannels = true;
+  bool stereoInput = false;
   std::uint32_t durationMs = 750;
   float monitorGainDb = -24.0f;
   float monitorPan = 0.0f;

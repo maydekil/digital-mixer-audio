@@ -40,7 +40,7 @@ int main() {
     "\"channel0Name\":\"VOICE\","
     "\"channel0Color\":\"#18d6e7\","
     "\"channel0SourceUid\":\"mic\","
-    "\"channel0Assignment\":\"mono\","
+    "\"channel0Assignment\":\"stereo\","
     "\"channel0Enabled\":true,"
     "\"channel0Mute\":false,"
     "\"channel0Solo\":false,"
@@ -143,7 +143,8 @@ int main() {
     std::cerr << "monitor selection should keep Vocal FX rack slot state\n";
     return 1;
   }
-  if (!near(selection.channelTrimDb, 1.0) || !near(selection.channelFaderDb, -6.0) || !near(selection.channelPan, 0.25)) {
+  if (!near(selection.channelTrimDb, 1.0) || !near(selection.channelFaderDb, -6.0) || !near(selection.channelPan, 0.25) ||
+      !selection.channelStereo) {
     std::cerr << "monitor selection should keep gain and pan\n";
     return 1;
   }

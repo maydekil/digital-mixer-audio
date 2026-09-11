@@ -3093,3 +3093,34 @@ Validation:
 
 Known limitations:
 - Manual packaged close/reopen route recovery still needs user hardware confirmation because automated tests do not change macOS output devices.
+
+### Phase19 Hardening Checkpoint — Dry Stereo System Monitor Path
+
+Changed files:
+- `native/engine/src/platform/macos/CoreAudioPassthrough.hpp`, `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: persistent monitor requests can now preserve stereo input, validate stereo channel availability, store two-channel ring-buffer frames, and feed stereo source buffers into the native mixer graph.
+- `native/engine/src/engine/EngineGraphSyncJson.hpp`, `native/engine/src/engine/EngineGraphSyncJson.cpp`: synced the monitored channel's mono/stereo assignment into `SyncedMonitorSelection`.
+- `native/engine/src/main.cpp`: passes the synced stereo assignment into `start-mixer-monitor`.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: SYSTEM and MUSIC sources now sync as stereo assignments; enabling the top-bar SYSTEM route forces SYSTEM FX sends off for a dry browser/system monitor path.
+- `apps/desktop/src/fixtures/approvedMixerSession.ts`: default SYSTEM strip no longer starts with FX A/B sends enabled.
+- `native/engine/tests/EngineGraphSyncJsonTest.cpp`: covers stereo assignment propagation to the persistent monitor selection.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Browser/YouTube audio captured through BlackHole 2ch is no longer collapsed into the mono monitor path.
+- SYSTEM route starts dry by default: EQ/COMP/NOISE/INSERT FX remain under user control, and FX A/B sends are disabled unless the user explicitly raises them.
+- Native monitor setup rejects invalid stereo requests instead of silently reading a missing second input channel.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `cmake --build native/engine/build --target local-mixer-engine local-mixer-engine-graph-sync-json-tests`
+- exit/result: `0`; native engine and graph sync test target built.
+- command: `npx vitest run tests/ui/preview-adapter.test.ts tests/electron/engine-supervisor.test.ts`
+- exit/result: `0`; targeted Vitest 22/22 passed.
+- command: `ctest --test-dir native/engine/build -R local-mixer-engine-graph-sync-json-tests --output-on-failure`
+- exit/result: `0`; targeted native graph sync test passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 46/46, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Automated verification cannot measure subjective BlackHole listening quality; final confirmation requires user hardware listening with SYSTEM sends off and processors bypassed.

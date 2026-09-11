@@ -27,7 +27,7 @@ export const approvedMixerSession: MixerSnapshot = {
     { id: "fx-b", label: "FX B", accent: "cyan", enabled: true, programId: 50, revision: 0, pending: false, error: "", modified: false, returnDb: -12, meter: { left: -12, right: -13, clip: false } }
   ],
   channels: [
-    channel("system", "SYSTEM", "BlackHole 1-2", "system", -6, -12, -12, false, false),
+    channel("system", "SYSTEM", "BlackHole 1-2", "system", -6, 0, 0, false, false),
     channel("voice", "VOICE", "USB Mic", "vocal", -3, -18, -24, true, true),
     channel("guitar", "GUITAR", "Interface In 2", "instrument", -8, -18, -6, false, false),
     channel("music", "MUSIC", "Backing.wav", "music", -9, 0, 0, false, false),

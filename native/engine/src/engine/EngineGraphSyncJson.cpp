@@ -97,6 +97,7 @@ std::string syncMixerGraphResultJson(
   float monitorTrimDb = 0.0f;
   float monitorFaderDb = 0.0f;
   float monitorPan = 0.0f;
+  bool monitorStereo = false;
   bool masterEnabled = true;
   bool masterMuted = false;
   float masterTrimDb = 0.0f;
@@ -198,6 +199,7 @@ std::string syncMixerGraphResultJson(
       monitorTrimDb = trimDb;
       monitorFaderDb = faderDb;
       monitorPan = pan;
+      monitorStereo = assignment == SourceAssignment::stereo;
       monitorProcessors = processors;
     }
   }
@@ -227,6 +229,7 @@ std::string syncMixerGraphResultJson(
   monitorSelection.channelTrimDb = monitorTrimDb;
   monitorSelection.channelFaderDb = monitorFaderDb;
   monitorSelection.channelPan = monitorPan;
+  monitorSelection.channelStereo = monitorStereo;
   monitorSelection.masterEnabled = masterEnabled;
   monitorSelection.masterMuted = masterMuted;
   monitorSelection.masterTrimDb = masterTrimDb;

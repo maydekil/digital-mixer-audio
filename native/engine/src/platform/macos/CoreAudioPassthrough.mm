@@ -41,6 +41,7 @@ struct PassthroughState {
   std::vector<float> graphRight;
   std::uint32_t inputChannel = 0;
   std::uint32_t outputChannel = 0;
+  std::uint32_t ringChannels = 1;
   double outputSampleRate = 48000.0;
   bool mirrorToAllOutputChannels = true;
   localmixer::engine::RealtimeMetrics metrics;
@@ -181,15 +182,20 @@ OSStatus inputCallback(
   if (inputData == nullptr) return noErr;
   auto* state = static_cast<PassthroughState*>(clientData);
   const auto frames = frameCountFor(inputData);
-  const auto capacity = state->ring.samples.size();
+  const auto ringChannels = std::max<std::uint32_t>(1, state->ringChannels);
+  const auto capacity = state->ring.samples.size() / ringChannels;
   if (capacity == 0) return noErr;
 
   for (UInt32 frame = 0; frame < frames; frame += 1) {
-    const auto sample = readChannel(inputData, state->inputChannel, frame);
+    const auto left = readChannel(inputData, state->inputChannel, frame);
+    const auto right = ringChannels > 1 ? readChannel(inputData, state->inputChannel + 1, frame) : left;
     const auto write = state->ring.writeFrame.load(std::memory_order_relaxed);
-    state->ring.samples[write % capacity] = sample;
+    const auto base = (write % capacity) * ringChannels;
+    state->ring.samples[base] = left;
+    if (ringChannels > 1) state->ring.samples[base + 1] = right;
     state->ring.writeFrame.store(write + 1, std::memory_order_release);
-    updatePeak(state->ring, sample);
+    updatePeak(state->ring, left);
+    updatePeak(state->ring, right);
   }
   return noErr;
 }
@@ -207,7 +213,8 @@ OSStatus outputCallback(
   const auto callbackStart = std::chrono::steady_clock::now();
   auto* state = static_cast<PassthroughState*>(clientData);
   const auto frames = frameCountFor(outputData);
-  const auto capacity = state->ring.samples.size();
+  const auto ringChannels = std::max<std::uint32_t>(1, state->ringChannels);
+  const auto capacity = state->ring.samples.size() / ringChannels;
 
   for (UInt32 bufferIndex = 0; bufferIndex < outputData->mNumberBuffers; bufferIndex += 1) {
     auto& buffer = outputData->mBuffers[bufferIndex];
@@ -219,12 +226,19 @@ OSStatus outputCallback(
   for (UInt32 frame = 0; frame < frames; frame += 1) {
     const auto read = state->ring.readFrame.load(std::memory_order_relaxed);
     const auto write = state->ring.writeFrame.load(std::memory_order_acquire);
-    float sample = 0.0f;
+    float left = 0.0f;
+    float right = 0.0f;
     if (read < write) {
-      sample = state->ring.samples[read % capacity];
+      const auto base = (read % capacity) * ringChannels;
+      left = state->ring.samples[base];
+      right = ringChannels > 1 ? state->ring.samples[base + 1] : left;
       state->ring.readFrame.store(read + 1, std::memory_order_release);
     }
-    if (frame < state->graphInput.size()) state->graphInput[frame] = sample;
+    if (frame < state->graphInput.size()) state->graphInput[frame] = (left + right) * 0.5f;
+    if (ringChannels > 1 && frame * 2 + 1 < state->graphStereoInput.size()) {
+      state->graphStereoInput[frame * 2] = left;
+      state->graphStereoInput[frame * 2 + 1] = right;
+    }
   }
 
   if (frames > state->graphInput.size() || frames > state->graphLeft.size() || frames > state->graphRight.size()) {
@@ -233,7 +247,10 @@ OSStatus outputCallback(
 
   std::span<const float> graphSource = std::span<const float>(state->graphInput.data(), frames);
   std::uint32_t graphChannels = 1;
-  if (state->vocalFx.active() && frames * 2 <= state->graphStereoInput.size()) {
+  if (ringChannels > 1 && frames * 2 <= state->graphStereoInput.size()) {
+    graphSource = std::span<const float>(state->graphStereoInput.data(), frames * 2);
+    graphChannels = 2;
+  } else if (state->vocalFx.active() && frames * 2 <= state->graphStereoInput.size()) {
     state->vocalFx.processMonoToStereo(graphSource, std::span<float>(state->graphLeft.data(), frames), std::span<float>(state->graphRight.data(), frames));
     for (std::size_t frame = 0; frame < frames; frame += 1) {
       state->graphStereoInput[frame * 2] = state->graphLeft[frame];
@@ -280,10 +297,10 @@ void prepareMonitorGraph(PassthroughState& state, const PassthroughMonitorReques
   state.runtime.prepare(static_cast<std::uint32_t>(scratchFrames));
   state.vocalFx.prepare(request.projectSampleRate, static_cast<std::uint32_t>(scratchFrames));
   if (request.insertFxEnabled) state.vocalFx.configure(request.vocalFxSlots);
-  graph.setAssignment(created.id, state.vocalFx.active() ? localmixer::engine::SourceAssignment::stereo
-                                                         : localmixer::engine::SourceAssignment::mono,
+  graph.setAssignment(created.id, request.stereoInput || state.vocalFx.active() ? localmixer::engine::SourceAssignment::stereo
+                                                                                : localmixer::engine::SourceAssignment::mono,
     0,
-    state.vocalFx.active());
+    request.stereoInput || state.vocalFx.active());
   graph.setLevel(created.id, 0.0f, request.monitorGainDb, request.monitorPan);
   graph.setInputMonitoring(created.id, true);
   graph.setProcessors(created.id, request.processors);
@@ -338,6 +355,10 @@ DeviceContext prepareDeviceContext(const PassthroughMonitorRequest& request) {
     context.error = "INPUT_CHANNEL_OUT_OF_RANGE";
     return context;
   }
+  if (request.stereoInput && request.inputChannel + 1 >= context.inputChannels) {
+    context.error = "INPUT_STEREO_CHANNEL_OUT_OF_RANGE";
+    return context;
+  }
   if (request.outputChannel >= context.outputChannels) {
     context.error = "OUTPUT_CHANNEL_OUT_OF_RANGE";
     return context;
@@ -386,9 +407,10 @@ struct PersistentPassthroughMonitor::Impl {
 
     state.inputChannel = request.inputChannel;
     state.outputChannel = request.outputChannel;
+    state.ringChannels = request.stereoInput ? 2 : 1;
     state.outputSampleRate = context.outputRate;
     state.mirrorToAllOutputChannels = request.mirrorToAllOutputChannels;
-    state.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate), 0.0f);
+    state.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate) * state.ringChannels, 0.0f);
     state.ring.writeFrame.store(0, std::memory_order_relaxed);
     state.ring.readFrame.store(0, std::memory_order_relaxed);
     state.ring.peakScaled.store(0, std::memory_order_relaxed);
@@ -485,8 +507,9 @@ PassthroughMonitorResult monitorPassthrough(const PassthroughMonitorRequest& req
   PassthroughState state;
   state.inputChannel = request.inputChannel;
   state.outputChannel = request.outputChannel;
+  state.ringChannels = request.stereoInput ? 2 : 1;
   state.mirrorToAllOutputChannels = request.mirrorToAllOutputChannels;
-  state.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate), 0.0f);
+  state.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate) * state.ringChannels, 0.0f);
   prepareMonitorGraph(state, request);
 
   AudioDeviceIOProcID inputProc = nullptr;

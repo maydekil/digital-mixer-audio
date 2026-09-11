@@ -158,6 +158,8 @@ export function MixerPage() {
       adapter.setChannelEnabled("system", true);
       adapter.setChannelSource("system", blackHole.uid);
       adapter.setChannelMonitor("system", true);
+      adapter.setChannelSend("system", "fx-a", -60);
+      adapter.setChannelSend("system", "fx-b", -60);
       adapter.selectChannel("system");
     });
     await syncMixerGraph(adapter.getSnapshot(), physicalOutput.uid);
@@ -600,7 +602,7 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}Name`] = channel.name;
     payload[`${prefix}Color`] = channelColor(channel);
     payload[`${prefix}SourceUid`] = channel.kind === "source" ? channel.source : "";
-    payload[`${prefix}Assignment`] = channel.role === "music" || channel.kind !== "source" ? "stereo" : "mono";
+    payload[`${prefix}Assignment`] = channel.role === "music" || channel.role === "system" || channel.kind !== "source" ? "stereo" : "mono";
     payload[`${prefix}Enabled`] = channel.enabled;
     payload[`${prefix}Mute`] = channel.mute;
     payload[`${prefix}Solo`] = channel.solo;

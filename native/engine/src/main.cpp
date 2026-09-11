@@ -601,6 +601,7 @@ int runStdioProtocol() {
           .inputChannel = static_cast<std::uint32_t>(readJsonNumberField(line, "inputChannel").value_or(0.0)),
           .outputChannel = static_cast<std::uint32_t>(readJsonNumberField(line, "outputChannel").value_or(0.0)),
           .mirrorToAllOutputChannels = readJsonBoolField(line, "mirrorToAllOutputChannels").value_or(true),
+          .stereoInput = monitorSelection.channelStereo,
           .durationMs = 0,
           .monitorGainDb = effectiveMonitorGainDb,
           .monitorPan = monitorSelection.channelPan,
