@@ -176,6 +176,17 @@ describe("PreviewAdapter", () => {
     expect(snapshot.eqBands.find((band) => band.id === "mid1")?.freq).toBe("350 Hz");
   });
 
+  it("can reset master output EQ without changing the selected strip", () => {
+    const adapter = new PreviewAdapter();
+    adapter.setChannelEqBand("master", "low", "gainDb", 6);
+    adapter.resetChannelEqBands("master");
+
+    const snapshot = adapter.getSnapshot();
+    const master = snapshot.channels.find((channel) => channel.id === "master");
+    expect(snapshot.selectedChannelId).toBe("voice");
+    expect(master?.eqBands.find((band) => band.id === "low")).toMatchObject({ freqHz: 100, gainDb: 0, gain: "+0.0 dB" });
+  });
+
   it("keeps system channel insert FX disabled", () => {
     const adapter = new PreviewAdapter();
     adapter.setChannelProcessor("system", "insertFx", true);

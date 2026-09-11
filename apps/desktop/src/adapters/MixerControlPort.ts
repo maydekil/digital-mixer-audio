@@ -193,6 +193,7 @@ export interface MixerControlPort {
   setFxReturn(unitId: FxUnitId, valueDb: number): void;
   setFxProgramMacro(unitId: FxUnitId, macro: "macro1" | "macro2", value: string): void;
   setChannelEqBand(channelId: string, bandId: EqBandState["id"], field: "freqHz" | "gainDb" | "qValue" | "type", value: number | string): void;
+  resetChannelEqBands(channelId: string): void;
   updateEqBand(bandId: EqBandState["id"], field: "freqHz" | "gainDb" | "qValue" | "type", value: number | string): void;
   resetEqBands(): void;
   resetFxProgram(unitId: FxUnitId): void;

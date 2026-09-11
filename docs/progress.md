@@ -3960,3 +3960,32 @@ Validation:
 Known limitations:
 - Manual BlackHole route enable/disable from the SYSTEM strip is `NOT_RUN`; automated coverage verifies UI/default state and the control-path wiring, not physical macOS routing.
 - True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.
+
+### Phase19 UX Checkpoint — Make Right Processing Panel Master Output Scoped
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: changed the right-side processing panel target from the currently selected channel to the MASTER output channel.
+- `apps/desktop/src/features/processing/components/ChannelProcessingPanel.tsx`: labels the master target as `Master output processing`.
+- `apps/desktop/src/adapters/MixerControlPort.ts`, `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: added channel-scoped EQ reset so the master output panel can reset EQ without selecting the master strip.
+- `tests/ui/preview-adapter.test.ts`: covered resetting master EQ while the selected strip remains VOICE.
+- `tests/ui/visual.visual.ts`: verifies the right panel remains `MASTER` / `Master output processing`.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- The right-side processing panel no longer depends on the active/selected mixer channel.
+- The panel is now a standalone master-output processing surface for final tuning after the mixer channels are combined.
+- Right panel EQ, compressor, noise, and de-esser controls write to the MASTER channel state and continue through the existing native `sync-mixer-graph` payload for master processing.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 52/52 passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed and refreshed the current UI screenshots.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 52/52, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual listening confirmation that master-output EQ/COMP/NOISE changes affect the post-mix hardware output is `NOT_RUN`.
+- True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.

@@ -252,6 +252,15 @@ export class PreviewAdapter implements MixerControlPort {
     });
   }
 
+  resetChannelEqBands(channelId: string): void {
+    const resetBands = defaultEqBands();
+    this.snapshot.channels = this.snapshot.channels.map((channel) => {
+      if (channel.id !== channelId) return channel;
+      if (channel.id === this.snapshot.selectedChannelId) this.snapshot.eqBands = structuredClone(resetBands);
+      return { ...channel, eqBands: structuredClone(resetBands) };
+    });
+  }
+
   resetEqBands(): void {
     const resetBands = defaultEqBands();
     this.snapshot.eqBands = resetBands;

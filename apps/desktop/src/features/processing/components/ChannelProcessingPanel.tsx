@@ -27,7 +27,7 @@ export function ChannelProcessingPanel({ channel, eqBands, onEqChange, onEqReset
       <header className="processing-header">
         <div>
           <h2>{channel.name}</h2>
-          <p>Channel processing</p>
+          <p>{channel.kind === "master" ? "Master output processing" : "Channel processing"}</p>
         </div>
         {channel.monitor ? <Badge>MONITOR ON</Badge> : null}
         <Button>Presets⌄</Button>

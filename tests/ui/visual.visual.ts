@@ -17,6 +17,8 @@ for (const viewport of viewports) {
     await expect(page.getByText("FX A")).toHaveCount(0);
     await expect(page.getByText("FX B")).toHaveCount(0);
     await expect(page.getByText("VOICE · HARMONY")).toBeVisible();
+    await expect(page.locator(".processing-panel").getByRole("heading", { name: "MASTER" })).toBeVisible();
+    await expect(page.locator(".processing-panel").getByText("Master output processing")).toBeVisible();
     await expect(page.getByText("PARAMETRIC EQ")).toBeVisible();
     await expect(page.getByText(/SEND A/)).toHaveCount(0);
     await expect(page.getByText(/SEND B/)).toHaveCount(0);
