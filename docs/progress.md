@@ -3642,3 +3642,30 @@ Validation:
 
 Known limitations:
 - Manual visual confirmation of the final EQ graph proportion in the running desktop app is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Verify Compressor Parameter Path
+
+Changed files:
+- `apps/desktop/src/features/project/sessionDocument.ts`: persisted and restored compressor `attackMs` and `releaseMs` alongside threshold and ratio.
+- `tests/ui/preview-adapter.test.ts`: covered selected-channel compressor attack/release updates through the UI adapter.
+- `tests/ui/project-session.test.ts`: covered compressor attack/release project save and restore.
+- `native/engine/tests/DynamicsTest.cpp`: added DSP assertions that compressor ratio, attack, and release each change output gain behavior.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Compressor threshold, ratio, attack, and release are all covered through the UI state path.
+- Project files preserve all four visible compressor knobs.
+- Native DSP tests now prove ratio, attack, and release are not inert parameters.
+
+Validation:
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 49/49 passed.
+- command: `cmake --build native/engine/build --target local-mixer-dynamics-tests`
+- exit/result: `0`; native dynamics test binary rebuilt.
+- command: `ctest --test-dir native/engine/build -R local-mixer-dynamics-tests --output-on-failure`
+- exit/result: `0`; native dynamics compressor tests passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 49/49, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual listening confirmation of subtle attack/release differences on the user's current material is `NOT_RUN` in automated verification.

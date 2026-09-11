@@ -41,6 +41,49 @@ int main() {
     return 1;
   }
 
+  Compressor gentleRatio;
+  gentleRatio.configure(CompressorConfig{.thresholdDb = -24.0f, .ratio = 2.0f, .attackMs = 0.0f});
+  Compressor strongRatio;
+  strongRatio.configure(CompressorConfig{.thresholdDb = -24.0f, .ratio = 8.0f, .attackMs = 0.0f});
+  std::vector<float> gentleRatioSample(1, decibelsToLinear(-12.0f));
+  std::vector<float> strongRatioSample(1, decibelsToLinear(-12.0f));
+  gentleRatio.processMono(gentleRatioSample);
+  strongRatio.processMono(strongRatioSample);
+  if (linearToDecibels(strongRatioSample[0]) > linearToDecibels(gentleRatioSample[0]) - 3.0f) {
+    std::cerr << "compressor ratio should change output gain\n";
+    return 1;
+  }
+
+  Compressor fastAttack;
+  fastAttack.configure(CompressorConfig{.thresholdDb = -30.0f, .ratio = 10.0f, .attackMs = 0.0f});
+  Compressor slowAttack;
+  slowAttack.configure(CompressorConfig{.thresholdDb = -30.0f, .ratio = 10.0f, .attackMs = 200.0f});
+  std::vector<float> fastAttackSample(1, decibelsToLinear(-6.0f));
+  std::vector<float> slowAttackSample(1, decibelsToLinear(-6.0f));
+  fastAttack.processMono(fastAttackSample);
+  slowAttack.processMono(slowAttackSample);
+  if (linearToDecibels(fastAttackSample[0]) > linearToDecibels(slowAttackSample[0]) - 12.0f) {
+    std::cerr << "compressor attack should change transient gain\n";
+    return 1;
+  }
+
+  Compressor fastRelease;
+  fastRelease.configure(CompressorConfig{.thresholdDb = -24.0f, .ratio = 8.0f, .attackMs = 0.0f, .releaseMs = 1.0f});
+  Compressor slowRelease;
+  slowRelease.configure(CompressorConfig{.thresholdDb = -24.0f, .ratio = 8.0f, .attackMs = 0.0f, .releaseMs = 1000.0f});
+  std::vector<float> fastReleaseTrigger(8, decibelsToLinear(-6.0f));
+  std::vector<float> slowReleaseTrigger(8, decibelsToLinear(-6.0f));
+  fastRelease.processMono(fastReleaseTrigger);
+  slowRelease.processMono(slowReleaseTrigger);
+  std::vector<float> fastReleaseTail(480, decibelsToLinear(-30.0f));
+  std::vector<float> slowReleaseTail(480, decibelsToLinear(-30.0f));
+  fastRelease.processMono(fastReleaseTail);
+  slowRelease.processMono(slowReleaseTail);
+  if (linearToDecibels(fastReleaseTail.back()) < linearToDecibels(slowReleaseTail.back()) + 3.0f) {
+    std::cerr << "compressor release should change recovery gain\n";
+    return 1;
+  }
+
   Compressor bypassedCompressor;
   bypassedCompressor.configure(CompressorConfig{.enabled = false});
   std::vector<float> bypassed{0.25f, -0.5f};

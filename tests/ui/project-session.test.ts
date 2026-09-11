@@ -24,7 +24,9 @@ describe("project session serialization", () => {
       noiseEnabled: true,
       insertFxEnabled: true,
       noiseThresholdDb: -50,
-      compRatio: 3
+      compRatio: 3,
+      compAttackMs: 10,
+      compReleaseMs: 120
     });
     expect(fxA).toMatchObject({ programId: 12, enabled: true, modified: true, returnDb: -6 });
     expect(voiceSendA).toMatchObject({ enabled: true, gainDb: -18 });
@@ -43,6 +45,8 @@ describe("project session serialization", () => {
     source.channels[1].faderDb = -12;
     source.channels[1].processing.noise = false;
     source.channels[1].dynamics.compressor.ratio = 5;
+    source.channels[1].dynamics.compressor.attackMs = 24;
+    source.channels[1].dynamics.compressor.releaseMs = 240;
     source.fxUnits[0].enabled = false;
     source.fxUnits[0].returnDb = -18;
     source.harmony.enabled = true;
@@ -57,6 +61,8 @@ describe("project session serialization", () => {
     expect(voice?.faderDb).toBe(-10);
     expect(voice?.processing.noise).toBe(false);
     expect(voice?.dynamics.compressor.ratio).toBe(5);
+    expect(voice?.dynamics.compressor.attackMs).toBe(24);
+    expect(voice?.dynamics.compressor.releaseMs).toBe(240);
     expect(loaded.fxUnits[0]).toMatchObject({ enabled: false, returnDb: -18 });
     expect(loaded.harmony.enabled).toBe(true);
     expect(loaded.channels.find((channel) => channel.id === "voice")?.harmonyEnabled).toBe(true);
@@ -85,7 +91,9 @@ describe("project session serialization", () => {
       noiseThresholdDb: -50,
       noiseRangeDb: -80,
       compThresholdDb: -18,
-      compRatio: 3
+      compRatio: 3,
+      compAttackMs: 10,
+      compReleaseMs: 120
     });
     document.fxSends.push({ channelId: "break-music", unitId: "fx-a", enabled: true, gainDb: -18 });
 

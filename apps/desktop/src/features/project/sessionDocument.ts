@@ -34,6 +34,8 @@ export interface ProjectSessionChannel {
   noiseRangeDb: number;
   compThresholdDb: number;
   compRatio: number;
+  compAttackMs: number;
+  compReleaseMs: number;
 }
 
 export interface ProjectSessionFxUnit {
@@ -203,7 +205,9 @@ function channelToSession(channel: ChannelState): ProjectSessionChannel {
     noiseThresholdDb: channel.dynamics.noise.thresholdDb,
     noiseRangeDb: channel.dynamics.noise.rangeDb,
     compThresholdDb: channel.dynamics.compressor.thresholdDb,
-    compRatio: channel.dynamics.compressor.ratio
+    compRatio: channel.dynamics.compressor.ratio,
+    compAttackMs: channel.dynamics.compressor.attackMs,
+    compReleaseMs: channel.dynamics.compressor.releaseMs
   };
 }
 
@@ -237,7 +241,9 @@ function applyChannelSession(channel: ChannelState, saved: ProjectSessionChannel
       compressor: {
         ...channel.dynamics.compressor,
         thresholdDb: Number(saved.compThresholdDb),
-        ratio: Number(saved.compRatio)
+        ratio: Number(saved.compRatio),
+        attackMs: Number.isFinite(Number(saved.compAttackMs)) ? Number(saved.compAttackMs) : channel.dynamics.compressor.attackMs,
+        releaseMs: Number.isFinite(Number(saved.compReleaseMs)) ? Number(saved.compReleaseMs) : channel.dynamics.compressor.releaseMs
       }
     }
   };
