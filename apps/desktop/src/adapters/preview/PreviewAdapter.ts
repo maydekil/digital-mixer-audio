@@ -478,10 +478,10 @@ function noiseSettingsFromAmount(amount: number): ChannelDynamicsState["noise"] 
   const normalized = clamp(amount, 0, 100) / 100;
   const curve = normalized ** 0.55;
   return {
-    thresholdDb: roundTo(-80 + curve * 58, 1),
-    rangeDb: roundTo(-18 - curve * 72, 1),
-    holdMs: Math.round(160 - curve * 140),
-    releaseMs: Math.round(320 - curve * 275)
+    thresholdDb: roundTo(-80 + curve * 74, 1),
+    rangeDb: roundTo(-18 - curve * 78, 1),
+    holdMs: Math.round(160 - curve * 150),
+    releaseMs: Math.round(320 - curve * 295)
   };
 }
 

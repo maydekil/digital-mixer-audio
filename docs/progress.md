@@ -4128,3 +4128,31 @@ Validation:
 Known limitations:
 - Manual mic listening validation of the stronger fan-noise curve is `NOT_RUN`.
 - A gate can strongly reduce fan noise while the mic is idle, but it cannot fully remove constant fan noise underneath active speech.
+
+### Phase19 UX Checkpoint — Add Hard Vocal Noise Gate Ceiling
+
+Changed files:
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: retuned the upper end of the one-knob vocal noise curve so `100` reaches hard-gate behavior around `-6 dB` threshold and `-96 dB` range.
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: updated the inverse knob display mapping for the hard-gate curve.
+- `tests/ui/preview-adapter.test.ts`: updated one-knob mapping expectations for the more aggressive curve.
+- `native/engine/tests/DynamicsTest.cpp`: added native DSP coverage proving a hard vocal gate attenuates fan-like ambience below threshold while opening for close voice level.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- The top of the VOICE `NOISE` knob is now intentionally extreme. At `100`, it should make below-threshold fan/room noise drop dramatically while the mic is idle.
+- If user hardware listening still sounds identical between `OFF` and `100`, the likely issue is direct monitoring or another route bypassing the mixer processor path, not the DSP gate itself.
+- `NOISE=OFF` remains a true bypass.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- --run tests/ui/preview-adapter.test.ts`
+- exit/result: `0`; PreviewAdapter suite 19/19 passed.
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43 passed, including the new hard-gate DSP assertion.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 53/53, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware listening validation of `NOISE=100` versus `OFF` is `NOT_RUN`.
+- `NOISE=100` may cut softer speech; it is intended as a diagnostic/extreme ceiling as well as an aggressive gate setting.
