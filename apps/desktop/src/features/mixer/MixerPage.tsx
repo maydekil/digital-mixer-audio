@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PreviewAdapter } from "../../adapters/preview/PreviewAdapter";
 import { snapshotToExportRequest } from "../export/exportDocument";
-import { CompactFxRow } from "../fx/components/CompactFxRow";
 import { HarmonyQuickPanel } from "../harmony/components/HarmonyQuickPanel";
 import { HardwareMonitorPanel } from "../hardware/components/HardwareMonitorPanel";
 import { MediaImportPanel } from "../media/components/MediaImportPanel";
@@ -43,8 +42,6 @@ export function MixerPage() {
   const [systemMeter, setSystemMeter] = useState<MeterLevel>({ left: -60, right: -60, clip: false });
   const autosaveReady = useRef(false);
   const liveMonitorRefreshTimer = useRef<number | undefined>(undefined);
-  const fxProgramInFlight = useRef<Record<"fx-a" | "fx-b", boolean>>({ "fx-a": false, "fx-b": false });
-  const fxProgramDesired = useRef<Partial<Record<"fx-a" | "fx-b", number>>>({});
 
   function refresh(action: () => void) {
     action();
@@ -321,81 +318,6 @@ export function MixerPage() {
     });
   }
 
-  async function selectFxProgram(unitId: "fx-a" | "fx-b", programId: number) {
-    fxProgramDesired.current[unitId] = programId;
-    if (!window.localMixer?.engineCommand) {
-      refresh(() => adapter.setFxProgram(unitId, programId));
-      delete fxProgramDesired.current[unitId];
-      return;
-    }
-    if (fxProgramInFlight.current[unitId]) {
-      refresh(() => adapter.setFxProgramPending(unitId, true));
-      return;
-    }
-
-    fxProgramInFlight.current[unitId] = true;
-    try {
-      while (fxProgramDesired.current[unitId] !== undefined) {
-        const desiredProgramId = fxProgramDesired.current[unitId] ?? programId;
-        delete fxProgramDesired.current[unitId];
-        await sendFxProgramRequest(unitId, desiredProgramId);
-      }
-    } finally {
-      fxProgramInFlight.current[unitId] = false;
-    }
-  }
-
-  async function sendFxProgramRequest(unitId: "fx-a" | "fx-b", programId: number) {
-    const engineCommand = window.localMixer?.engineCommand;
-    if (!engineCommand) return;
-    const unit = adapter.getSnapshot().fxUnits.find((item) => item.id === unitId);
-    refresh(() => adapter.setFxProgramPending(unitId, true));
-    const result = await engineCommand("fx-unit-select-program", {
-      unitId,
-      programId,
-      expectedRevision: unit?.revision ?? 0
-    });
-    if (result?.ok === false || result?.accepted === false || typeof result?.programId !== "number") {
-      refresh(() => adapter.setFxError(unitId, String(result?.error ?? "FX_PROGRAM_REJECTED")));
-      return;
-    }
-    refresh(() => adapter.ackFxProgram(unitId, result.programId as number, Number(result.revision ?? 0)));
-  }
-
-  async function setFxMacro(unitId: "fx-a" | "fx-b", macro: "macro1" | "macro2", value: string) {
-    const unit = adapter.getSnapshot().fxUnits.find((item) => item.id === unitId);
-    refresh(() => adapter.setFxProgramMacro(unitId, macro, value));
-    if (!window.localMixer?.engineCommand || !unit) return;
-    const result = await window.localMixer.engineCommand("fx-unit-set-macro", {
-      unitId,
-      macro,
-      value,
-      expectedRevision: unit.revision
-    });
-    if (result?.ok === false || result?.accepted === false) {
-      refresh(() => adapter.setFxError(unitId, String(result?.error ?? "FX_MACRO_REJECTED")));
-      return;
-    }
-    refresh(() => adapter.ackFxProgram(unitId, Number(result.programId ?? unit.programId), Number(result.revision ?? unit.revision), true));
-  }
-
-  async function resetFxProgram(unitId: "fx-a" | "fx-b") {
-    const unit = adapter.getSnapshot().fxUnits.find((item) => item.id === unitId);
-    if (!window.localMixer?.engineCommand || !unit) {
-      refresh(() => adapter.resetFxProgram(unitId));
-      return;
-    }
-    const result = await window.localMixer.engineCommand("fx-unit-reset-macros", {
-      unitId,
-      expectedRevision: unit.revision
-    });
-    if (result?.ok === false || result?.accepted === false) {
-      refresh(() => adapter.setFxError(unitId, String(result?.error ?? "FX_RESET_REJECTED")));
-      return;
-    }
-    refresh(() => adapter.ackFxProgram(unitId, Number(result.programId ?? unit.programId), Number(result.revision ?? unit.revision)));
-  }
-
   async function setHarmonyEnabled(enabled: boolean) {
     const current = adapter.getSnapshot().harmony;
     const channel = adapter.getSnapshot().channels.find((item) => item.role === "vocal");
@@ -510,10 +432,6 @@ export function MixerPage() {
     if (selected.role === "system" && vocalFxOpen) setVocalFxOpen(false);
   }, [selected.role, vocalFxOpen]);
 
-  const fxA = snapshot.fxUnits[0];
-  const fxB = snapshot.fxUnits[1];
-  const programA = snapshot.programs.find((program) => program.id === fxA.programId) ?? snapshot.programs[0];
-  const programB = snapshot.programs.find((program) => program.id === fxB.programId) ?? snapshot.programs[0];
   const inputOptions = devices
     .filter((device) => (device.inputChannels ?? 0) > 0)
     .map((device) => ({ value: device.uid, label: device.name || device.uid }));
@@ -561,10 +479,6 @@ export function MixerPage() {
         onRenameChannel={renameSelectedChannel}
         onRemoveChannel={removeSelectedChannel}
       />
-      <div className="fx-stack">
-        <CompactFxRow unit={fxA} program={programA} programs={snapshot.programs} onProgramChange={(id) => void selectFxProgram("fx-a", id)} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-a", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-a", value))} onMacro={(macro, value) => void setFxMacro("fx-a", macro, value)} onReset={() => void resetFxProgram("fx-a")} />
-        <CompactFxRow unit={fxB} program={programB} programs={snapshot.programs} onProgramChange={(id) => void selectFxProgram("fx-b", id)} onToggle={(enabled) => refresh(() => adapter.setFxEnabled("fx-b", enabled))} onReturn={(value) => refresh(() => adapter.setFxReturn("fx-b", value))} onMacro={(macro, value) => void setFxMacro("fx-b", macro, value)} onReset={() => void resetFxProgram("fx-b")} />
-      </div>
       <section className="workspace">
         <div className="left-zone">
           <ChannelBank
@@ -585,7 +499,6 @@ export function MixerPage() {
             onPan={(id, value) => refreshLiveProcessing(() => adapter.setChannelPan(id, value))}
             onFader={(id, value) => refreshLiveProcessing(() => adapter.setChannelFader(id, value))}
             onEqBand={(id, bandId, gainDb) => refreshLiveProcessing(() => adapter.setChannelEqBand(id, bandId, "gainDb", gainDb))}
-            onSend={(id, unitId, value) => refreshLiveProcessing(() => adapter.setChannelSend(id, unitId, value))}
             onMute={(id, muted) => {
               const nextSnapshot = refresh(() => adapter.setChannelMute(id, muted));
               void refreshActiveMonitor(nextSnapshot);
@@ -624,8 +537,6 @@ export function MixerPage() {
           <ChannelProcessingPanel
             channel={selected}
             eqBands={selected.eqBands}
-            linkedProgram={programA}
-            onSendA={(value) => refreshLiveProcessing(() => adapter.setChannelSend(selected.id, "fx-a", value))}
             onEqChange={(bandId, field, value) => refreshLiveProcessing(() => adapter.updateEqBand(bandId, field, value))}
             onEqReset={() => refreshLiveProcessing(() => adapter.resetEqBands())}
             onProcessor={(processorId, enabled) => refreshLiveProcessing(() => adapter.setChannelProcessor(selected.id, processorId, enabled))}
@@ -660,12 +571,12 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     channelCount: channels.length,
     outputUid,
     monitorGainDb: monitorSafetyGainDb,
-    fxAEnabled: fxA?.enabled ?? false,
+    fxAEnabled: false,
     fxAProgramId: fxA?.programId ?? 12,
-    fxAReturnDb: fxA?.returnDb ?? -12,
-    fxBEnabled: fxB?.enabled ?? false,
+    fxAReturnDb: -60,
+    fxBEnabled: false,
     fxBProgramId: fxB?.programId ?? 50,
-    fxBReturnDb: fxB?.returnDb ?? -12,
+    fxBReturnDb: -60,
     vocalFxSlotCount: snapshot.vocalFx.slots.length
   };
   snapshot.vocalFx.slots.forEach((slot, index) => {
@@ -676,7 +587,7 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
   });
   channels.forEach((channel, index) => {
     const prefix = `channel${index}`;
-    const fxSendsEnabled = channel.role !== "system" && channel.processing.insertFx;
+    const fxSendsEnabled = false;
     payload[`${prefix}Id`] = channel.id;
     payload[`${prefix}Kind`] = channel.kind;
     payload[`${prefix}Name`] = channel.name;

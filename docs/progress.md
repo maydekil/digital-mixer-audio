@@ -3871,3 +3871,33 @@ Validation:
 
 Known limitations:
 - This checkpoint does not yet implement true simultaneous native live capture/mixing for SYSTEM plus VOICE. The current persistent monitor path is still single-source; full multi-source native mixer monitoring remains required for the user's target workflow.
+
+### Phase19 UX Checkpoint — Hide Global FX Sends And Cut Runtime FX Path
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: removed the compact FX A/B row from the main mixer, stopped wiring strip send handlers, and forced the live native sync payload to disable FX A/B units, returns, and all per-channel FX sends.
+- `apps/desktop/src/features/mixer/components/ChannelBank.tsx`: removed send handler propagation from the mixer bank.
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: removed the SEND A/SEND B knob pair from every channel strip.
+- `apps/desktop/src/features/processing/components/ChannelProcessingPanel.tsx`: removed the linked SEND A processor card from the right-side inspector.
+- `apps/desktop/src/styles/app.css`: collapsed the application grid after hiding the FX A/B row.
+- `tests/ui/visual.visual.ts`: updated visual coverage so hidden FX rows, FX program selects, returns, and send knobs are asserted absent.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- The mixer no longer shows the top FX A/B panel or per-channel SEND A/SEND B controls.
+- Runtime audio sync now sends `fxAEnabled=false`, `fxBEnabled=false`, return gains at `-60 dB`, and every channel send disabled with send gains at `-60 dB`.
+- Stored project/session FX metadata remains in the model for future re-enable work, but the current live monitor graph is fed as dry/no-send from the renderer control surface.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 50/50 passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed and refreshed the current UI screenshots.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 50/50, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual listening confirmation on SYSTEM+VOICE hardware after hiding FX sends is `NOT_RUN`; automated evidence verifies the control payload and UI surface, not the user's current physical routing.
+- True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.

@@ -1,4 +1,4 @@
-import type { ChannelState, EqBandState, FxProgram, ProcessorId } from "../../../adapters/MixerControlPort";
+import type { ChannelState, EqBandState, ProcessorId } from "../../../adapters/MixerControlPort";
 import { EqResponseGraph } from "../../../components/audio/EqResponseGraph";
 import { NumericParameter } from "../../../components/audio/NumericParameter";
 import { RotaryKnob } from "../../../components/audio/RotaryKnob";
@@ -8,8 +8,6 @@ import { Badge } from "../../../components/ui/Badge";
 interface ChannelProcessingPanelProps {
   channel: ChannelState;
   eqBands: EqBandState[];
-  linkedProgram: FxProgram;
-  onSendA(valueDb: number): void;
   onEqChange(bandId: EqBandState["id"], field: "freqHz" | "gainDb" | "qValue" | "type", value: number | string): void;
   onEqReset(): void;
   onProcessor(processorId: ProcessorId, enabled: boolean): void;
@@ -18,15 +16,12 @@ interface ChannelProcessingPanelProps {
   onDeEsserChange(field: keyof ChannelState["dynamics"]["deEsser"], value: number): void;
 }
 
-export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSendA, onEqChange, onEqReset, onProcessor, onNoiseChange, onCompressorChange, onDeEsserChange }: ChannelProcessingPanelProps) {
-  const sendA = channel.sends["fx-a"];
+export function ChannelProcessingPanel({ channel, eqBands, onEqChange, onEqReset, onProcessor, onNoiseChange, onCompressorChange, onDeEsserChange }: ChannelProcessingPanelProps) {
   const noise = channel.dynamics.noise;
   const compressor = channel.dynamics.compressor;
   const deEsser = channel.dynamics.deEsser;
-  const showInsertFx = channel.role !== "system";
   const deEsserAvailable = channel.role === "vocal";
   const deEsserEnabled = deEsserAvailable && channel.processing.deEsser;
-  const fxSendBypassed = !channel.processing.insertFx;
   return (
     <aside className="processing-panel">
       <header className="processing-header">
@@ -92,12 +87,6 @@ export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSend
           <RotaryKnob label="Frequency" value={formatFrequency(deEsser.frequencyHz)} numericValue={deEsser.frequencyHz} min={1000} max={12000} step={100} disabled={!deEsserEnabled} onChange={(value) => onDeEsserChange("frequencyHz", value)} />
           <RotaryKnob label="Threshold" value={`${deEsser.thresholdDb} dB`} numericValue={deEsser.thresholdDb} min={-80} max={0} disabled={!deEsserEnabled} onChange={(value) => onDeEsserChange("thresholdDb", value)} />
         </section>
-        {showInsertFx ? (
-          <section className={`processor-card ${channel.processing.insertFx ? "is-active" : "is-bypassed"}`}>
-            <div className="processor-title"><span>⏻</span><strong>SEND A · {linkedProgram.name}</strong></div>
-            <RotaryKnob label="Send A" value={fxSendBypassed || !sendA.enabled ? "OFF" : `${sendA.gainDb} dB`} numericValue={fxSendBypassed ? -60 : sendA.gainDb} min={-60} max={10} tone="amber" disabled={fxSendBypassed} onChange={onSendA} />
-          </section>
-        ) : null}
       </div>
     </aside>
   );

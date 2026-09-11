@@ -1,4 +1,4 @@
-import type { ChannelState, EqBandState, FxUnitId, VocalFxPreset } from "../../../adapters/MixerControlPort";
+import type { ChannelState, EqBandState, VocalFxPreset } from "../../../adapters/MixerControlPort";
 import { ClipIndicator } from "../../../components/audio/ClipIndicator";
 import { LevelMeter } from "../../../components/audio/LevelMeter";
 import { RotaryKnob } from "../../../components/audio/RotaryKnob";
@@ -17,7 +17,6 @@ interface ChannelStripProps {
   onPan(value: number): void;
   onFader(value: number): void;
   onEqBand(bandId: EqBandState["id"], gainDb: number): void;
-  onSend(unitId: FxUnitId, value: number): void;
   onMute(muted: boolean): void;
   onSolo(solo: boolean): void;
   onMonitor(monitor: boolean): void;
@@ -28,7 +27,7 @@ interface ChannelStripProps {
   onHarmonySettings?(): void;
 }
 
-export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onSend, onMute, onSolo, onMonitor, onRecordArm, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
+export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onMute, onSolo, onMonitor, onRecordArm, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
   const isMaster = channel.kind === "master";
   const isGroup = channel.kind === "group";
   const meter = channel.enabled ? channel.meter : { left: -60, right: -60, clip: false };
@@ -56,7 +55,6 @@ export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxP
       ) : !isMaster ? <div className="harmony-shortcut is-placeholder" aria-hidden="true" /> : null}
       <div className="strip-divider" />
       {!isMaster ? <RotaryKnob label="Pan" value={formatPan(channel.pan)} numericValue={channel.pan} min={-100} max={100} step={1} onChange={onPan} /> : <div className="master-spacer" aria-hidden="true" />}
-      {!isMaster ? <SendPair channel={channel} onSend={onSend} /> : null}
       <div className="fader-meter-row">
         <VerticalFader valueDb={channel.faderDb} onChange={onFader} label={`${channel.name} fader`} />
         <div className="strip-meter-stack">
@@ -130,18 +128,6 @@ function MasterUpperControls() {
     <div className="master-upper">
       <Button tone="green" active>LIMITER</Button>
       <div className="master-upper-spacer" aria-hidden="true" />
-    </div>
-  );
-}
-
-function SendPair({ channel, onSend }: { channel: ChannelState; onSend(unitId: FxUnitId, value: number): void }) {
-  const sendA = channel.sends["fx-a"];
-  const sendB = channel.sends["fx-b"];
-  const disabled = channel.role === "system" || !channel.processing.insertFx;
-  return (
-    <div className="send-pair">
-      <RotaryKnob label="SEND A" value={disabled || !sendA.enabled ? "OFF" : `${sendA.gainDb} dB`} numericValue={disabled ? -60 : sendA.gainDb} min={-60} max={10} tone="amber" size="sm" disabled={disabled} onChange={(value) => onSend("fx-a", value)} />
-      <RotaryKnob label="SEND B" value={disabled || !sendB.enabled ? "OFF" : `${sendB.gainDb} dB`} numericValue={disabled ? -60 : sendB.gainDb} min={-60} max={10} tone="cyan" size="sm" disabled={disabled} onChange={(value) => onSend("fx-b", value)} />
     </div>
   );
 }

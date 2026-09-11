@@ -10,11 +10,12 @@ for (const viewport of viewports) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Local Audio Mixer" })).toBeVisible();
-    await expect(page.getByText("FX A")).toBeVisible();
-    await expect(page.getByText("FX B")).toBeVisible();
+    await expect(page.getByText("FX A")).toHaveCount(0);
+    await expect(page.getByText("FX B")).toHaveCount(0);
     await expect(page.getByText("VOICE · HARMONY")).toBeVisible();
     await expect(page.getByText("PARAMETRIC EQ")).toBeVisible();
-    await expect(page.getByText("SEND A · Vocal Plate")).toBeVisible();
+    await expect(page.getByText(/SEND A/)).toHaveCount(0);
+    await expect(page.getByText(/SEND B/)).toHaveCount(0);
     await expect(page.getByText("SOUND PADS")).toBeVisible();
     await expect(page.getByRole("button", { name: /APPLAUSE/i })).toBeEnabled();
     await page.screenshot({ path: `docs/reports/ui/${viewport.name}.png`, fullPage: true });
@@ -35,12 +36,8 @@ test("preview controls mutate visible mixer state", async ({ page }) => {
   await voiceStrip.locator('label[aria-label="VOICE fader"] input').fill("25");
   await expect(voiceStrip.getByText("-5.0 dB")).toBeVisible();
 
-  await voiceStrip.locator('input[aria-label="SEND A"]').fill("-9");
-  await expect(voiceStrip.getByText("-9 dB")).toBeVisible();
-  await expect(page.locator(".processing-panel").getByText("-9 dB")).toBeVisible();
-
-  await page.getByLabel("FX A return").fill("-18");
-  await expect(page.locator(".compact-fx-row").first().getByText("-18.0 dB")).toBeVisible();
+  await expect(voiceStrip.locator('input[aria-label="SEND A"]')).toHaveCount(0);
+  await expect(page.getByLabel("FX A return")).toHaveCount(0);
 
   await voiceStrip.getByRole("button", { name: "MON", exact: true }).click();
   await expect(page.getByText("MONITOR ON")).toHaveCount(0);
@@ -55,11 +52,8 @@ test("preview controls mutate visible mixer state", async ({ page }) => {
   await voiceStrip.getByLabel("Voice preset").selectOption("voice-12-robot");
   await expect(voiceStrip.getByLabel("Voice preset")).toHaveValue("voice-12-robot");
 
-  await page.getByLabel("FX program").first().selectOption("50");
-  await expect(page.getByLabel("FX program").first()).toHaveValue("50");
-
-  await page.locator(".compact-fx-row").first().getByRole("button", { name: "Edit" }).click();
-  await expect(page.getByRole("dialog", { name: "FX A editor" })).toBeVisible();
+  await expect(page.getByLabel("FX program")).toHaveCount(0);
+  await expect(page.locator(".compact-fx-row")).toHaveCount(0);
 });
 
 test("hardware modal exposes guarded system routing controls", async ({ page }) => {
