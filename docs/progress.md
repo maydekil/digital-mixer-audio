@@ -3590,3 +3590,21 @@ Validation:
 
 Known limitations:
 - Manual visual confirmation of right-panel height against the running desktop app screenshot is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Compact EQ Band Controls
+
+Changed files:
+- `apps/desktop/src/styles/app.css`: reduced EQ graph height, EQ band card padding, band label text/dot size, numeric parameter label/input sizing, and processing panel padding/gap.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- LOW, MID 1, MID 2, and HIGH controls take less vertical space in the right monitoring panel.
+- Numeric parameter fields are more compact while retaining readable labels and values.
+- The processing panel has more room for lower controls, reducing the need for vertical scrolling.
+
+Validation:
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 49/49, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual confirmation that the running desktop monitoring panel no longer scrolls at the user's current window size is `NOT_RUN` in automated verification.
