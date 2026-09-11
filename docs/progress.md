@@ -3514,3 +3514,22 @@ Validation:
 
 Known limitations:
 - Manual visual confirmation in the running desktop app is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Compact Top Bar Status Cleanup
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: removed the in-app traffic-light dots, engine ready status, and preview engine banner from the top bar.
+- `apps/desktop/src/styles/app.css`: removed unused traffic-light, engine status, and preview banner styling.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Top bar no longer renders the duplicate red/yellow/green window dots inside the app.
+- Top bar no longer shows `Preview Ready`.
+- Top bar no longer shows `UI PREVIEW · Audio engine not connected`, freeing horizontal space for mixer controls.
+
+Validation:
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 48/48, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual visual confirmation of the compacted top bar in the running desktop app is `NOT_RUN` in automated verification.

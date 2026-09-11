@@ -536,8 +536,6 @@ export function MixerPage() {
         projectName={snapshot.projectName}
         time={snapshot.transportTime}
         rate={snapshot.sampleRateLabel}
-        status={snapshot.engineStatus}
-        mode={snapshot.modeLabel}
         transportState={transportState}
         onVocalFx={() => {
           if (selected.role !== "system") setVocalFxOpen(true);
@@ -781,12 +779,10 @@ function parseFxPrograms(programs: unknown[]): FxProgram[] {
   });
 }
 
-function TopBar({ projectName, time, rate, status, mode, transportState, systemAudioEnabled, systemAudioStatus, vocalFxEnabled, onVocalFx, onTimeline, onPlay, onStop, onRecord, onOpen, onSave, onCollect, onExport, onSystemAudio, onAddChannel, onRenameChannel, onRemoveChannel }: {
+function TopBar({ projectName, time, rate, transportState, systemAudioEnabled, systemAudioStatus, vocalFxEnabled, onVocalFx, onTimeline, onPlay, onStop, onRecord, onOpen, onSave, onCollect, onExport, onSystemAudio, onAddChannel, onRenameChannel, onRemoveChannel }: {
   projectName: string;
   time: string;
   rate: string;
-  status: string;
-  mode: string;
   transportState: string;
   systemAudioEnabled: boolean;
   systemAudioStatus: string;
@@ -807,7 +803,6 @@ function TopBar({ projectName, time, rate, status, mode, transportState, systemA
 }) {
   return (
     <header className="top-bar">
-      <div className="window-dots"><span /><span /><span /></div>
       <h1>{projectName}</h1>
       <nav><button className="active">Mixer</button><button onClick={onVocalFx} disabled={!vocalFxEnabled}>Vocal FX</button><button onClick={onTimeline}>Timeline</button><button>Routing</button></nav>
       <div className="transport">
@@ -819,8 +814,6 @@ function TopBar({ projectName, time, rate, status, mode, transportState, systemA
       </div>
       <div className="time-display">{time}</div>
       <div className="rate">{rate}</div>
-      <div className="engine-status"><span />{status}</div>
-      <div className="preview-banner">{mode}</div>
       <button className="settings" aria-label="Open Project" title="Open Project" onClick={onOpen}>□</button>
       <button className="settings" aria-label="Save Project" title="Save Project" onClick={onSave}>▣</button>
       <button className="settings" aria-label="Collect Media" title="Collect Media" onClick={onCollect}>◇</button>
