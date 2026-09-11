@@ -462,6 +462,7 @@ function clampCompressor(field: keyof ChannelDynamicsState["compressor"], value:
 }
 
 function isProcessorAvailable(channel: ChannelState, processorId: ProcessorId) {
+  if (processorId === "noise") return channel.role !== "system";
   if (processorId === "insertFx") return channel.role !== "system";
   if (processorId === "deEsser") return channel.role === "vocal";
   return true;

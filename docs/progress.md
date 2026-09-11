@@ -4018,3 +4018,28 @@ Validation:
 Known limitations:
 - Manual live workflow validation after removing `S`/`MON` is `NOT_RUN`.
 - True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.
+
+### Phase19 Hardening Checkpoint — Cut SYSTEM Noise And Insert Paths
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: forces `ProcessorNoise=false` for SYSTEM in the native `sync-mixer-graph` payload, matching the existing forced `ProcessorInsertFx=false` and FX send bypass.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: rejects SYSTEM noise/gate enable requests in the preview/control adapter.
+- `tests/ui/preview-adapter.test.ts`: verifies SYSTEM cannot enable noise, insert FX, or FX sends.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- SYSTEM cannot feed the native noise/gate path from runtime sync, even if stale project/session state contains `noise=true`.
+- SYSTEM insert FX remains forced off in runtime sync and adapter state.
+- SYSTEM FX sends remain disabled and pinned to `-60 dB`; global FX send/return runtime path remains cut.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 52/52 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 52/52, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual listening confirmation that SYSTEM remains dry through hardware routing is `NOT_RUN`.
+- True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.

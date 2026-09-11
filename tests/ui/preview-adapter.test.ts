@@ -187,13 +187,15 @@ describe("PreviewAdapter", () => {
     expect(master?.eqBands.find((band) => band.id === "low")).toMatchObject({ freqHz: 100, gainDb: 0, gain: "+0.0 dB" });
   });
 
-  it("keeps system channel insert FX disabled", () => {
+  it("keeps system channel noise, insert FX, and sends disabled", () => {
     const adapter = new PreviewAdapter();
+    adapter.setChannelProcessor("system", "noise", true);
     adapter.setChannelProcessor("system", "insertFx", true);
     adapter.setChannelSend("system", "fx-a", -6);
     adapter.setChannelSend("system", "fx-b", -6);
 
     const system = adapter.getSnapshot().channels.find((channel) => channel.id === "system");
+    expect(system?.processing.noise).toBe(false);
     expect(system?.processing.insertFx).toBe(false);
     expect(system?.sends["fx-a"]).toEqual({ enabled: false, gainDb: -60 });
     expect(system?.sends["fx-b"]).toEqual({ enabled: false, gainDb: -60 });
