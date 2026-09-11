@@ -89,6 +89,15 @@
 .channel-tone-controls .rotary-face { width: 26px; height: 26px; }
 .channel-tone-controls .rotary-tick { height: 10px; transform-origin: 50% 10px; }
 .channel-tone-controls .rotary-value { font-size: 9px; margin-top: 2px; }
+.channel-compressor-section { display: grid; gap: 4px; padding: 4px; border: 1px solid #214957; border-radius: 5px; background: rgba(8, 30, 38, 0.72); }
+.channel-compressor-section.is-bypassed { opacity: 0.58; }
+.channel-compressor-section > .ui-button { min-height: 20px; padding: 1px 5px; font-size: 9px; }
+.channel-compressor-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 5px; }
+.channel-compressor-controls .rotary { min-width: 0; }
+.channel-compressor-controls .rotary-label { font-size: 8px; margin-bottom: 1px; }
+.channel-compressor-controls .rotary-face { width: 24px; height: 24px; }
+.channel-compressor-controls .rotary-tick { height: 9px; transform-origin: 50% 9px; }
+.channel-compressor-controls .rotary-value { font-size: 8.5px; margin-top: 1px; }
 .processor-slot-placeholder { min-height: 24px; visibility: hidden; }
 .master-upper { display: grid; grid-template-rows: 24px 1fr; gap: 4px; min-height: 140px; }
 .master-upper-spacer { min-height: 101px; }

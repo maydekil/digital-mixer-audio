@@ -47,6 +47,11 @@ test("preview controls mutate visible mixer state", async ({ page }) => {
   await expect(voiceStrip.getByText("+4.0")).toBeVisible();
   await voiceStrip.locator('input[aria-label="MID 1"]').fill("-2");
   await expect(voiceStrip.getByText("-2.0")).toBeVisible();
+  await expect(voiceStrip.getByRole("button", { name: "COMP", exact: true })).toHaveClass(/is-active/);
+  await voiceStrip.locator('input[aria-label="Ratio"]').fill("4");
+  await expect(voiceStrip.getByText("4:1")).toBeVisible();
+  await voiceStrip.locator('input[aria-label="Attack"]').fill("25");
+  await expect(voiceStrip.getByText("25 ms")).toBeVisible();
   await voiceStrip.getByLabel("Voice preset").selectOption("default");
   await expect(voiceStrip.getByLabel("Voice preset")).toHaveValue("default");
   await voiceStrip.getByLabel("Voice preset").selectOption("voice-12-robot");

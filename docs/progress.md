@@ -3901,3 +3901,32 @@ Validation:
 Known limitations:
 - Manual listening confirmation on SYSTEM+VOICE hardware after hiding FX sends is `NOT_RUN`; automated evidence verifies the control payload and UI surface, not the user's current physical routing.
 - True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.
+
+### Phase19 UX Checkpoint — Add Per-Channel Compressor Strip Controls
+
+Changed files:
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: added a compact per-channel compressor panel with `COMP` enable/bypass plus Threshold, Ratio, Attack, and Release knobs matching the right-side compressor controls.
+- `apps/desktop/src/features/mixer/components/ChannelBank.tsx`: passed compressor parameter and enable handlers into each channel strip.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: wired strip compressor edits through `setChannelCompressorParam` and `setChannelProcessor(..., "comp", ...)` with live monitor refresh.
+- `apps/desktop/src/styles/app.css`: styled the compact compressor panel and knobs so they fit inside each channel strip.
+- `tests/ui/visual.visual.ts`: covered the visible VOICE strip compressor state plus ratio/attack knob edits.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Every non-master channel strip now has its own compressor panel directly in the mixer.
+- The strip compressor controls write to the same per-channel compressor state as the right-side inspector, so native sync receives the existing `CompThresholdDb`, `CompRatio`, `CompAttackMs`, and `CompReleaseMs` fields.
+- The `COMP` button on each strip toggles that channel's native compressor processor on/off.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 50/50 passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed and refreshed the current UI screenshots.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 50/50, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual live listening confirmation for each channel's strip compressor behavior is `NOT_RUN`; automated coverage verifies UI state and the native sync/control path.
+- True simultaneous native live capture/mixing for multiple active channels remains a separate required checkpoint.

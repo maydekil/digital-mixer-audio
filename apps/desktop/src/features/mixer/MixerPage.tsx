@@ -499,6 +499,8 @@ export function MixerPage() {
             onPan={(id, value) => refreshLiveProcessing(() => adapter.setChannelPan(id, value))}
             onFader={(id, value) => refreshLiveProcessing(() => adapter.setChannelFader(id, value))}
             onEqBand={(id, bandId, gainDb) => refreshLiveProcessing(() => adapter.setChannelEqBand(id, bandId, "gainDb", gainDb))}
+            onCompressorParam={(id, field, value) => refreshLiveProcessing(() => adapter.setChannelCompressorParam(id, field, value))}
+            onCompressorEnabled={(id, enabled) => refreshLiveProcessing(() => adapter.setChannelProcessor(id, "comp", enabled))}
             onMute={(id, muted) => {
               const nextSnapshot = refresh(() => adapter.setChannelMute(id, muted));
               void refreshActiveMonitor(nextSnapshot);

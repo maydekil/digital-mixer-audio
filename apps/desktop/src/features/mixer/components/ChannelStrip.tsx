@@ -17,6 +17,8 @@ interface ChannelStripProps {
   onPan(value: number): void;
   onFader(value: number): void;
   onEqBand(bandId: EqBandState["id"], gainDb: number): void;
+  onCompressorParam(field: keyof ChannelState["dynamics"]["compressor"], value: number): void;
+  onCompressorEnabled(enabled: boolean): void;
   onMute(muted: boolean): void;
   onSolo(solo: boolean): void;
   onMonitor(monitor: boolean): void;
@@ -27,7 +29,7 @@ interface ChannelStripProps {
   onHarmonySettings?(): void;
 }
 
-export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onMute, onSolo, onMonitor, onRecordArm, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
+export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onCompressorParam, onCompressorEnabled, onMute, onSolo, onMonitor, onRecordArm, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
   const isMaster = channel.kind === "master";
   const isGroup = channel.kind === "group";
   const meter = channel.enabled ? channel.meter : { left: -60, right: -60, clip: false };
@@ -47,6 +49,7 @@ export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxP
       </header>
       <RotaryKnob label="Gain" value={`${channel.trimDb.toFixed(1)} dB`} numericValue={channel.trimDb} min={-24} max={24} step={0.5} onChange={onTrim} />
       {isMaster ? <MasterUpperControls /> : <ChannelToneControls channel={channel} vocalFxPresetId={vocalFxPresetId} vocalFxPresets={vocalFxPresets} onEqBand={onEqBand} onVocalFxPreset={onVocalFxPreset} />}
+      {!isMaster ? <ChannelCompressorControls channel={channel} onParam={onCompressorParam} onEnabled={onCompressorEnabled} /> : null}
       {channel.harmonyVisible ? (
         <div className="harmony-shortcut">
           <Button tone="violet" active={channel.harmonyEnabled} onClick={onHarmonyToggle}>HARMONY {channel.harmonyEnabled ? "ON" : "OFF"}</Button>
@@ -69,6 +72,25 @@ export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxP
         {!isGroup && !isMaster ? <Button tone="danger" active={channel.recordArm} onClick={() => onRecordArm(!channel.recordArm)}>REC</Button> : null}
       </div>
     </article>
+  );
+}
+
+function ChannelCompressorControls({ channel, onParam, onEnabled }: {
+  channel: ChannelState;
+  onParam(field: keyof ChannelState["dynamics"]["compressor"], value: number): void;
+  onEnabled(enabled: boolean): void;
+}) {
+  const compressor = channel.dynamics.compressor;
+  return (
+    <div className={`channel-compressor-section ${channel.processing.comp ? "is-active" : "is-bypassed"}`}>
+      <Button tone="cyan" active={channel.processing.comp} onClick={() => onEnabled(!channel.processing.comp)}>COMP</Button>
+      <div className="channel-compressor-controls">
+        <RotaryKnob label="Threshold" value={`${compressor.thresholdDb} dB`} numericValue={compressor.thresholdDb} min={-80} max={0} size="sm" onChange={(value) => onParam("thresholdDb", value)} />
+        <RotaryKnob label="Ratio" value={`${compressor.ratio}:1`} numericValue={compressor.ratio} min={1} max={20} step={0.5} size="sm" onChange={(value) => onParam("ratio", value)} />
+        <RotaryKnob label="Attack" value={`${compressor.attackMs} ms`} numericValue={compressor.attackMs} min={0.1} max={200} step={0.1} size="sm" onChange={(value) => onParam("attackMs", value)} />
+        <RotaryKnob label="Release" value={`${compressor.releaseMs} ms`} numericValue={compressor.releaseMs} min={10} max={3000} size="sm" onChange={(value) => onParam("releaseMs", value)} />
+      </div>
+    </div>
   );
 }
 
