@@ -2,12 +2,12 @@ import { useRef, useState } from "react";
 import { Button } from "../../../components/ui/Button";
 
 const SOUND_PADS = [
-  { id: "applause", label: "Applause", cue: "APPLAUSE" },
-  { id: "laugh", label: "Laugh", cue: "LAUGH" },
-  { id: "cheer", label: "Cheer", cue: "CHEER" },
-  { id: "drumroll", label: "Drum Roll", cue: "ROLL" },
-  { id: "ding", label: "Ding", cue: "DING" },
-  { id: "whoosh", label: "Whoosh", cue: "WHOOSH" },
+  { id: "applause", label: "Applause" },
+  { id: "laugh", label: "Laugh" },
+  { id: "cheer", label: "Cheer" },
+  { id: "drumroll", label: "Drum Roll" },
+  { id: "ding", label: "Ding" },
+  { id: "whoosh", label: "Whoosh" },
 ];
 
 export function SoundPadPanel() {
@@ -56,7 +56,6 @@ export function SoundPadPanel() {
       <div className="sound-pad-grid">
         {SOUND_PADS.map((pad) => (
           <button className={`sound-pad${activePadId === pad.id ? " is-playing" : ""}`} key={pad.id} type="button" onClick={() => void playPad(pad.id)}>
-            <span>{pad.cue}</span>
             <strong>{pad.label}</strong>
           </button>
         ))}

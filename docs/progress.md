@@ -3571,3 +3571,22 @@ Validation:
 
 Known limitations:
 - Manual visual confirmation of divider alignment in the running desktop app is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Compact Right Monitoring Panel
+
+Changed files:
+- `apps/desktop/src/features/sound-pads/components/SoundPadPanel.tsx`: removed duplicate cue labels from sound pad buttons.
+- `apps/desktop/src/styles/app.css`: reduced the sound pad row height, compacted sound pad padding/header sizing, and gave the right processing panel more vertical room.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Sound pad buttons now show one label only, e.g. `Applause` instead of both `APPLAUSE` and `Applause`.
+- The sound pad container is shorter and closer to the harmony frame height.
+- The right channel processing/monitoring area gets more available height so lower controls are less likely to be clipped.
+
+Validation:
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 49/49, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual visual confirmation of right-panel height against the running desktop app screenshot is `NOT_RUN` in automated verification.

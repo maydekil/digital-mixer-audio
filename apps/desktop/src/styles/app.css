@@ -66,7 +66,7 @@
 
 .workspace { display: grid; grid-template-columns: minmax(650px, 60fr) minmax(390px, 40fr); gap: 8px; padding: 8px 10px; min-height: 0; min-width: 0; }
 .left-zone { min-width: 0; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) 96px; gap: 7px; overflow: hidden; }
-.right-zone { min-width: 0; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) 112px; gap: 8px; }
+.right-zone { min-width: 0; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) 94px; gap: 8px; }
 .channel-bank { display: flex; gap: 8px; min-width: 0; min-height: 0; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; }
 .channel-strip { flex: 0 0 140px; height: 100%; min-height: 0; display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: linear-gradient(180deg, rgba(17, 45, 55, 0.96), rgba(8, 22, 28, 0.96)); box-shadow: var(--shadow); overflow: hidden; }
 .channel-strip.is-selected { border-color: #e8e300; box-shadow: inset 0 0 0 1px #e8e300, var(--shadow); }
@@ -229,21 +229,20 @@
 .processing-panel .rotary-value { font-size: 10.5px; }
 .processing-panel .rotary-label { font-size: 9.5px; }
 
-.sound-pad-panel { min-width: 0; min-height: 0; display: grid; grid-template-rows: 28px minmax(0, 1fr); gap: 7px; padding: 8px; border: 1px solid var(--border); border-radius: 7px; background: rgba(10, 28, 36, 0.95); }
+.sound-pad-panel { min-width: 0; min-height: 0; display: grid; grid-template-rows: 24px minmax(0, 1fr); gap: 6px; padding: 7px 8px; border: 1px solid var(--border); border-radius: 7px; background: rgba(10, 28, 36, 0.95); }
 .sound-pad-panel header { display: flex; align-items: center; gap: 10px; }
 .sound-pad-panel header div { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .sound-pad-panel header strong { font-size: 11px; font-weight: 480; white-space: nowrap; }
 .sound-pad-panel header span { color: #9fc2cc; font-size: 10px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sound-pad-panel header .ui-button { margin-left: auto; min-height: 24px; }
+.sound-pad-panel header .ui-button { margin-left: auto; min-height: 22px; }
 .sound-pad-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; min-width: 0; min-height: 0; }
-.sound-pad { min-width: 0; border: 1px solid #2d6674; border-radius: 5px; background: linear-gradient(180deg, rgba(13, 46, 56, 0.95), rgba(8, 26, 34, 0.98)); color: var(--text); padding: 5px 4px; display: grid; align-content: center; gap: 3px; text-align: center; box-shadow: inset 0 0 14px rgba(24, 214, 231, 0.12); cursor: pointer; transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease, transform 80ms ease; }
+.sound-pad { min-width: 0; border: 1px solid #2d6674; border-radius: 5px; background: linear-gradient(180deg, rgba(13, 46, 56, 0.95), rgba(8, 26, 34, 0.98)); color: var(--text); padding: 4px; display: grid; place-items: center; text-align: center; box-shadow: inset 0 0 14px rgba(24, 214, 231, 0.12); cursor: pointer; transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease, transform 80ms ease; }
 .sound-pad:hover { border-color: var(--cyan); background: linear-gradient(180deg, rgba(16, 70, 82, 0.98), rgba(8, 34, 43, 0.98)); box-shadow: inset 0 0 18px rgba(24, 214, 231, 0.24), 0 0 0 1px rgba(24, 214, 231, 0.24); }
 .sound-pad:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 .sound-pad:active { transform: translateY(1px); border-color: #f3c842; box-shadow: inset 0 0 18px rgba(243, 200, 66, 0.22); }
 .sound-pad.is-playing { border-color: #f3c842; box-shadow: inset 0 0 18px rgba(243, 200, 66, 0.2), 0 0 0 1px rgba(243, 200, 66, 0.25); }
-.sound-pad:hover span, .sound-pad:focus-visible span { color: #6fffee; }
-.sound-pad span { color: var(--cyan); font-size: 8px; line-height: 1; font-weight: 480; letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; }
-.sound-pad strong { font-size: 10px; line-height: 1.05; font-weight: 430; overflow-wrap: anywhere; }
+.sound-pad:hover strong, .sound-pad:focus-visible strong { color: #6fffee; }
+.sound-pad strong { color: var(--cyan); font-size: 10px; line-height: 1.05; font-weight: 480; overflow-wrap: anywhere; }
 
 .modal-backdrop { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: rgba(0, 0, 0, 0.38); }
 .hardware-monitor-modal { width: min(840px, calc(100vw - 48px)); display: grid; grid-template-rows: 28px 40px 36px 30px 30px; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 7px; background: rgba(10, 28, 36, 0.98); box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5); overflow: hidden; }
@@ -325,7 +324,7 @@
   .fx-return { width: 260px; grid-template-columns: 52px minmax(72px, 1fr) 68px; }
   .workspace { grid-template-columns: minmax(620px, 1fr) 438px; padding: 8px 12px; }
   .left-zone { grid-template-rows: minmax(0, 1fr) 94px; gap: 6px; }
-  .right-zone { grid-template-rows: minmax(0, 1fr) 92px; gap: 6px; }
+  .right-zone { grid-template-rows: minmax(0, 1fr) 86px; gap: 6px; }
   .channel-strip { flex-basis: 140px; gap: 4px; padding: 7px; font-size: 10px; }
   .channel-strip header { min-height: 40px; padding-bottom: 3px; }
   .processing-buttons { gap: 4px; }
@@ -366,10 +365,9 @@
   .eq-band { padding: 5px; }
   .numeric-parameter { grid-template-columns: 34px minmax(0, 1fr); }
   .compressor-controls { gap: 6px; }
-  .sound-pad-panel { padding: 7px; grid-template-rows: 24px minmax(0, 1fr); gap: 5px; }
+  .sound-pad-panel { padding: 6px 7px; grid-template-rows: 22px minmax(0, 1fr); gap: 5px; }
   .sound-pad-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
-  .sound-pad { padding: 3px 4px; gap: 2px; }
-  .sound-pad span { font-size: 7px; }
+  .sound-pad { padding: 3px 4px; }
   .sound-pad strong { font-size: 9px; }
   .hardware-monitor-modal { width: min(600px, calc(100vw - 32px)); padding: 9px; grid-template-rows: 26px 38px 34px 28px; gap: 6px; }
   .hardware-monitor-actions { grid-template-columns: 50px 46px 76px 82px minmax(60px, 1fr); gap: 5px; }
