@@ -90,7 +90,11 @@ export class EngineSupervisor extends EventEmitter {
 
   private async restoreSystemRoute() {
     const status = await this.send("routing-system-status");
-    if (status.ownsSystemRoute || status.recoveryMarkerPresent) await this.send("routing-system-disable");
+    if (status.ownsSystemRoute) {
+      await this.send("routing-system-disable");
+      return;
+    }
+    if (status.recoveryMarkerPresent) await this.send("routing-system-recover");
   }
 
   private async recoverSystemRoute() {

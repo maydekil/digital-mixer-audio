@@ -116,6 +116,31 @@ describe("EngineSupervisor", () => {
     }
   });
 
+  it("recovers durable system route marker before normal stop", async () => {
+    const eventFile = join(tmpdir(), `local-mixer-route-stop-marker-${process.pid}.log`);
+    rmSync(eventFile, { force: true });
+    process.env.LOCAL_MIXER_FAKE_ROUTE_EVENTS = eventFile;
+    const supervisor = new EngineSupervisor({
+      enginePath: process.execPath,
+      args: [fakeEngine, "route-marker"],
+      startupTimeoutMs: 500,
+      commandTimeoutMs: 500,
+      restoreSystemRouteOnStop: true
+    });
+
+    try {
+      await supervisor.start();
+      await supervisor.stop();
+      expect(existsSync(eventFile)).toBe(true);
+      const events = readFileSync(eventFile, "utf8");
+      expect(events).toContain("recover\n");
+      expect(events).not.toContain("disable\n");
+    } finally {
+      delete process.env.LOCAL_MIXER_FAKE_ROUTE_EVENTS;
+      rmSync(eventFile, { force: true });
+    }
+  });
+
   it("recovers durable system route marker on startup", async () => {
     const eventFile = join(tmpdir(), `local-mixer-route-recover-${process.pid}.log`);
     rmSync(eventFile, { force: true });

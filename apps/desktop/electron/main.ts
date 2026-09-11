@@ -69,6 +69,7 @@ const supportedEngineCommands = new Set([
 const soundPadMaxMs = 6000;
 let activeSoundPad: { child: ReturnType<typeof spawn>; timeout: ReturnType<typeof setTimeout> } | null = null;
 let engineSupervisor: EngineSupervisor | null = null;
+let quitAfterEngineCleanup = false;
 
 function soundPadHelperPath() {
   if (process.env.LOCAL_MIXER_SOUND_PAD_HELPER) return process.env.LOCAL_MIXER_SOUND_PAD_HELPER;
@@ -355,6 +356,12 @@ app.on("window-all-closed", () => {
   app.quit();
 });
 
-app.on("before-quit", () => {
-  void engineSupervisor?.stop();
+app.on("before-quit", (event) => {
+  if (quitAfterEngineCleanup) return;
+  event.preventDefault();
+  void (async () => {
+    await engineSupervisor?.stop();
+    quitAfterEngineCleanup = true;
+    app.quit();
+  })();
 });

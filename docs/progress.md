@@ -3067,3 +3067,29 @@ Validation:
 
 Known limitations:
 - Automated verification still does not claim a packaged/manual BlackHole listening PASS; user hardware listening remains the evidence for audible SYSTEM route behavior.
+
+### Phase19 Hardening Checkpoint — Quit Route Recovery Gate
+
+Changed files:
+- `apps/desktop/electron/main.ts`: `before-quit` now prevents the first quit event, awaits engine supervisor cleanup/route restore, then quits after cleanup has completed.
+- `apps/desktop/electron/EngineSupervisor.ts`: normal-stop route restore now uses `routing-system-disable` for live owned routes and `routing-system-recover` for durable marker-only recovery.
+- `tests/electron/engine-supervisor.test.ts`: added marker-only stop coverage so route recovery is not confused with owned-route disable.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Closing the desktop app now gives the native engine a chance to restore macOS output away from BlackHole before Electron exits.
+- If a previous run left only a durable recovery marker, normal engine stop uses the recovery command rather than the owned-route disable command.
+- The app still avoids silently forcing recovery during automated smoke when a local marker is present.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npx vitest run tests/electron/engine-supervisor.test.ts`
+- exit/result: `0`; EngineSupervisor 10/10 passed.
+- command: `npm run build:desktop:main`
+- exit/result: `0`; Electron main/preload build passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 46/46, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual packaged close/reopen route recovery still needs user hardware confirmation because automated tests do not change macOS output devices.
