@@ -35,6 +35,8 @@ export function MixerPage() {
   const [outputUid, setOutputUid] = useState("");
   const [transportState, setTransportState] = useState("stopped");
   const [projectPath, setProjectPath] = useState("");
+  const [systemAudioEnabled, setSystemAudioEnabled] = useState(false);
+  const [systemAudioStatus, setSystemAudioStatus] = useState("System Audio");
   const autosaveReady = useRef(false);
   const fxProgramInFlight = useRef<Record<"fx-a" | "fx-b", boolean>>({ "fx-a": false, "fx-b": false });
   const fxProgramDesired = useRef<Partial<Record<"fx-a" | "fx-b", number>>>({});
@@ -82,6 +84,67 @@ export function MixerPage() {
       sampleRate: 48000,
       monitorGainDb: -18
     });
+  }
+
+  async function toggleSystemAudio() {
+    const engineCommand = window.localMixer?.engineCommand;
+    if (!engineCommand) return;
+
+    if (systemAudioEnabled) {
+      await engineCommand("stop-mixer-monitor");
+      const result = await engineCommand("routing-system-disable");
+      refresh(() => adapter.setChannelMonitor("system", false));
+      setSystemAudioEnabled(false);
+      setSystemAudioStatus(result?.ok === false ? String(result.error ?? "Route restore failed") : "System Audio");
+      return;
+    }
+
+    const blackHole = devices.find((device) => isBlackHoleDevice(device) && (device.inputChannels ?? 0) >= 2);
+    const physicalOutput = physicalOutputDevice(devices, outputUid);
+    if (!blackHole || !physicalOutput) {
+      setSystemAudioStatus(!blackHole ? "BlackHole missing" : "Choose output");
+      window.alert(!blackHole ? "BlackHole 2ch belum terdeteksi." : "Pilih output fisik, bukan Default/BlackHole.");
+      return;
+    }
+    if (outputUid !== physicalOutput.uid) setOutputUid(physicalOutput.uid);
+
+    const route = await engineCommand("routing-system-diagnostics", {
+      blackHoleUid: blackHole.uid,
+      physicalOutputUid: physicalOutput.uid,
+      sampleRate: 48000,
+      blackHoleInputStartChannel: 0,
+      physicalOutputStartChannel: 0
+    });
+    if (route.routeValid !== true) {
+      setSystemAudioStatus(String(route.error ?? "Route rejected"));
+      window.alert(`Route belum siap: ${String(route.error ?? "Route rejected")}`);
+      return;
+    }
+
+    if (!window.confirm("Switch macOS output to BlackHole and monitor SYSTEM through the mixer?")) return;
+    const enabled = await engineCommand("routing-system-enable", {
+      blackHoleUid: blackHole.uid,
+      physicalOutputUid: physicalOutput.uid,
+      sampleRate: 48000,
+      blackHoleInputStartChannel: 0,
+      physicalOutputStartChannel: 0,
+      allowOsRouteChange: true
+    });
+    if (enabled.ok === false) {
+      setSystemAudioStatus(String(enabled.error ?? "Route failed"));
+      return;
+    }
+
+    refresh(() => {
+      adapter.setChannelEnabled("system", true);
+      adapter.setChannelSource("system", blackHole.uid);
+      adapter.setChannelMonitor("system", true);
+      adapter.selectChannel("system");
+    });
+    await syncMixerGraph(adapter.getSnapshot(), physicalOutput.uid);
+    await engineCommand("start-mixer-monitor", { sampleRate: 48000, monitorGainDb: -18 });
+    setSystemAudioEnabled(true);
+    setSystemAudioStatus("System ON");
   }
 
   async function sendTransport(type: "transport-play" | "transport-pause" | "transport-stop") {
@@ -397,6 +460,9 @@ export function MixerPage() {
         onSave={() => void saveProject()}
         onCollect={() => void collectProject()}
         onExport={() => void exportProject()}
+        systemAudioEnabled={systemAudioEnabled}
+        systemAudioStatus={systemAudioStatus}
+        onSystemAudio={() => void toggleSystemAudio()}
         onAddChannel={addChannel}
         onRenameChannel={renameSelectedChannel}
         onRemoveChannel={removeSelectedChannel}
@@ -577,13 +643,15 @@ function parseFxPrograms(programs: unknown[]): FxProgram[] {
   });
 }
 
-function TopBar({ projectName, time, rate, status, mode, transportState, onVocalFx, onTimeline, onPlay, onStop, onRecord, onOpen, onSave, onCollect, onExport, onAddChannel, onRenameChannel, onRemoveChannel }: {
+function TopBar({ projectName, time, rate, status, mode, transportState, systemAudioEnabled, systemAudioStatus, onVocalFx, onTimeline, onPlay, onStop, onRecord, onOpen, onSave, onCollect, onExport, onSystemAudio, onAddChannel, onRenameChannel, onRemoveChannel }: {
   projectName: string;
   time: string;
   rate: string;
   status: string;
   mode: string;
   transportState: string;
+  systemAudioEnabled: boolean;
+  systemAudioStatus: string;
   onVocalFx(): void;
   onTimeline(): void;
   onPlay(): void;
@@ -593,6 +661,7 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onVocal
   onSave(): void;
   onCollect(): void;
   onExport(): void;
+  onSystemAudio(): void;
   onAddChannel(): void;
   onRenameChannel(): void;
   onRemoveChannel(): void;
@@ -617,6 +686,14 @@ function TopBar({ projectName, time, rate, status, mode, transportState, onVocal
       <button className="settings" aria-label="Save Project" title="Save Project" onClick={onSave}>▣</button>
       <button className="settings" aria-label="Collect Media" title="Collect Media" onClick={onCollect}>◇</button>
       <button className="settings" aria-label="Export Mix" title="Export Mix" onClick={onExport}>⇩</button>
+      <button
+        className={`settings system-audio-toggle${systemAudioEnabled ? " is-active" : ""}`}
+        aria-label={systemAudioStatus}
+        title={systemAudioStatus}
+        onClick={onSystemAudio}
+      >
+        SYS
+      </button>
       <button className="settings" aria-label="Add Channel" title="Add Channel" onClick={onAddChannel}>＋</button>
       <button className="settings" aria-label="Rename Channel" title="Rename Channel" onClick={onRenameChannel}>✎</button>
       <button className="settings" aria-label="Remove Channel" title="Remove Channel" onClick={onRemoveChannel}>−</button>
@@ -629,6 +706,17 @@ function parseSourceRole(role: string): "system" | "vocal" | "instrument" | "mus
   const normalized = role.trim().toLowerCase();
   if (normalized === "system" || normalized === "vocal" || normalized === "instrument") return normalized;
   return "music";
+}
+
+function isBlackHoleDevice(device: HardwareDevice) {
+  return /blackhole/i.test(`${device.name} ${device.uid}`);
+}
+
+function physicalOutputDevice(devices: HardwareDevice[], selectedUid: string) {
+  const selected = devices.find((device) => device.uid === selectedUid && (device.outputChannels ?? 0) > 0 && !isBlackHoleDevice(device));
+  if (selected) return selected;
+  return devices.find((device) => device.defaultOutput && (device.outputChannels ?? 0) > 0 && !isBlackHoleDevice(device)) ??
+    devices.find((device) => (device.outputChannels ?? 0) > 0 && !isBlackHoleDevice(device));
 }
 
 function Footer({ outputUid, outputOptions, onOutput, onHardware }: { outputUid: string; outputOptions: Array<{ value: string; label: string }>; onOutput(value: string): void; onHardware(): void }) {

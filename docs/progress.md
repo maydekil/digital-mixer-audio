@@ -3013,3 +3013,26 @@ Validation:
 Known limitations:
 - Packaged manual autosave/recovery acceptance remains NOT_RUN.
 - Undo/redo transaction integration and recent-project menus remain pending.
+
+### Phase19 Hardening Checkpoint — Main Mixer System Audio Toggle
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: added a top-bar `SYS` action that performs BlackHole route diagnostics, switches macOS output to BlackHole with explicit confirmation, assigns the SYSTEM channel source to BlackHole, selects a physical output device, enables SYSTEM monitoring, and starts native mixer monitoring.
+- `apps/desktop/src/styles/app.css`: styled the `SYS` route toggle active state.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Users no longer need to open Hardware Monitor for the normal browser/YouTube route flow after devices are detected.
+- The action avoids using BlackHole as the mixer output and prefers the selected/default physical output device.
+- Disable restores the owned system route and stops mixer monitoring.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 45/45 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 45/45, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- This automated verification does not claim packaged/manual BlackHole listening PASS; user hardware testing is still the evidence for actual YouTube audio.
