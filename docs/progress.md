@@ -3533,3 +3533,22 @@ Validation:
 
 Known limitations:
 - Manual visual confirmation of the compacted top bar in the running desktop app is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Default Channel Faders At Unity
+
+Changed files:
+- `apps/desktop/src/fixtures/approvedMixerSession.ts`: changed all default source/group/master faders to `0 dB`.
+- `tests/ui/preview-adapter.test.ts`: added a regression test that every default channel starts at unity gain.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- SYSTEM, VOICE, GUITAR, MUSIC, GROUP 1, and MASTER now open with faders exactly at `0.0 dB`.
+- Default mixer state no longer attenuates channel volume through negative fader values before the user moves anything.
+- The vertical fader UI continues to map `0 dB` to the center position.
+
+Validation:
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 49/49, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual listening confirmation that perceived system monitor volume matches the original source at default faders is `NOT_RUN` in automated verification.

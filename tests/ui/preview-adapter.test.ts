@@ -2,6 +2,19 @@ import { describe, expect, it } from "vitest";
 import { PreviewAdapter } from "../../apps/desktop/src/adapters/preview/PreviewAdapter";
 
 describe("PreviewAdapter", () => {
+  it("starts every channel fader at unity gain", () => {
+    const adapter = new PreviewAdapter();
+    const snapshot = adapter.getSnapshot();
+    expect(snapshot.channels.map((channel) => [channel.id, channel.faderDb])).toEqual([
+      ["system", 0],
+      ["voice", 0],
+      ["guitar", 0],
+      ["music", 0],
+      ["group1", 0],
+      ["master", 0]
+    ]);
+  });
+
   it("keeps selected channel send A linked to the same state", () => {
     const adapter = new PreviewAdapter();
     adapter.setChannelSend("voice", "fx-a", -12);

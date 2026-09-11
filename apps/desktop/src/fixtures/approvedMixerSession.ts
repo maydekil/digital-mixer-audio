@@ -27,14 +27,14 @@ export const approvedMixerSession: MixerSnapshot = {
     { id: "fx-b", label: "FX B", accent: "cyan", enabled: true, programId: 50, revision: 0, pending: false, error: "", modified: false, returnDb: -12, meter: { left: -12, right: -13, clip: false } }
   ],
   channels: [
-    channel("system", "SYSTEM", "BlackHole 1-2", "system", -6, 0, 0, false, false),
-    channel("voice", "VOICE", "USB Mic", "vocal", -3, -18, -24, true, true),
-    channel("guitar", "GUITAR", "Interface In 2", "instrument", -8, -18, -6, false, false),
-    channel("music", "MUSIC", "Backing.wav", "music", -9, 0, 0, false, false),
-    channel("group1", "GROUP 1", "Music Bus", "group", -4, -6, -6, false, false),
+    channel("system", "SYSTEM", "BlackHole 1-2", "system", 0, 0, 0, false, false),
+    channel("voice", "VOICE", "USB Mic", "vocal", 0, -18, -24, true, true),
+    channel("guitar", "GUITAR", "Interface In 2", "instrument", 0, -18, -6, false, false),
+    channel("music", "MUSIC", "Backing.wav", "music", 0, 0, 0, false, false),
+    channel("group1", "GROUP 1", "Music Bus", "group", 0, -6, -6, false, false),
     {
       id: "master", name: "MASTER", source: "Output 1-2", kind: "master", role: "master",
-      enabled: true, trimDb: 0, pan: 0, faderDb: -1, mute: false, solo: false,
+      enabled: true, trimDb: 0, pan: 0, faderDb: 0, mute: false, solo: false,
       processing: { eq: true, comp: false, noise: false, insertFx: false },
       dynamics: cloneDynamics(),
       sends: { "fx-a": { enabled: false, gainDb: 0 }, "fx-b": { enabled: false, gainDb: 0 } },
