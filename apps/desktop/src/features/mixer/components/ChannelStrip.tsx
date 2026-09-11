@@ -86,6 +86,7 @@ function ProcessingButtons({ channel, onProcessor }: { channel: ChannelState; on
           {button.label}
         </Button>
       ))}
+      {channel.role === "system" ? <div className="processor-slot-placeholder" aria-hidden="true" /> : null}
     </div>
   );
 }

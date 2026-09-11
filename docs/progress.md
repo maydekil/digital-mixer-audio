@@ -3552,3 +3552,22 @@ Validation:
 
 Known limitations:
 - Manual listening confirmation that perceived system monitor volume matches the original source at default faders is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Align System Strip Divider
+
+Changed files:
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: added a layout-only placeholder where SYSTEM omits the INSERT FX button.
+- `apps/desktop/src/styles/app.css`: sized the hidden processor placeholder to match a processor button row.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- SYSTEM still does not expose an INSERT FX control.
+- SYSTEM processing area reserves the same vertical space as other non-master channels.
+- The divider above the Pan knob aligns with the neighboring channel strips.
+
+Validation:
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 49/49, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual visual confirmation of divider alignment in the running desktop app is `NOT_RUN` in automated verification.

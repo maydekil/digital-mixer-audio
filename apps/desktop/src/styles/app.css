@@ -80,6 +80,7 @@
 .processing-buttons { display: grid; gap: 5px; }
 .processing-buttons .ui-button:not(.is-active) { color: #8faeb7; border-color: #214957; background: #09222b; box-shadow: inset 3px 0 0 rgba(95, 126, 137, 0.28); }
 .processing-buttons .ui-button.is-active { text-shadow: 0 0 7px rgba(24, 214, 231, 0.36); }
+.processor-slot-placeholder { min-height: 24px; visibility: hidden; }
 .master-upper { display: grid; grid-template-rows: 24px 1fr; gap: 4px; min-height: 140px; }
 .master-upper-spacer { min-height: 101px; }
 .harmony-shortcut { display: grid; grid-template-columns: 1fr 28px; gap: 4px; min-height: 27px; }
