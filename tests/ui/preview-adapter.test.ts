@@ -45,7 +45,7 @@ describe("PreviewAdapter", () => {
     const voice = adapter.getSnapshot().channels.find((channel) => channel.id === "voice");
     expect(voice?.trimDb).toBe(4.5);
     expect(voice?.pan).toBe(-35);
-    expect(voice?.faderDb).toBe(-11);
+    expect(voice?.faderDb).toBe(-10);
     expect(voice?.enabled).toBe(false);
     expect(voice?.source).toBe("BuiltInHeadphoneInputDevice");
     expect(voice?.meter.left).toBe(-60);

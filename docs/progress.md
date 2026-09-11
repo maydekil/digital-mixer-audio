@@ -3199,3 +3199,30 @@ Validation:
 
 Known limitations:
 - The native persistent monitor still applies level changes by resyncing/restarting the monitor path from UI control changes; manual hardware testing should confirm this feels responsive enough during fader movement.
+
+### Phase19 Hardening Checkpoint — Symmetric Unity Fader Scale
+
+Changed files:
+- `apps/desktop/src/components/audio/VerticalFader.tsx`: changed channel fader UI to a symmetric `-10 dB` to `+10 dB` scale with `0 dB` at the visual center.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: clamps channel fader edits to `-10..+10` and defaults newly-added source channels to unity `0 dB`.
+- `apps/desktop/src/features/project/sessionDocument.ts`: clamps restored project fader values into the new `-10..+10` UI range and defaults missing channels to unity.
+- `apps/desktop/src/styles/app.css`: keeps the center `0` scale label visible on compact layouts.
+- `tests/ui/preview-adapter.test.ts`, `tests/ui/project-session.test.ts`: updated fader clamp expectations.
+
+Implemented behavior:
+- Fader center is `0.0 dB`, which is unity gain / same volume as the source before channel/master gain staging.
+- The fader top is `+10 dB` and bottom is `-10 dB`, giving a balanced visual travel above and below unity.
+- Older project values below `-10 dB` are clamped into the new UI fader range on restore.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 47/47 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size guard passed with `MixerPage.tsx` warning at 833 lines.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 47/47, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- This changes the UI fader operating range; deep attenuation below `-10 dB` now requires mute/off rather than fader travel.

@@ -218,7 +218,7 @@ function applyChannelSession(channel: ChannelState, saved: ProjectSessionChannel
     monitor: Boolean(saved.monitor),
     recordArm: Boolean(saved.recordArm),
     trimDb: Number(saved.gainDb),
-    faderDb: Number(saved.faderDb),
+    faderDb: clamp(Number(saved.faderDb), -10, 10),
     pan: Number(saved.pan) * 100,
     processing: {
       ...channel.processing,
@@ -269,7 +269,7 @@ function fallbackChannel(): ChannelState {
     enabled: true,
     trimDb: 0,
     pan: 0,
-    faderDb: -12,
+    faderDb: 0,
     mute: false,
     solo: false,
     monitor: false,
@@ -378,4 +378,9 @@ function mediaRefs(snapshot: MixerSnapshot) {
 function slugProjectId(projectName: string) {
   const slug = projectName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   return slug || "local-audio-mixer";
+}
+
+function clamp(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min, Math.min(max, value));
 }
