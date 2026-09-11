@@ -3401,3 +3401,25 @@ Validation:
 
 Known limitations:
 - Real listening confirmation that fresh startup audio is uncolored on the user's BlackHole/YouTube setup is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Flat EQ Graph Line
+
+Changed files:
+- `apps/desktop/src/components/audio/EqResponseGraph.tsx`: changed EQ graph endpoints to follow the first/last band gain instead of applying display offsets, so a flat EQ renders as a true horizontal line.
+- `apps/desktop/src/styles/app.css`: added a more visible `0 dB` reference line in the EQ graph.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- With all EQ bands at `0.0 dB`, the EQ graph now shows a straight horizontal line across the whole graph, not only through the draggable nodes.
+- The `0 dB` reference line remains visible behind the curve, making the flat state obvious at startup and after RESET.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 48/48 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 48/48, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Visual confirmation in the running desktop app is `NOT_RUN` in automated verification and should be checked manually by opening the EQ panel.

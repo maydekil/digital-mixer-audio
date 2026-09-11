@@ -9,8 +9,8 @@ export function EqResponseGraph({ bands, onBandChange }: EqResponseGraphProps) {
   const points = bands.map((band) => `${freqToX(band.freqHz)},${gainToY(band.gainDb)}`).join(" ");
   const first = bands[0];
   const last = bands[bands.length - 1];
-  const leftY = first ? gainToY(Math.max(-12, first.gainDb - 9)) : 132;
-  const rightY = last ? gainToY(last.gainDb + 1) : 58;
+  const leftY = first ? gainToY(first.gainDb) : gainToY(0);
+  const rightY = last ? gainToY(last.gainDb) : gainToY(0);
 
   function updateBand(bandId: EqBandDisplay["id"], clientX: number, clientY: number, svg: SVGSVGElement) {
     const rect = svg.getBoundingClientRect();
@@ -29,6 +29,7 @@ export function EqResponseGraph({ bands, onBandChange }: EqResponseGraphProps) {
       </defs>
       {Array.from({ length: 15 }).map((_, index) => <line key={`v-${index}`} x1={index * 50} x2={index * 50} y1="10" y2="150" />)}
       {Array.from({ length: 7 }).map((_, index) => <line key={`h-${index}`} x1="0" x2="700" y1={20 + index * 22} y2={20 + index * 22} />)}
+      <line className="eq-zero-line" x1="0" x2="700" y1={gainToY(0)} y2={gainToY(0)} />
       <text x="0" y="35">+12</text><text x="0" y="94">0</text><text x="0" y="145">-12</text>
       <text x="0" y="174">20</text><text x="150" y="174">100</text><text x="355" y="174">1k</text><text x="590" y="174">10k</text><text x="668" y="174">20k</text>
       <polygon points={`0,150 0,${leftY} ${points} 700,${rightY} 700,150`} fill="url(#eqFill)" />
