@@ -25,6 +25,8 @@ interface HardwareDevice {
   outputChannels?: number;
 }
 
+const monitorSafetyGainDb = -18;
+
 export function MixerPage() {
   const adapter = useMemo(() => new PreviewAdapter(), []);
   const [snapshot, setSnapshot] = useState(adapter.getSnapshot());
@@ -87,7 +89,7 @@ export function MixerPage() {
     }
     await window.localMixer.engineCommand("start-mixer-monitor", {
       sampleRate: 48000,
-      monitorGainDb: -18
+      monitorGainDb: monitorSafetyGainDb
     });
   }
 
@@ -103,7 +105,7 @@ export function MixerPage() {
     }
     await window.localMixer.engineCommand("start-mixer-monitor", {
       sampleRate: 48000,
-      monitorGainDb: -18
+      monitorGainDb: monitorSafetyGainDb
     });
   }
 
@@ -165,7 +167,7 @@ export function MixerPage() {
       adapter.selectChannel("system");
     });
     await syncMixerGraph(adapter.getSnapshot(), physicalOutput.uid);
-    await engineCommand("start-mixer-monitor", { sampleRate: 48000, monitorGainDb: -18 });
+    await engineCommand("start-mixer-monitor", { sampleRate: 48000, monitorGainDb: monitorSafetyGainDb });
     setSystemAudioEnabled(true);
     setSystemAudioStatus("System ON");
   }
@@ -489,9 +491,12 @@ export function MixerPage() {
       : [{ value: channel.source, label: channel.source }, ...inputOptions];
     return [channel.id, options];
   }));
-  const displayChannels = snapshot.channels.map((channel) => (
-    channel.id === "system" ? { ...channel, meter: systemMeter } : channel
-  ));
+  const masterMeter = systemAudioEnabled ? masterMeterFromSystem(snapshot, systemMeter) : undefined;
+  const displayChannels = snapshot.channels.map((channel) => {
+    if (channel.id === "system") return { ...channel, meter: systemMeter };
+    if (channel.kind === "master" && masterMeter) return { ...channel, meter: masterMeter };
+    return channel;
+  });
 
   return (
     <main className="mixer-app">
@@ -536,9 +541,15 @@ export function MixerPage() {
               void refreshActiveMonitor(nextSnapshot);
             }}
             onSource={(id, source) => refresh(() => adapter.setChannelSource(id, source))}
-            onTrim={(id, value) => refresh(() => adapter.setChannelTrim(id, value))}
+            onTrim={(id, value) => {
+              const nextSnapshot = refresh(() => adapter.setChannelTrim(id, value));
+              void refreshActiveMonitor(nextSnapshot);
+            }}
             onPan={(id, value) => refresh(() => adapter.setChannelPan(id, value))}
-            onFader={(id, value) => refresh(() => adapter.setChannelFader(id, value))}
+            onFader={(id, value) => {
+              const nextSnapshot = refresh(() => adapter.setChannelFader(id, value));
+              void refreshActiveMonitor(nextSnapshot);
+            }}
             onSend={(id, unitId, value) => refresh(() => adapter.setChannelSend(id, unitId, value))}
             onMute={(id, muted) => {
               const nextSnapshot = refresh(() => adapter.setChannelMute(id, muted));
@@ -615,7 +626,7 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
   const payload: Record<string, string | number | boolean> = {
     channelCount: channels.length,
     outputUid,
-    monitorGainDb: -18,
+    monitorGainDb: monitorSafetyGainDb,
     fxAEnabled: fxA?.enabled ?? false,
     fxAProgramId: fxA?.programId ?? 12,
     fxAReturnDb: fxA?.returnDb ?? -12,
@@ -691,6 +702,21 @@ function isMasterAudible(snapshot: MixerSnapshot) {
 function linearPeakToDb(peak: number) {
   if (!Number.isFinite(peak) || peak <= 0.000001) return -60;
   return Math.max(-60, Math.min(6, 20 * Math.log10(peak)));
+}
+
+function masterMeterFromSystem(snapshot: MixerSnapshot, systemMeter: MeterLevel): MeterLevel {
+  const system = snapshot.channels.find((channel) => channel.id === "system");
+  const master = snapshot.channels.find((channel) => channel.kind === "master" || channel.role === "master");
+  if (!system?.enabled || system.mute || !master?.enabled || master.mute) return { left: -60, right: -60, clip: false };
+  const gainDb = system.trimDb + system.faderDb + master.trimDb + master.faderDb + monitorSafetyGainDb;
+  const left = clampMeterDb(systemMeter.left + gainDb);
+  const right = clampMeterDb((systemMeter.right ?? systemMeter.left) + gainDb);
+  return { left, right, clip: left >= 0 || right >= 0 };
+}
+
+function clampMeterDb(value: number) {
+  if (!Number.isFinite(value)) return -60;
+  return Math.max(-60, Math.min(6, value));
 }
 
 function parseFxPrograms(programs: unknown[]): FxProgram[] {

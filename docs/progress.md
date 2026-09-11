@@ -3175,3 +3175,27 @@ Validation:
 
 Known limitations:
 - Automated verification does not confirm real BlackHole meter motion; user hardware playback should confirm the SYSTEM strip meter moves with browser/system audio.
+
+### Phase19 Hardening Checkpoint — Master Monitor Fader And Meter Bridge
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: master/source trim and fader changes now resync/restart the active native monitor, and the MASTER strip gets a live meter derived from the SYSTEM input peak plus SYSTEM/MASTER gain staging.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- While SYSTEM/BlackHole monitoring is active, moving the MASTER fader or trim now affects the native monitor path immediately instead of waiting for monitor restart/toggle.
+- MASTER meter now moves during SYSTEM monitoring and reflects mute/off states as silence.
+- The monitor safety gain remains a single constant shared by sync/start calls and live meter derivation.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 47/47 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size guard passed with `MixerPage.tsx` at 833 lines.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 47/47, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- The native persistent monitor still applies level changes by resyncing/restarting the monitor path from UI control changes; manual hardware testing should confirm this feels responsive enough during fader movement.
