@@ -86,7 +86,9 @@ export class PreviewAdapter implements MixerControlPort {
       ...channel,
       sends: {
         ...channel.sends,
-        [unitId]: channel.role === "system" ? { enabled: false, gainDb: -60 } : { enabled: gainDb > -60, gainDb: clamp(gainDb, -60, 10) }
+        [unitId]: channel.role === "system" || !channel.processing.insertFx
+          ? { enabled: false, gainDb: -60 }
+          : { enabled: gainDb > -60, gainDb: clamp(gainDb, -60, 10) }
       }
     } : channel);
   }

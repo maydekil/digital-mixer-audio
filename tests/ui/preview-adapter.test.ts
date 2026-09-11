@@ -165,6 +165,17 @@ describe("PreviewAdapter", () => {
     expect(system?.sends["fx-b"]).toEqual({ enabled: false, gainDb: -60 });
   });
 
+  it("bypasses channel FX sends while insert FX is disabled", () => {
+    const adapter = new PreviewAdapter();
+    adapter.setChannelProcessor("voice", "insertFx", false);
+    adapter.setChannelSend("voice", "fx-a", -6);
+    adapter.setChannelSend("voice", "fx-b", -6);
+
+    const voice = adapter.getSnapshot().channels.find((channel) => channel.id === "voice");
+    expect(voice?.sends["fx-a"]).toEqual({ enabled: false, gainDb: -60 });
+    expect(voice?.sends["fx-b"]).toEqual({ enabled: false, gainDb: -60 });
+  });
+
   it("keeps source monitoring exclusive until aggregate routing is available", () => {
     const adapter = new PreviewAdapter();
     adapter.setChannelMonitor("voice", true);

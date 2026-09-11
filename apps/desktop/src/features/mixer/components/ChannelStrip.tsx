@@ -103,7 +103,7 @@ function MasterUpperControls() {
 function SendPair({ channel, onSend }: { channel: ChannelState; onSend(unitId: FxUnitId, value: number): void }) {
   const sendA = channel.sends["fx-a"];
   const sendB = channel.sends["fx-b"];
-  const disabled = channel.role === "system";
+  const disabled = channel.role === "system" || !channel.processing.insertFx;
   return (
     <div className="send-pair">
       <RotaryKnob label="SEND A" value={disabled || !sendA.enabled ? "OFF" : `${sendA.gainDb} dB`} numericValue={disabled ? -60 : sendA.gainDb} min={-60} max={10} tone="amber" size="sm" disabled={disabled} onChange={(value) => onSend("fx-a", value)} />

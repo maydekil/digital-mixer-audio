@@ -23,6 +23,7 @@ export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSend
   const compressor = channel.dynamics.compressor;
   const deEsser = channel.dynamics.deEsser;
   const showInsertFx = channel.role !== "system";
+  const fxSendBypassed = !channel.processing.insertFx;
   return (
     <aside className="processing-panel">
       <header className="processing-header">
@@ -80,7 +81,7 @@ export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSend
         {showInsertFx ? (
           <section className={`processor-card ${channel.processing.insertFx ? "is-active" : "is-bypassed"}`}>
             <div className="processor-title"><span>⏻</span><strong>SEND A · {linkedProgram.name}</strong></div>
-            <RotaryKnob label="Send A" value={sendA.enabled ? `${sendA.gainDb} dB` : "OFF"} numericValue={sendA.gainDb} min={-60} max={10} tone="amber" onChange={onSendA} />
+            <RotaryKnob label="Send A" value={fxSendBypassed || !sendA.enabled ? "OFF" : `${sendA.gainDb} dB`} numericValue={fxSendBypassed ? -60 : sendA.gainDb} min={-60} max={10} tone="amber" disabled={fxSendBypassed} onChange={onSendA} />
           </section>
         ) : null}
       </div>

@@ -3687,3 +3687,25 @@ Validation:
 
 Known limitations:
 - Manual hardware confirmation with the user's `External Microphone` and `External Headphones` is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Bypass FX Sends When Insert FX Is Off
+
+Changed files:
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: disabled SEND A/B knobs whenever INSERT FX is off.
+- `apps/desktop/src/features/processing/components/ChannelProcessingPanel.tsx`: disabled the right-panel Send A control whenever INSERT FX is off.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: rejected send changes while INSERT FX is off by forcing FX sends off.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: sent FX A/B as disabled to native whenever INSERT FX is off, regardless of stored send values.
+- `tests/ui/preview-adapter.test.ts`: covered send bypass while INSERT FX is disabled.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Turning INSERT FX off now cuts the channel's FX A/B send path.
+- Stored send knob values can remain available for when INSERT FX is turned back on, but native receives `SendAEnabled/SendBEnabled=false` while INSERT FX is off.
+- Voice/system monitoring no longer keeps wet FX audible merely because global FX returns are ON.
+
+Validation:
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 50/50, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual listening confirmation that VOICE sounds dry with INSERT FX off is `NOT_RUN` in automated verification.
