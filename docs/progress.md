@@ -3470,3 +3470,25 @@ Validation:
 
 Known limitations:
 - Manual confirmation that SYSTEM/BlackHole pan is audible on the user's hardware setup is `NOT_RUN` in automated verification.
+
+### Phase19 Hardening Checkpoint — Post-Pan System Metering
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: changed SYSTEM display metering to derive post-gain/post-pan output levels from the native input peaks; MASTER display metering now derives from the post-pan SYSTEM output plus master gain.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- SYSTEM meter now follows pan balance: hard-left pan drops the right meter, hard-right pan drops the left meter.
+- MASTER meter reflects the same post-pan channel balance instead of showing pre-pan BlackHole input on both sides.
+- Native status remains an input peak source; UI now maps it to the displayed mixer output level.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 48/48 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 48/48, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual visual confirmation of post-pan meter behavior in the running desktop app is `NOT_RUN` in automated verification.

@@ -522,9 +522,10 @@ export function MixerPage() {
       : [{ value: channel.source, label: channel.source }, ...inputOptions];
     return [channel.id, options];
   }));
-  const masterMeter = systemMonitorActive ? masterMeterFromSystem(snapshot, systemMeter) : undefined;
+  const systemOutputMeter = systemMonitorActive ? systemOutputMeterFromInput(snapshot, systemMeter) : systemMeter;
+  const masterMeter = systemMonitorActive ? masterMeterFromSystem(snapshot, systemOutputMeter) : undefined;
   const displayChannels = snapshot.channels.map((channel) => {
-    if (channel.id === "system") return { ...channel, meter: systemMeter };
+    if (channel.id === "system") return { ...channel, meter: systemOutputMeter };
     if (channel.kind === "master" && masterMeter) return { ...channel, meter: masterMeter };
     return channel;
   });
@@ -730,14 +731,30 @@ function linearPeakToDb(peak: number) {
   return Math.max(-60, Math.min(6, 20 * Math.log10(peak)));
 }
 
-function masterMeterFromSystem(snapshot: MixerSnapshot, systemMeter: MeterLevel): MeterLevel {
+function systemOutputMeterFromInput(snapshot: MixerSnapshot, inputMeter: MeterLevel): MeterLevel {
   const system = snapshot.channels.find((channel) => channel.id === "system");
-  const master = snapshot.channels.find((channel) => channel.kind === "master" || channel.role === "master");
-  if (!system?.enabled || system.mute || !master?.enabled || master.mute) return { left: -60, right: -60, clip: false };
-  const gainDb = system.trimDb + system.faderDb + master.trimDb + master.faderDb + monitorSafetyGainDb;
-  const left = clampMeterDb(systemMeter.left + gainDb);
-  const right = clampMeterDb((systemMeter.right ?? systemMeter.left) + gainDb);
+  if (!system?.enabled || system.mute) return { left: -60, right: -60, clip: false };
+  const pan = Math.max(-1, Math.min(1, system.pan / 100));
+  const leftPanDb = linearGainToDb(Math.min(1, 1 - pan));
+  const rightPanDb = linearGainToDb(Math.min(1, 1 + pan));
+  const gainDb = system.trimDb + system.faderDb + monitorSafetyGainDb;
+  const left = clampMeterDb(inputMeter.left + gainDb + leftPanDb);
+  const right = clampMeterDb((inputMeter.right ?? inputMeter.left) + gainDb + rightPanDb);
   return { left, right, clip: left >= 0 || right >= 0 };
+}
+
+function masterMeterFromSystem(snapshot: MixerSnapshot, systemOutputMeter: MeterLevel): MeterLevel {
+  const master = snapshot.channels.find((channel) => channel.kind === "master" || channel.role === "master");
+  if (!master?.enabled || master.mute) return { left: -60, right: -60, clip: false };
+  const gainDb = master.trimDb + master.faderDb;
+  const left = clampMeterDb(systemOutputMeter.left + gainDb);
+  const right = clampMeterDb((systemOutputMeter.right ?? systemOutputMeter.left) + gainDb);
+  return { left, right, clip: left >= 0 || right >= 0 };
+}
+
+function linearGainToDb(gain: number) {
+  if (!Number.isFinite(gain) || gain <= 0.000001) return -60;
+  return 20 * Math.log10(gain);
 }
 
 function clampMeterDb(value: number) {
