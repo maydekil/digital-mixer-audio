@@ -120,6 +120,22 @@ describe("PreviewAdapter", () => {
     expect(guitar?.eqBands.find((band) => band.id === "low")?.gain).toBe("+3.0 dB");
   });
 
+  it("resets selected channel EQ bands to the neutral music start point", () => {
+    const adapter = new PreviewAdapter();
+    adapter.updateEqBand("low", "gainDb", 8);
+    adapter.updateEqBand("mid1", "freqHz", 1200);
+
+    adapter.resetEqBands();
+    const snapshot = adapter.getSnapshot();
+    const selected = snapshot.channels.find((channel) => channel.id === snapshot.selectedChannelId);
+    const low = selected?.eqBands.find((band) => band.id === "low");
+    const mid1 = selected?.eqBands.find((band) => band.id === "mid1");
+
+    expect(low).toMatchObject({ freqHz: 100, gainDb: 0, gain: "+0.0 dB" });
+    expect(mid1).toMatchObject({ freqHz: 350, gainDb: 0, qValue: 1 });
+    expect(snapshot.eqBands.find((band) => band.id === "mid1")?.freq).toBe("350 Hz");
+  });
+
   it("keeps system channel insert FX disabled", () => {
     const adapter = new PreviewAdapter();
     adapter.setChannelProcessor("system", "insertFx", true);

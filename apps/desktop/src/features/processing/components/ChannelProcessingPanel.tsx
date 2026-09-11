@@ -11,12 +11,13 @@ interface ChannelProcessingPanelProps {
   linkedProgram: FxProgram;
   onSendA(valueDb: number): void;
   onEqChange(bandId: EqBandState["id"], field: "freqHz" | "gainDb" | "qValue" | "type", value: number | string): void;
+  onEqReset(): void;
   onNoiseChange(field: keyof ChannelState["dynamics"]["noise"], value: number): void;
   onCompressorChange(field: keyof ChannelState["dynamics"]["compressor"], value: number): void;
   onDeEsserChange(field: keyof ChannelState["dynamics"]["deEsser"], value: number): void;
 }
 
-export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSendA, onEqChange, onNoiseChange, onCompressorChange, onDeEsserChange }: ChannelProcessingPanelProps) {
+export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSendA, onEqChange, onEqReset, onNoiseChange, onCompressorChange, onDeEsserChange }: ChannelProcessingPanelProps) {
   const sendA = channel.sends["fx-a"];
   const noise = channel.dynamics.noise;
   const compressor = channel.dynamics.compressor;
@@ -33,7 +34,7 @@ export function ChannelProcessingPanel({ channel, eqBands, linkedProgram, onSend
         <Button>Presets⌄</Button>
       </header>
       <section className={`processor-card eq-card ${channel.processing.eq ? "is-active" : "is-bypassed"}`}>
-        <div className="processor-title"><span>⏻</span><strong>PARAMETRIC EQ</strong><label>HPF <input type="checkbox" checked readOnly /> <b>80 Hz</b></label></div>
+        <div className="processor-title"><span>⏻</span><strong>PARAMETRIC EQ</strong><Button tone="cyan" className="processor-reset" onClick={onEqReset}>RESET</Button><label>HPF <input type="checkbox" checked readOnly /> <b>80 Hz</b></label></div>
         <EqResponseGraph bands={eqBands} onBandChange={(bandId, freqHz, gainDb) => {
           onEqChange(bandId, "freqHz", freqHz);
           onEqChange(bandId, "gainDb", gainDb);

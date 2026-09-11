@@ -3351,3 +3351,30 @@ Validation:
 
 Known limitations:
 - Real-time audible EQ movement on BlackHole/YouTube is `NOT_RUN` in automated verification and should be confirmed manually on the user's Mac.
+
+### Phase19 Hardening Checkpoint — EQ Reset Control
+
+Changed files:
+- `apps/desktop/src/adapters/MixerControlPort.ts`: added `resetEqBands()` to the mixer control port contract.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: implemented selected-channel EQ reset to the neutral music start point.
+- `apps/desktop/src/features/processing/components/ChannelProcessingPanel.tsx`: added a compact RESET button to the PARAMETRIC EQ header.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: wired EQ reset through the live processing refresh path so active native monitoring is re-prepared immediately.
+- `apps/desktop/src/styles/app.css`: sized the compact processor reset button for the EQ card header.
+- `tests/ui/preview-adapter.test.ts`: added coverage for resetting selected-channel EQ to neutral/default values.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Clicking RESET in the EQ panel restores the selected channel's LOW/MID/HIGH bands to the app's neutral music starting point: default frequencies and `0.0 dB` gain.
+- Reset remains scoped to the selected channel.
+- If a native monitor is active, reset re-syncs/restarts that monitor path so the flat EQ state is applied immediately.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript check passed.
+- command: `npm run test:ui`
+- exit/result: `0`; Vitest 48/48 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 48/48, native CTest 43/43 including EQ tests, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Audible confirmation of RESET on live BlackHole/YouTube monitoring is `NOT_RUN` in automated verification and should be checked manually on the user's Mac.

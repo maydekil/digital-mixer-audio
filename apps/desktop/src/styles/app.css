@@ -211,6 +211,7 @@
 .processor-title { display: flex; align-items: center; gap: 9px; margin-bottom: 6px; font-size: 11px; }
 .processor-title strong { font-weight: 470; }
 .processor-title > span { color: var(--cyan); font-size: 16px; }
+.processor-title .processor-reset { min-height: 22px; padding: 0 8px; font-size: 10px; }
 .processor-title label { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .processor-title input { accent-color: var(--cyan); }
 .eq-graph { width: 100%; height: 122px; display: block; background: #0b1f27; border: 1px solid #294a55; border-radius: 5px; }

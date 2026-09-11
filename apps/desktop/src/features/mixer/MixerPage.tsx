@@ -610,6 +610,7 @@ export function MixerPage() {
             linkedProgram={programA}
             onSendA={(value) => refreshLiveProcessing(() => adapter.setChannelSend(selected.id, "fx-a", value))}
             onEqChange={(bandId, field, value) => refreshLiveProcessing(() => adapter.updateEqBand(bandId, field, value))}
+            onEqReset={() => refreshLiveProcessing(() => adapter.resetEqBands())}
             onNoiseChange={(field, value) => refreshLiveProcessing(() => adapter.setChannelNoiseParam(selected.id, field, value))}
             onCompressorChange={(field, value) => refreshLiveProcessing(() => adapter.setChannelCompressorParam(selected.id, field, value))}
             onDeEsserChange={(field, value) => refreshLiveProcessing(() => adapter.setChannelDeEsserParam(selected.id, field, value))}
