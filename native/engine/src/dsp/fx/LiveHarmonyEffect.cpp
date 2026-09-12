@@ -13,6 +13,8 @@ constexpr auto kVoiceCount = std::size_t{2};
 constexpr auto kVoicedOpenRms = 0.012f;
 constexpr auto kVoicedCloseRms = 0.006f;
 constexpr auto kMaxVoicedZeroCrossRate = 0.18f;
+constexpr auto kBackingVoiceToneHz = 4200.0f;
+constexpr auto kPi = 3.14159265358979323846f;
 
 float voiceLevel(float levelDb, float voiceDb) noexcept {
   return decibelsToLinear(std::clamp(levelDb + voiceDb, -60.0f, 6.0f));
@@ -56,6 +58,7 @@ void LiveHarmonyEffect::reset() noexcept {
     voice.read = 0;
     voice.write = 0;
     voice.fill = 0;
+    voice.toneState = 0.0f;
   }
   inputFill_ = 0;
   voiceGate_ = 0.0f;
@@ -120,6 +123,13 @@ float LiveHarmonyEffect::analyzeVoicedGate() const noexcept {
   return zeroCrossRate <= kMaxVoicedZeroCrossRate ? 1.0f : 0.0f;
 }
 
+float LiveHarmonyEffect::smoothVoiceTone(VoiceState& voice, float sample) const noexcept {
+  const auto sampleRate = static_cast<float>(std::max(1.0, spec_.sampleRate));
+  const auto alpha = 1.0f - std::exp((-2.0f * kPi * kBackingVoiceToneHz) / sampleRate);
+  voice.toneState += alpha * (sample - voice.toneState);
+  return voice.toneState;
+}
+
 void LiveHarmonyEffect::processReadyBlock() noexcept {
   const auto targetGate = analyzeVoicedGate();
   voiceGate_ += std::clamp(targetGate - voiceGate_, -0.35f, 0.18f);
@@ -127,7 +137,7 @@ void LiveHarmonyEffect::processReadyBlock() noexcept {
     auto& voice = voices_[voiceIndex];
     if (!voice.backend) continue;
     if (!voice.backend->processBlock(inputBlock_, shiftedBlocks_[voiceIndex])) continue;
-    for (auto& sample : shiftedBlocks_[voiceIndex]) sample *= voiceGate_;
+    for (auto& sample : shiftedBlocks_[voiceIndex]) sample = smoothVoiceTone(voice, sample) * voiceGate_;
     pushVoiceOutput(voice, shiftedBlocks_[voiceIndex]);
   }
   std::fill(inputBlock_.begin(), inputBlock_.end(), 0.0f);

@@ -4683,3 +4683,23 @@ Validation:
 
 Known limitations:
 - Manual hardware confirmation that the stronger default is now obvious enough is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Smooth Live Harmony Timbre
+
+Changed files:
+- `native/engine/src/dsp/fx/LiveHarmonyEffect.hpp`: adds per-voice tone smoothing state.
+- `native/engine/src/dsp/fx/LiveHarmonyEffect.cpp`: applies a low-pass tone smoother to pitch-shifted backing voices before they are queued to the live output.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Live Harmony backing voices are slightly darker and less sharp, reducing the synthetic/robotic edge from pitch-shift artifacts.
+- The dry voice path remains unchanged, so vocal clarity is preserved while only the backing layers are softened.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation that the robotic character is reduced enough is `NOT_RUN`.

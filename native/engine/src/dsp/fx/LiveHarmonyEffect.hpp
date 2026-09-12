@@ -41,10 +41,12 @@ class LiveHarmonyEffect final : public EffectProcessor {
     std::size_t read = 0;
     std::size_t write = 0;
     std::size_t fill = 0;
+    float toneState = 0.0f;
   };
 
   void configureVoices() noexcept;
   float analyzeVoicedGate() const noexcept;
+  float smoothVoiceTone(VoiceState& voice, float sample) const noexcept;
   void processReadyBlock() noexcept;
   void pushVoiceOutput(VoiceState& voice, std::span<const float> samples) noexcept;
   float popVoiceOutput(VoiceState& voice) noexcept;
