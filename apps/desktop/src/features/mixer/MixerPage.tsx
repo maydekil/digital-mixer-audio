@@ -80,9 +80,9 @@ export function MixerPage() {
       liveMonitorRefreshTimer.current = undefined;
     }
     if (!window.localMixer?.engineCommand) return;
-    const activeSource = autoMonitorChannel(nextSnapshot);
+    const activeSources = autoMonitorChannels(nextSnapshot);
     await syncMixerGraph(nextSnapshot, nextOutputUid);
-    if (!activeSource || !isMasterAudible(nextSnapshot)) {
+    if (activeSources.length === 0 || !isMasterAudible(nextSnapshot)) {
       await window.localMixer.engineCommand("stop-mixer-monitor");
       return;
     }
@@ -572,7 +572,7 @@ export function MixerPage() {
 async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
   if (!window.localMixer?.engineCommand) return;
   const channels = snapshot.channels.slice(0, 32);
-  const autoMonitorId = autoMonitorChannel(snapshot)?.id ?? "";
+  const autoMonitorIds = new Set(autoMonitorChannels(snapshot).map((channel) => channel.id));
   const fxA = snapshot.fxUnits.find((unit) => unit.id === "fx-a");
   const fxB = snapshot.fxUnits.find((unit) => unit.id === "fx-b");
   const payload: Record<string, string | number | boolean> = {
@@ -613,7 +613,7 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}Enabled`] = channel.enabled;
     payload[`${prefix}Mute`] = channel.mute;
     payload[`${prefix}Solo`] = channel.solo;
-    payload[`${prefix}Monitor`] = channel.id === autoMonitorId;
+    payload[`${prefix}Monitor`] = autoMonitorIds.has(channel.id);
     payload[`${prefix}ProcessorEq`] = channel.processing.eq;
     payload[`${prefix}ProcessorComp`] = channel.processing.comp;
     payload[`${prefix}ProcessorNoise`] = channel.role === "vocal" ? true : channel.role === "system" ? false : channel.processing.noise;
@@ -670,11 +670,10 @@ function harmonyVoice2Override(interval: string) {
   return interval === "+5th" ? undefined : harmonyIntervalSemitones(interval);
 }
 
-function autoMonitorChannel(snapshot: MixerSnapshot) {
-  const eligible = snapshot.channels.filter((channel) => (
+function autoMonitorChannels(snapshot: MixerSnapshot) {
+  return snapshot.channels.filter((channel) => (
     channel.kind === "source" && channel.enabled && !channel.mute && Boolean(channel.source)
   ));
-  return eligible.find((channel) => Boolean(channel.monitor)) ?? eligible[0];
 }
 
 function vocalNoiseRatio(thresholdDb: number) {

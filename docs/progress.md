@@ -5092,3 +5092,38 @@ Validation:
 
 Known limitations:
 - Manual confirmation of MASTER M alignment in the live desktop app is `NOT_RUN`.
+
+### Phase19 Native Checkpoint — Aggregate Live Monitor Sources
+
+Changed files:
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: source monitor state is no longer forced exclusive when enabling or monitoring another source channel.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: `sync-mixer-graph` now marks every enabled, unmuted source channel with an assigned source as monitor-active.
+- `native/engine/src/engine/EngineGraphSyncJson.hpp` and `native/engine/src/engine/EngineGraphSyncJson.cpp`: monitor sync now stores a list of active source selections, preserving each source's gain, pan, processor, insert FX, and send state.
+- `native/engine/src/main.cpp`: `start-mixer-monitor` now forwards all synced monitor sources into the native passthrough request.
+- `native/engine/src/platform/macos/CoreAudioPassthrough.hpp` and `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: persistent Core Audio monitor now owns one preallocated ring/input callback per source and mixes all source buffers through the native `MixerRenderRuntime` before output.
+- `native/engine/tests/EngineGraphSyncJsonTest.cpp`, `tests/ui/preview-adapter.test.ts`, and `scripts/test-native.mjs`: updated coverage from single-source rejection to multi-source sync/monitor support.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- Multiple source channels can be ON at the same time and remain eligible for live monitoring instead of replacing each other.
+- Native graph sync accepts multiple monitored sources and reports `activeMonitorCount` for all of them.
+- The persistent Core Audio monitor can capture multiple input sources, apply each source's own channel processing/gain/pan, and sum them before the master output path.
+- Existing single-source monitor commands remain compatible through the legacy request fields.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- --run tests/ui/preview-adapter.test.ts`
+- exit/result: `0`; PreviewAdapter suite 21/21 passed.
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43 passed, plus engine self-test, device enumeration smoke, and protocol smoke passed with multi-monitor sync expecting `activeMonitorCount=2`.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with `CoreAudioPassthrough.mm` at 739 lines and the existing `MixerPage.tsx 836` warning.
+- command: `npm run check:architecture`
+- exit/result: `0`; architecture guard passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation of simultaneous SYSTEM + VOICE monitoring in the desktop app is `NOT_RUN`.
+- Long-running drift behavior between separate Core Audio input devices is `NOT_RUN`; this checkpoint creates independent input callbacks and native summing, but does not yet add drift compensation/resampling between device clocks.

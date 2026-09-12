@@ -100,6 +100,7 @@ std::string syncMixerGraphResultJson(
   std::uint32_t stripCount = 0;
   std::uint32_t monitorCount = 0;
   std::string monitorInputUid;
+  std::vector<SyncedMonitorSource> monitorSources;
   std::uint32_t fxAProgramId = static_cast<std::uint32_t>(readJsonNumberField(line, "fxAProgramId").value_or(12.0));
   std::uint32_t fxBProgramId = static_cast<std::uint32_t>(readJsonNumberField(line, "fxBProgramId").value_or(50.0));
   FxSendState monitorSendA;
@@ -208,6 +209,18 @@ std::string syncMixerGraphResultJson(
     if (monitor && enabled && !muted && !sourceUid.empty() && kind == "source") {
       monitorCount += 1;
       if (monitorInputUid.empty()) monitorInputUid = sourceUid;
+      monitorSources.push_back(SyncedMonitorSource{
+        .inputUid = sourceUid,
+        .sendA = sendA,
+        .sendB = sendB,
+        .insertFxEnabled = insertFxEnabled,
+        .vocalFxSlots = insertFxEnabled ? vocalFxSlots : std::vector<dsp::fx::RackSlotState>{},
+        .channelTrimDb = trimDb,
+        .channelFaderDb = faderDb,
+        .channelPan = pan,
+        .channelStereo = assignment == SourceAssignment::stereo,
+        .processors = processors,
+      });
       monitorSendA = sendA;
       monitorSendB = sendB;
       monitorInsertFxEnabled = insertFxEnabled;
@@ -217,14 +230,6 @@ std::string syncMixerGraphResultJson(
       monitorStereo = assignment == SourceAssignment::stereo;
       monitorProcessors = processors;
     }
-  }
-
-  if (monitorCount > 1) {
-    clearMonitorSelection(monitorSelection);
-    return "\"synced\":false,\"error\":\"MULTIPLE_MONITOR_SOURCES_UNSUPPORTED\",\"stripCount\":" +
-      std::to_string(stripCount) +
-      ",\"activeMonitorCount\":" + std::to_string(monitorCount) +
-      ",\"retiredGraphCount\":" + std::to_string(controller.retiredCount());
   }
 
   controller.publish(std::move(prepared));
@@ -245,6 +250,7 @@ std::string syncMixerGraphResultJson(
   monitorSelection.channelFaderDb = monitorFaderDb;
   monitorSelection.channelPan = monitorPan;
   monitorSelection.channelStereo = monitorStereo;
+  monitorSelection.sources = std::move(monitorSources);
   monitorSelection.masterEnabled = masterEnabled;
   monitorSelection.masterMuted = masterMuted;
   monitorSelection.masterTrimDb = masterTrimDb;

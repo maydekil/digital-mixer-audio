@@ -12,6 +12,20 @@
 
 namespace localmixer::platform::macos {
 
+struct PassthroughMonitorSource {
+  std::string inputUid;
+  std::string label = "Monitor";
+  std::uint32_t inputChannel = 0;
+  bool stereoInput = false;
+  float monitorGainDb = -24.0f;
+  float monitorPan = 0.0f;
+  localmixer::engine::ChannelProcessorConfig processors = localmixer::engine::defaultChannelProcessorConfig();
+  localmixer::engine::FxSendState sendA;
+  localmixer::engine::FxSendState sendB;
+  bool insertFxEnabled = false;
+  std::vector<localmixer::dsp::fx::RackSlotState> vocalFxSlots;
+};
+
 struct PassthroughMonitorRequest {
   std::string inputUid;
   std::string outputUid;
@@ -32,6 +46,7 @@ struct PassthroughMonitorRequest {
   localmixer::engine::FxSendState sendB;
   bool insertFxEnabled = false;
   std::vector<localmixer::dsp::fx::RackSlotState> vocalFxSlots;
+  std::vector<PassthroughMonitorSource> sources;
 };
 
 struct PassthroughMonitorResult {

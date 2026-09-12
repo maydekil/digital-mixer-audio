@@ -59,7 +59,6 @@ export class PreviewAdapter implements MixerControlPort {
   }
 
   setChannelEnabled(channelId: string, enabled: boolean): void {
-    const target = this.snapshot.channels.find((channel) => channel.id === channelId);
     this.snapshot.channels = this.snapshot.channels.map((channel) => {
       if (channel.id === channelId) {
         return {
@@ -69,7 +68,6 @@ export class PreviewAdapter implements MixerControlPort {
           meter: enabled ? channel.meter : { left: -60, right: -60, clip: false }
         };
       }
-      if (enabled && target?.kind === "source" && channel.kind === "source") return { ...channel, monitor: false };
       return channel;
     });
   }
@@ -113,7 +111,6 @@ export class PreviewAdapter implements MixerControlPort {
   setChannelMonitor(channelId: string, monitor: boolean): void {
     this.snapshot.channels = this.snapshot.channels.map((channel) => {
       if (channel.id === channelId) return { ...channel, monitor };
-      if (monitor && channel.kind === "source") return { ...channel, monitor: false };
       return channel;
     });
   }

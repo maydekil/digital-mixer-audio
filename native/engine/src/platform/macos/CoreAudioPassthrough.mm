@@ -8,13 +8,13 @@
 #include <CoreFoundation/CoreFoundation.h>
 
 #include <algorithm>
-#include <array>
 #include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <span>
 #include <thread>
+#include <utility>
 #include <vector>
 
 namespace localmixer::platform::macos {
@@ -24,6 +24,28 @@ constexpr double kRateTolerance = 0.01;
 constexpr float kLimitCeiling = 0.98f;
 
 struct RingBuffer {
+  RingBuffer() = default;
+  RingBuffer(const RingBuffer&) = delete;
+  RingBuffer& operator=(const RingBuffer&) = delete;
+  RingBuffer(RingBuffer&& other) noexcept
+    : samples(std::move(other.samples)) {
+    writeFrame.store(other.writeFrame.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    readFrame.store(other.readFrame.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    peakScaled.store(other.peakScaled.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    peakScaledLeft.store(other.peakScaledLeft.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    peakScaledRight.store(other.peakScaledRight.load(std::memory_order_relaxed), std::memory_order_relaxed);
+  }
+  RingBuffer& operator=(RingBuffer&& other) noexcept {
+    if (this == &other) return *this;
+    samples = std::move(other.samples);
+    writeFrame.store(other.writeFrame.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    readFrame.store(other.readFrame.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    peakScaled.store(other.peakScaled.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    peakScaledLeft.store(other.peakScaledLeft.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    peakScaledRight.store(other.peakScaledRight.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    return *this;
+  }
+
   std::vector<float> samples;
   std::atomic<std::uint64_t> writeFrame{0};
   std::atomic<std::uint64_t> readFrame{0};
@@ -32,29 +54,45 @@ struct RingBuffer {
   std::atomic<int> peakScaledRight{0};
 };
 
-struct PassthroughState {
+struct MonitorSourceState {
   RingBuffer ring;
-  localmixer::engine::MixerRenderRuntime runtime;
   localmixer::engine::VocalFxRackRuntime vocalFx;
   localmixer::engine::StripId graphStrip;
   std::vector<float> graphInput;
   std::vector<float> graphStereoInput;
+  std::vector<float> graphFxLeft;
+  std::vector<float> graphFxRight;
+  std::uint32_t inputChannel = 0;
+  std::uint32_t ringChannels = 1;
+};
+
+struct PassthroughState {
+  std::vector<MonitorSourceState> sources;
+  localmixer::engine::MixerRenderRuntime runtime;
+  std::vector<localmixer::engine::SourceBuffer> renderSources;
   std::vector<float> graphLeft;
   std::vector<float> graphRight;
-  std::uint32_t inputChannel = 0;
   std::uint32_t outputChannel = 0;
-  std::uint32_t ringChannels = 1;
   double outputSampleRate = 48000.0;
   bool mirrorToAllOutputChannels = true;
   localmixer::engine::RealtimeMetrics metrics;
 };
 
+struct InputCallbackClient {
+  PassthroughState* state = nullptr;
+  std::size_t sourceIndex = 0;
+};
+
+struct InputDeviceContext {
+  AudioObjectID device = kAudioObjectUnknown;
+  std::uint32_t channels = 0;
+  double rate = 0.0;
+};
+
 struct DeviceContext {
-  AudioObjectID input = kAudioObjectUnknown;
+  std::vector<InputDeviceContext> inputs;
   AudioObjectID output = kAudioObjectUnknown;
-  std::uint32_t inputChannels = 0;
   std::uint32_t outputChannels = 0;
-  double inputRate = 0.0;
   double outputRate = 0.0;
   std::string error;
 };
@@ -178,6 +216,23 @@ void updateStereoPeak(RingBuffer& ring, float left, float right) {
   updatePeak(ring.peakScaled, std::max(std::fabs(left), std::fabs(right)));
 }
 
+std::vector<PassthroughMonitorSource> monitorSources(const PassthroughMonitorRequest& request) {
+  if (!request.sources.empty()) return request.sources;
+  return {PassthroughMonitorSource{
+    .inputUid = request.inputUid,
+    .label = "Monitor",
+    .inputChannel = request.inputChannel,
+    .stereoInput = request.stereoInput,
+    .monitorGainDb = request.monitorGainDb,
+    .monitorPan = request.monitorPan,
+    .processors = request.processors,
+    .sendA = request.sendA,
+    .sendB = request.sendB,
+    .insertFxEnabled = request.insertFxEnabled,
+    .vocalFxSlots = request.vocalFxSlots,
+  }};
+}
+
 OSStatus inputCallback(
   AudioObjectID,
   const AudioTimeStamp*,
@@ -188,21 +243,23 @@ OSStatus inputCallback(
   void* clientData
 ) {
   if (inputData == nullptr) return noErr;
-  auto* state = static_cast<PassthroughState*>(clientData);
+  auto* client = static_cast<InputCallbackClient*>(clientData);
+  if (client == nullptr || client->state == nullptr || client->sourceIndex >= client->state->sources.size()) return noErr;
+  auto& source = client->state->sources[client->sourceIndex];
   const auto frames = frameCountFor(inputData);
-  const auto ringChannels = std::max<std::uint32_t>(1, state->ringChannels);
-  const auto capacity = state->ring.samples.size() / ringChannels;
+  const auto ringChannels = std::max<std::uint32_t>(1, source.ringChannels);
+  const auto capacity = source.ring.samples.size() / ringChannels;
   if (capacity == 0) return noErr;
 
   for (UInt32 frame = 0; frame < frames; frame += 1) {
-    const auto left = readChannel(inputData, state->inputChannel, frame);
-    const auto right = ringChannels > 1 ? readChannel(inputData, state->inputChannel + 1, frame) : left;
-    const auto write = state->ring.writeFrame.load(std::memory_order_relaxed);
+    const auto left = readChannel(inputData, source.inputChannel, frame);
+    const auto right = ringChannels > 1 ? readChannel(inputData, source.inputChannel + 1, frame) : left;
+    const auto write = source.ring.writeFrame.load(std::memory_order_relaxed);
     const auto base = (write % capacity) * ringChannels;
-    state->ring.samples[base] = left;
-    if (ringChannels > 1) state->ring.samples[base + 1] = right;
-    state->ring.writeFrame.store(write + 1, std::memory_order_release);
-    updateStereoPeak(state->ring, left, right);
+    source.ring.samples[base] = left;
+    if (ringChannels > 1) source.ring.samples[base + 1] = right;
+    source.ring.writeFrame.store(write + 1, std::memory_order_release);
+    updateStereoPeak(source.ring, left, right);
   }
   return noErr;
 }
@@ -220,8 +277,6 @@ OSStatus outputCallback(
   const auto callbackStart = std::chrono::steady_clock::now();
   auto* state = static_cast<PassthroughState*>(clientData);
   const auto frames = frameCountFor(outputData);
-  const auto ringChannels = std::max<std::uint32_t>(1, state->ringChannels);
-  const auto capacity = state->ring.samples.size() / ringChannels;
 
   for (UInt32 bufferIndex = 0; bufferIndex < outputData->mNumberBuffers; bufferIndex += 1) {
     auto& buffer = outputData->mBuffers[bufferIndex];
@@ -229,48 +284,61 @@ OSStatus outputCallback(
     if (samples != nullptr) std::fill(samples, samples + (buffer.mDataByteSize / sizeof(float)), 0.0f);
   }
 
-  if (capacity == 0) return noErr;
-  for (UInt32 frame = 0; frame < frames; frame += 1) {
-    const auto read = state->ring.readFrame.load(std::memory_order_relaxed);
-    const auto write = state->ring.writeFrame.load(std::memory_order_acquire);
-    float left = 0.0f;
-    float right = 0.0f;
-    if (read < write) {
-      const auto base = (read % capacity) * ringChannels;
-      left = state->ring.samples[base];
-      right = ringChannels > 1 ? state->ring.samples[base + 1] : left;
-      state->ring.readFrame.store(read + 1, std::memory_order_release);
-    }
-    if (frame < state->graphInput.size()) state->graphInput[frame] = (left + right) * 0.5f;
-    if (ringChannels > 1 && frame * 2 + 1 < state->graphStereoInput.size()) {
-      state->graphStereoInput[frame * 2] = left;
-      state->graphStereoInput[frame * 2 + 1] = right;
-    }
-  }
-
-  if (frames > state->graphInput.size() || frames > state->graphLeft.size() || frames > state->graphRight.size()) {
+  if (frames > state->graphLeft.size() || frames > state->graphRight.size() ||
+      state->renderSources.size() != state->sources.size()) {
     return noErr;
   }
 
-  std::span<const float> graphSource = std::span<const float>(state->graphInput.data(), frames);
-  std::uint32_t graphChannels = 1;
-  if (ringChannels > 1 && frames * 2 <= state->graphStereoInput.size()) {
-    graphSource = std::span<const float>(state->graphStereoInput.data(), frames * 2);
-    graphChannels = 2;
-  } else if (state->vocalFx.active() && frames * 2 <= state->graphStereoInput.size()) {
-    state->vocalFx.processMonoToStereo(graphSource, std::span<float>(state->graphLeft.data(), frames), std::span<float>(state->graphRight.data(), frames));
-    for (std::size_t frame = 0; frame < frames; frame += 1) {
-      state->graphStereoInput[frame * 2] = state->graphLeft[frame];
-      state->graphStereoInput[frame * 2 + 1] = state->graphRight[frame];
+  for (std::size_t sourceIndex = 0; sourceIndex < state->sources.size(); sourceIndex += 1) {
+    auto& source = state->sources[sourceIndex];
+    const auto ringChannels = std::max<std::uint32_t>(1, source.ringChannels);
+    const auto capacity = source.ring.samples.size() / ringChannels;
+    if (capacity == 0 || frames > source.graphInput.size()) return noErr;
+    if (ringChannels > 1 && frames * 2 > source.graphStereoInput.size()) return noErr;
+
+    for (UInt32 frame = 0; frame < frames; frame += 1) {
+      const auto read = source.ring.readFrame.load(std::memory_order_relaxed);
+      const auto write = source.ring.writeFrame.load(std::memory_order_acquire);
+      float left = 0.0f;
+      float right = 0.0f;
+      if (read < write) {
+        const auto base = (read % capacity) * ringChannels;
+        left = source.ring.samples[base];
+        right = ringChannels > 1 ? source.ring.samples[base + 1] : left;
+        source.ring.readFrame.store(read + 1, std::memory_order_release);
+      }
+      source.graphInput[frame] = (left + right) * 0.5f;
+      if (ringChannels > 1) {
+        source.graphStereoInput[frame * 2] = left;
+        source.graphStereoInput[frame * 2 + 1] = right;
+      }
     }
-    graphSource = std::span<const float>(state->graphStereoInput.data(), frames * 2);
-    graphChannels = 2;
+
+    std::span<const float> graphSource = std::span<const float>(source.graphInput.data(), frames);
+    std::uint32_t graphChannels = 1;
+    if (ringChannels > 1) {
+      graphSource = std::span<const float>(source.graphStereoInput.data(), frames * 2);
+      graphChannels = 2;
+    } else if (source.vocalFx.active() && frames * 2 <= source.graphStereoInput.size()) {
+      source.vocalFx.processMonoToStereo(
+        graphSource,
+        std::span<float>(source.graphFxLeft.data(), frames),
+        std::span<float>(source.graphFxRight.data(), frames));
+      for (std::size_t frame = 0; frame < frames; frame += 1) {
+        source.graphStereoInput[frame * 2] = source.graphFxLeft[frame];
+        source.graphStereoInput[frame * 2 + 1] = source.graphFxRight[frame];
+      }
+      graphSource = std::span<const float>(source.graphStereoInput.data(), frames * 2);
+      graphChannels = 2;
+    }
+    state->renderSources[sourceIndex] = localmixer::engine::SourceBuffer{
+      .stripId = source.graphStrip,
+      .samples = graphSource,
+      .channels = graphChannels
+    };
   }
 
-  const std::array<localmixer::engine::SourceBuffer, 1> sources{
-    localmixer::engine::SourceBuffer{.stripId = state->graphStrip, .samples = graphSource, .channels = graphChannels}
-  };
-  state->runtime.process(sources, {
+  state->runtime.process(state->renderSources, {
     .left = std::span<float>(state->graphLeft.data(), frames),
     .right = std::span<float>(state->graphRight.data(), frames),
   });
@@ -294,76 +362,102 @@ OSStatus outputCallback(
 }
 
 void prepareMonitorGraph(PassthroughState& state, const PassthroughMonitorRequest& request) {
+  const auto requestSources = monitorSources(request);
   state.runtime = localmixer::engine::MixerRenderRuntime{request.projectSampleRate};
   state.runtime.setFxProgram(localmixer::engine::FxBusId::a, request.fxAProgramId);
   state.runtime.setFxProgram(localmixer::engine::FxBusId::b, request.fxBProgramId);
   auto& graph = state.runtime.graph();
-  const auto created = graph.createStrip("Monitor", "#18d6e7");
-  state.graphStrip = created.id;
   const auto scratchFrames = static_cast<std::size_t>(std::max<double>(request.projectSampleRate, 512.0));
+  state.sources.clear();
+  state.sources.resize(requestSources.size());
+  state.renderSources.resize(requestSources.size());
   state.runtime.prepare(static_cast<std::uint32_t>(scratchFrames));
-  state.vocalFx.prepare(request.projectSampleRate, static_cast<std::uint32_t>(scratchFrames));
-  state.vocalFx.configure(request.insertFxEnabled ? request.vocalFxSlots : std::vector<localmixer::dsp::fx::RackSlotState>{});
-  graph.setAssignment(created.id, request.stereoInput || state.vocalFx.active() ? localmixer::engine::SourceAssignment::stereo
-                                                                                : localmixer::engine::SourceAssignment::mono,
-    0,
-    request.stereoInput || state.vocalFx.active());
-  graph.setLevel(created.id, 0.0f, request.monitorGainDb, request.monitorPan);
-  graph.setInputMonitoring(created.id, true);
-  graph.setProcessors(created.id, request.processors);
   graph.setFxUnit(localmixer::engine::FxBusId::a, request.fxA);
   graph.setFxUnit(localmixer::engine::FxBusId::b, request.fxB);
-  graph.setFxSend(created.id, localmixer::engine::FxBusId::a, request.sendA);
-  graph.setFxSend(created.id, localmixer::engine::FxBusId::b, request.sendB);
-  state.graphInput.assign(scratchFrames, 0.0f);
-  state.graphStereoInput.assign(scratchFrames * 2, 0.0f);
+
+  for (std::size_t index = 0; index < requestSources.size(); index += 1) {
+    const auto& requestSource = requestSources[index];
+    auto& source = state.sources[index];
+    const auto created = graph.createStrip(requestSource.label.empty() ? "Monitor" : requestSource.label, "#18d6e7");
+    source.graphStrip = created.id;
+    source.inputChannel = requestSource.inputChannel;
+    source.ringChannels = requestSource.stereoInput ? 2 : 1;
+    source.vocalFx.prepare(request.projectSampleRate, static_cast<std::uint32_t>(scratchFrames));
+    source.vocalFx.configure(
+      requestSource.insertFxEnabled ? requestSource.vocalFxSlots : std::vector<localmixer::dsp::fx::RackSlotState>{});
+    const auto graphStereo = requestSource.stereoInput || source.vocalFx.active();
+    graph.setAssignment(
+      created.id,
+      graphStereo ? localmixer::engine::SourceAssignment::stereo : localmixer::engine::SourceAssignment::mono,
+      0,
+      graphStereo);
+    graph.setLevel(created.id, 0.0f, requestSource.monitorGainDb, requestSource.monitorPan);
+    graph.setInputMonitoring(created.id, true);
+    graph.setProcessors(created.id, requestSource.processors);
+    graph.setFxSend(created.id, localmixer::engine::FxBusId::a, requestSource.sendA);
+    graph.setFxSend(created.id, localmixer::engine::FxBusId::b, requestSource.sendB);
+    source.graphInput.assign(scratchFrames, 0.0f);
+    source.graphStereoInput.assign(scratchFrames * 2, 0.0f);
+    source.graphFxLeft.assign(scratchFrames, 0.0f);
+    source.graphFxRight.assign(scratchFrames, 0.0f);
+  }
   state.graphLeft.assign(scratchFrames, 0.0f);
   state.graphRight.assign(scratchFrames, 0.0f);
 }
 
 DeviceContext prepareDeviceContext(const PassthroughMonitorRequest& request) {
   DeviceContext context;
-  context.input = deviceByUid(request.inputUid, kAudioHardwarePropertyDefaultInputDevice);
-  if (context.input == kAudioObjectUnknown) {
-    context.error = "NO_INPUT_DEVICE";
-    return context;
-  }
+  const auto requestSources = monitorSources(request);
+  context.inputs.reserve(requestSources.size());
   context.output = deviceByUid(request.outputUid, kAudioHardwarePropertyDefaultOutputDevice);
   if (context.output == kAudioObjectUnknown) {
     context.error = "NO_OUTPUT_DEVICE";
     return context;
   }
 
-  if (!sampleRate(context.input, context.inputRate)) {
-    context.error = "INPUT_RATE_UNAVAILABLE";
-    return context;
-  }
   if (!sampleRate(context.output, context.outputRate)) {
     context.error = "OUTPUT_RATE_UNAVAILABLE";
     return context;
   }
-  if (std::fabs(context.inputRate - request.projectSampleRate) > kRateTolerance ||
-      std::fabs(context.outputRate - request.projectSampleRate) > kRateTolerance) {
+  if (std::fabs(context.outputRate - request.projectSampleRate) > kRateTolerance) {
     context.error = "SAMPLE_RATE_MISMATCH";
     return context;
   }
 
-  context.inputChannels = countChannels(context.input, kAudioDevicePropertyScopeInput);
-  context.outputChannels = countChannels(context.output, kAudioDevicePropertyScopeOutput);
-  if (context.inputChannels == 0) {
-    context.error = "NO_INPUT_CHANNELS";
-    return context;
+  for (const auto& source : requestSources) {
+    InputDeviceContext input;
+    input.device = deviceByUid(source.inputUid, kAudioHardwarePropertyDefaultInputDevice);
+    if (input.device == kAudioObjectUnknown) {
+      context.error = "NO_INPUT_DEVICE";
+      return context;
+    }
+    if (!sampleRate(input.device, input.rate)) {
+      context.error = "INPUT_RATE_UNAVAILABLE";
+      return context;
+    }
+    if (std::fabs(input.rate - request.projectSampleRate) > kRateTolerance) {
+      context.error = "SAMPLE_RATE_MISMATCH";
+      return context;
+    }
+    input.channels = countChannels(input.device, kAudioDevicePropertyScopeInput);
+    if (input.channels == 0) {
+      context.error = "NO_INPUT_CHANNELS";
+      return context;
+    }
+    if (source.inputChannel >= input.channels) {
+      context.error = "INPUT_CHANNEL_OUT_OF_RANGE";
+      return context;
+    }
+    if (source.stereoInput && source.inputChannel + 1 >= input.channels) {
+      context.error = "INPUT_STEREO_CHANNEL_OUT_OF_RANGE";
+      return context;
+    }
+    context.inputs.push_back(input);
   }
+
+  context.outputChannels = countChannels(context.output, kAudioDevicePropertyScopeOutput);
   if (context.outputChannels == 0) {
     context.error = "NO_OUTPUT_CHANNELS";
-    return context;
-  }
-  if (request.inputChannel >= context.inputChannels) {
-    context.error = "INPUT_CHANNEL_OUT_OF_RANGE";
-    return context;
-  }
-  if (request.stereoInput && request.inputChannel + 1 >= context.inputChannels) {
-    context.error = "INPUT_STEREO_CHANNEL_OUT_OF_RANGE";
     return context;
   }
   if (request.outputChannel >= context.outputChannels) {
@@ -377,17 +471,28 @@ PersistentMonitorStatus statusFromContext(
   const DeviceContext& context,
   bool running,
   const std::string& error,
-  RingBuffer& ring
+  PassthroughState& state
 ) {
-  const auto peak = ring.peakScaled.exchange(0, std::memory_order_relaxed);
-  const auto peakLeft = ring.peakScaledLeft.exchange(0, std::memory_order_relaxed);
-  const auto peakRight = ring.peakScaledRight.exchange(0, std::memory_order_relaxed);
+  int peak = 0;
+  int peakLeft = 0;
+  int peakRight = 0;
+  for (auto& source : state.sources) {
+    peak = std::max(peak, source.ring.peakScaled.exchange(0, std::memory_order_relaxed));
+    peakLeft = std::max(peakLeft, source.ring.peakScaledLeft.exchange(0, std::memory_order_relaxed));
+    peakRight = std::max(peakRight, source.ring.peakScaledRight.exchange(0, std::memory_order_relaxed));
+  }
+  std::uint32_t inputChannels = 0;
+  double inputRate = 0.0;
+  for (const auto& input : context.inputs) {
+    inputChannels += input.channels;
+    if (inputRate == 0.0) inputRate = input.rate;
+  }
   return {
     .running = running,
     .error = error,
-    .inputChannels = context.inputChannels,
+    .inputChannels = inputChannels,
     .outputChannels = context.outputChannels,
-    .inputSampleRate = context.inputRate,
+    .inputSampleRate = inputRate,
     .outputSampleRate = context.outputRate,
     .inputPeak = static_cast<float>(peak) / 1'000'000.0f,
     .inputPeakLeft = static_cast<float>(peakLeft) / 1'000'000.0f,
@@ -399,10 +504,10 @@ PersistentMonitorStatus statusFromContext(
   const DeviceContext& context,
   bool running,
   const std::string& error,
-  RingBuffer& ring,
+  PassthroughState& state,
   const localmixer::engine::RealtimeMetrics& metrics
 ) {
-  auto status = statusFromContext(context, running, error, ring);
+  auto status = statusFromContext(context, running, error, state);
   status.metrics = metrics.snapshot();
   return status;
 }
@@ -415,61 +520,76 @@ struct PersistentPassthroughMonitor::Impl {
   PersistentMonitorStatus start(const PassthroughMonitorRequest& request) {
     stop();
     context = prepareDeviceContext(request);
-    if (!context.error.empty()) return statusFromContext(context, false, context.error, state.ring);
+    if (!context.error.empty()) return statusFromContext(context, false, context.error, state);
 
-    state.inputChannel = request.inputChannel;
     state.outputChannel = request.outputChannel;
-    state.ringChannels = request.stereoInput ? 2 : 1;
     state.outputSampleRate = context.outputRate;
     state.mirrorToAllOutputChannels = request.mirrorToAllOutputChannels;
-    state.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate) * state.ringChannels, 0.0f);
-    state.ring.writeFrame.store(0, std::memory_order_relaxed);
-    state.ring.readFrame.store(0, std::memory_order_relaxed);
-    state.ring.peakScaled.store(0, std::memory_order_relaxed);
-    state.ring.peakScaledLeft.store(0, std::memory_order_relaxed);
-    state.ring.peakScaledRight.store(0, std::memory_order_relaxed);
     state.metrics.reset();
     prepareMonitorGraph(state, request);
-
-    auto audioStatus = AudioDeviceCreateIOProcID(context.input, inputCallback, &state, &inputProc);
-    if (audioStatus != noErr || inputProc == nullptr) {
-      return statusFromContext(context, false, "INPUT_CALLBACK_CREATE_FAILED", state.ring, state.metrics);
+    for (auto& source : state.sources) {
+      source.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate) * source.ringChannels, 0.0f);
+      source.ring.writeFrame.store(0, std::memory_order_relaxed);
+      source.ring.readFrame.store(0, std::memory_order_relaxed);
+      source.ring.peakScaled.store(0, std::memory_order_relaxed);
+      source.ring.peakScaledLeft.store(0, std::memory_order_relaxed);
+      source.ring.peakScaledRight.store(0, std::memory_order_relaxed);
     }
-    audioStatus = AudioDeviceCreateIOProcID(context.output, outputCallback, &state, &outputProc);
+
+    inputProcs.assign(state.sources.size(), nullptr);
+    inputClients.assign(state.sources.size(), {});
+    for (std::size_t index = 0; index < state.sources.size(); index += 1) {
+      inputClients[index] = InputCallbackClient{.state = &state, .sourceIndex = index};
+      auto audioStatus = AudioDeviceCreateIOProcID(
+        context.inputs[index].device, inputCallback, &inputClients[index], &inputProcs[index]);
+      if (audioStatus != noErr || inputProcs[index] == nullptr) {
+        destroyCallbacks();
+        return statusFromContext(context, false, "INPUT_CALLBACK_CREATE_FAILED", state, state.metrics);
+      }
+    }
+    auto audioStatus = AudioDeviceCreateIOProcID(context.output, outputCallback, &state, &outputProc);
     if (audioStatus != noErr || outputProc == nullptr) {
-      AudioDeviceDestroyIOProcID(context.input, inputProc);
-      inputProc = nullptr;
-      return statusFromContext(context, false, "OUTPUT_CALLBACK_CREATE_FAILED", state.ring, state.metrics);
+      destroyCallbacks();
+      return statusFromContext(context, false, "OUTPUT_CALLBACK_CREATE_FAILED", state, state.metrics);
     }
 
-    audioStatus = AudioDeviceStart(context.input, inputProc);
-    if (audioStatus != noErr) {
-      destroyCallbacks();
-      return statusFromContext(context, false, "INPUT_START_FAILED", state.ring, state.metrics);
+    for (std::size_t index = 0; index < inputProcs.size(); index += 1) {
+      audioStatus = AudioDeviceStart(context.inputs[index].device, inputProcs[index]);
+      if (audioStatus != noErr) {
+        for (std::size_t stopIndex = 0; stopIndex < index; stopIndex += 1) {
+          AudioDeviceStop(context.inputs[stopIndex].device, inputProcs[stopIndex]);
+        }
+        destroyCallbacks();
+        return statusFromContext(context, false, "INPUT_START_FAILED", state, state.metrics);
+      }
     }
     audioStatus = AudioDeviceStart(context.output, outputProc);
     if (audioStatus != noErr) {
-      AudioDeviceStop(context.input, inputProc);
+      for (std::size_t index = 0; index < inputProcs.size(); index += 1) {
+        AudioDeviceStop(context.inputs[index].device, inputProcs[index]);
+      }
       destroyCallbacks();
-      return statusFromContext(context, false, "OUTPUT_START_FAILED", state.ring, state.metrics);
+      return statusFromContext(context, false, "OUTPUT_START_FAILED", state, state.metrics);
     }
 
     running = true;
-    return statusFromContext(context, true, "", state.ring, state.metrics);
+    return statusFromContext(context, true, "", state, state.metrics);
   }
 
   PersistentMonitorStatus stop() {
     if (running) {
       AudioDeviceStop(context.output, outputProc);
-      AudioDeviceStop(context.input, inputProc);
+      for (std::size_t index = 0; index < inputProcs.size() && index < context.inputs.size(); index += 1) {
+        AudioDeviceStop(context.inputs[index].device, inputProcs[index]);
+      }
     }
     destroyCallbacks();
     running = false;
-    return statusFromContext(context, false, "", state.ring, state.metrics);
+    return statusFromContext(context, false, "", state, state.metrics);
   }
 
   PersistentMonitorStatus currentStatus() {
-    return statusFromContext(context, running, "", state.ring, state.metrics);
+    return statusFromContext(context, running, "", state, state.metrics);
   }
 
   void destroyCallbacks() {
@@ -477,15 +597,18 @@ struct PersistentPassthroughMonitor::Impl {
       AudioDeviceDestroyIOProcID(context.output, outputProc);
       outputProc = nullptr;
     }
-    if (inputProc != nullptr && context.input != kAudioObjectUnknown) {
-      AudioDeviceDestroyIOProcID(context.input, inputProc);
-      inputProc = nullptr;
+    for (std::size_t index = 0; index < inputProcs.size() && index < context.inputs.size(); index += 1) {
+      if (inputProcs[index] != nullptr && context.inputs[index].device != kAudioObjectUnknown) {
+        AudioDeviceDestroyIOProcID(context.inputs[index].device, inputProcs[index]);
+        inputProcs[index] = nullptr;
+      }
     }
   }
 
   DeviceContext context;
   PassthroughState state;
-  AudioDeviceIOProcID inputProc = nullptr;
+  std::vector<AudioDeviceIOProcID> inputProcs;
+  std::vector<InputCallbackClient> inputClients;
   AudioDeviceIOProcID outputProc = nullptr;
   bool running = false;
 };
@@ -508,63 +631,108 @@ PersistentMonitorStatus PersistentPassthroughMonitor::status() {
 
 PassthroughMonitorResult monitorPassthrough(const PassthroughMonitorRequest& request) {
   const auto context = prepareDeviceContext(request);
+  PassthroughState state;
   if (!context.error.empty()) {
+    std::uint32_t inputChannels = 0;
+    double inputRate = 0.0;
+    for (const auto& input : context.inputs) {
+      inputChannels += input.channels;
+      if (inputRate == 0.0) inputRate = input.rate;
+    }
     return {
       .error = context.error,
-      .inputChannels = context.inputChannels,
+      .inputChannels = inputChannels,
       .outputChannels = context.outputChannels,
-      .inputSampleRate = context.inputRate,
+      .inputSampleRate = inputRate,
       .outputSampleRate = context.outputRate,
     };
   }
 
-  PassthroughState state;
-  state.inputChannel = request.inputChannel;
   state.outputChannel = request.outputChannel;
-  state.ringChannels = request.stereoInput ? 2 : 1;
   state.mirrorToAllOutputChannels = request.mirrorToAllOutputChannels;
-  state.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate) * state.ringChannels, 0.0f);
   prepareMonitorGraph(state, request);
+  for (auto& source : state.sources) {
+    source.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate) * source.ringChannels, 0.0f);
+  }
 
-  AudioDeviceIOProcID inputProc = nullptr;
+  std::vector<AudioDeviceIOProcID> inputProcs(state.sources.size(), nullptr);
+  std::vector<InputCallbackClient> inputClients(state.sources.size());
   AudioDeviceIOProcID outputProc = nullptr;
-  auto status = AudioDeviceCreateIOProcID(context.input, inputCallback, &state, &inputProc);
-  if (status != noErr || inputProc == nullptr) return {.error = "INPUT_CALLBACK_CREATE_FAILED"};
-  status = AudioDeviceCreateIOProcID(context.output, outputCallback, &state, &outputProc);
+  for (std::size_t index = 0; index < state.sources.size(); index += 1) {
+    inputClients[index] = InputCallbackClient{.state = &state, .sourceIndex = index};
+    auto status = AudioDeviceCreateIOProcID(
+      context.inputs[index].device, inputCallback, &inputClients[index], &inputProcs[index]);
+    if (status != noErr || inputProcs[index] == nullptr) {
+      for (std::size_t destroyIndex = 0; destroyIndex < index; destroyIndex += 1) {
+        AudioDeviceDestroyIOProcID(context.inputs[destroyIndex].device, inputProcs[destroyIndex]);
+      }
+      return {.error = "INPUT_CALLBACK_CREATE_FAILED"};
+    }
+  }
+  auto status = AudioDeviceCreateIOProcID(context.output, outputCallback, &state, &outputProc);
   if (status != noErr || outputProc == nullptr) {
-    AudioDeviceDestroyIOProcID(context.input, inputProc);
+    for (std::size_t index = 0; index < inputProcs.size(); index += 1) {
+      AudioDeviceDestroyIOProcID(context.inputs[index].device, inputProcs[index]);
+    }
     return {.error = "OUTPUT_CALLBACK_CREATE_FAILED"};
   }
 
-  status = AudioDeviceStart(context.input, inputProc);
-  if (status != noErr) {
-    AudioDeviceDestroyIOProcID(context.output, outputProc);
-    AudioDeviceDestroyIOProcID(context.input, inputProc);
-    return {.error = "INPUT_START_FAILED"};
+  for (std::size_t index = 0; index < inputProcs.size(); index += 1) {
+    status = AudioDeviceStart(context.inputs[index].device, inputProcs[index]);
+    if (status != noErr) {
+      for (std::size_t stopIndex = 0; stopIndex < index; stopIndex += 1) {
+        AudioDeviceStop(context.inputs[stopIndex].device, inputProcs[stopIndex]);
+      }
+      AudioDeviceDestroyIOProcID(context.output, outputProc);
+      for (std::size_t destroyIndex = 0; destroyIndex < inputProcs.size(); destroyIndex += 1) {
+        AudioDeviceDestroyIOProcID(context.inputs[destroyIndex].device, inputProcs[destroyIndex]);
+      }
+      return {.error = "INPUT_START_FAILED"};
+    }
   }
   status = AudioDeviceStart(context.output, outputProc);
   if (status != noErr) {
-    AudioDeviceStop(context.input, inputProc);
     AudioDeviceDestroyIOProcID(context.output, outputProc);
-    AudioDeviceDestroyIOProcID(context.input, inputProc);
+    for (std::size_t index = 0; index < inputProcs.size(); index += 1) {
+      AudioDeviceStop(context.inputs[index].device, inputProcs[index]);
+      AudioDeviceDestroyIOProcID(context.inputs[index].device, inputProcs[index]);
+    }
     return {.error = "OUTPUT_START_FAILED"};
   }
 
   std::this_thread::sleep_for(std::chrono::milliseconds(request.durationMs));
 
   AudioDeviceStop(context.output, outputProc);
-  AudioDeviceStop(context.input, inputProc);
+  for (std::size_t index = 0; index < inputProcs.size(); index += 1) {
+    AudioDeviceStop(context.inputs[index].device, inputProcs[index]);
+  }
   AudioDeviceDestroyIOProcID(context.output, outputProc);
-  AudioDeviceDestroyIOProcID(context.input, inputProc);
+  for (std::size_t index = 0; index < inputProcs.size(); index += 1) {
+    AudioDeviceDestroyIOProcID(context.inputs[index].device, inputProcs[index]);
+  }
+  std::uint32_t inputChannels = 0;
+  double inputRate = 0.0;
+  for (const auto& input : context.inputs) {
+    inputChannels += input.channels;
+    if (inputRate == 0.0) inputRate = input.rate;
+  }
+  int peak = 0;
+  int peakLeft = 0;
+  int peakRight = 0;
+  for (auto& source : state.sources) {
+    peak = std::max(peak, source.ring.peakScaled.load(std::memory_order_relaxed));
+    peakLeft = std::max(peakLeft, source.ring.peakScaledLeft.load(std::memory_order_relaxed));
+    peakRight = std::max(peakRight, source.ring.peakScaledRight.load(std::memory_order_relaxed));
+  }
   return {
     .ok = true,
-    .inputChannels = context.inputChannels,
+    .inputChannels = inputChannels,
     .outputChannels = context.outputChannels,
-    .inputSampleRate = context.inputRate,
+    .inputSampleRate = inputRate,
     .outputSampleRate = context.outputRate,
-    .inputPeak = static_cast<float>(state.ring.peakScaled.load(std::memory_order_relaxed)) / 1'000'000.0f,
-    .inputPeakLeft = static_cast<float>(state.ring.peakScaledLeft.load(std::memory_order_relaxed)) / 1'000'000.0f,
-    .inputPeakRight = static_cast<float>(state.ring.peakScaledRight.load(std::memory_order_relaxed)) / 1'000'000.0f,
+    .inputPeak = static_cast<float>(peak) / 1'000'000.0f,
+    .inputPeakLeft = static_cast<float>(peakLeft) / 1'000'000.0f,
+    .inputPeakRight = static_cast<float>(peakRight) / 1'000'000.0f,
   };
 }
 

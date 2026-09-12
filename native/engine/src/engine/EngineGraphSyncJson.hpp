@@ -10,6 +10,19 @@
 
 namespace localmixer::engine::protocol {
 
+struct SyncedMonitorSource {
+  std::string inputUid;
+  FxSendState sendA;
+  FxSendState sendB;
+  bool insertFxEnabled = false;
+  std::vector<dsp::fx::RackSlotState> vocalFxSlots;
+  float channelTrimDb = 0.0f;
+  float channelFaderDb = 0.0f;
+  float channelPan = 0.0f;
+  bool channelStereo = false;
+  ChannelProcessorConfig processors = defaultChannelProcessorConfig();
+};
+
 struct SyncedMonitorSelection {
   std::string inputUid;
   std::string outputUid;
@@ -27,6 +40,7 @@ struct SyncedMonitorSelection {
   float channelFaderDb = 0.0f;
   float channelPan = 0.0f;
   bool channelStereo = false;
+  std::vector<SyncedMonitorSource> sources;
   bool masterEnabled = true;
   bool masterMuted = false;
   float masterTrimDb = 0.0f;

@@ -590,6 +590,26 @@ int runStdioProtocol() {
           persistentMonitorStatusJson(false, "NO_MONITOR_SOURCE", 0, 0, 0.0, 0.0, 0.0f));
       } else {
 #if defined(__APPLE__)
+        std::vector<localmixer::platform::macos::PassthroughMonitorSource> monitorSources;
+        monitorSources.reserve(monitorSelection.sources.size());
+        const auto masterGainDb = monitorSelection.masterEnabled && !monitorSelection.masterMuted
+          ? monitorSelection.masterTrimDb + monitorSelection.masterFaderDb + monitorSelection.monitorGainDb
+          : -120.0f;
+        for (const auto& source : monitorSelection.sources) {
+          monitorSources.push_back({
+            .inputUid = source.inputUid,
+            .label = "Monitor",
+            .inputChannel = static_cast<std::uint32_t>(readJsonNumberField(line, "inputChannel").value_or(0.0)),
+            .stereoInput = source.channelStereo,
+            .monitorGainDb = source.channelTrimDb + source.channelFaderDb + masterGainDb,
+            .monitorPan = source.channelPan,
+            .processors = source.processors,
+            .sendA = source.sendA,
+            .sendB = source.sendB,
+            .insertFxEnabled = source.insertFxEnabled,
+            .vocalFxSlots = source.vocalFxSlots,
+          });
+        }
         const auto effectiveMonitorGainDb =
           monitorSelection.masterEnabled && !monitorSelection.masterMuted
             ? monitorSelection.channelTrimDb + monitorSelection.channelFaderDb +
@@ -616,6 +636,7 @@ int runStdioProtocol() {
           .sendB = monitorSelection.sendB,
           .insertFxEnabled = monitorSelection.insertFxEnabled,
           .vocalFxSlots = monitorSelection.vocalFxSlots,
+          .sources = monitorSources,
         });
         writeRawResponse(id, status.running, "start-mixer-monitor", persistentMonitorStatusJson(status));
 #else

@@ -290,13 +290,13 @@ describe("PreviewAdapter", () => {
     expect(voice?.sends["fx-b"]).toEqual({ enabled: false, gainDb: -60 });
   });
 
-  it("keeps source monitoring exclusive until aggregate routing is available", () => {
+  it("keeps multiple source monitors active for aggregate routing", () => {
     const adapter = new PreviewAdapter();
     adapter.setChannelMonitor("voice", true);
     adapter.setChannelMonitor("guitar", true);
 
     const snapshot = adapter.getSnapshot();
-    expect(snapshot.channels.find((channel) => channel.id === "voice")?.monitor).toBe(false);
+    expect(snapshot.channels.find((channel) => channel.id === "voice")?.monitor).toBe(true);
     expect(snapshot.channels.find((channel) => channel.id === "guitar")?.monitor).toBe(true);
     expect(snapshot.channels.find((channel) => channel.id === "music")?.monitor).toBe(false);
   });
@@ -307,7 +307,7 @@ describe("PreviewAdapter", () => {
     adapter.setChannelEnabled("guitar", true);
 
     let snapshot = adapter.getSnapshot();
-    expect(snapshot.channels.find((channel) => channel.id === "voice")?.monitor).toBe(false);
+    expect(snapshot.channels.find((channel) => channel.id === "voice")?.monitor).toBe(true);
     expect(snapshot.channels.find((channel) => channel.id === "guitar")?.monitor).toBe(true);
 
     adapter.setChannelEnabled("guitar", false);

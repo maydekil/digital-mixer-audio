@@ -267,8 +267,8 @@ async function testEngineProtocol() {
     messages.some((message) =>
       message.id === "native-sync-multi-monitor" &&
       message.type === "sync-mixer-graph" &&
-      message.ok === false &&
-      message.error === "MULTIPLE_MONITOR_SOURCES_UNSUPPORTED"
+      message.synced === true &&
+      message.activeMonitorCount === 2
     )
   );
   child.stdin.write(`${JSON.stringify({ id: "native-monitor-start", type: "start-mixer-monitor", sampleRate: 48000 })}\n`);

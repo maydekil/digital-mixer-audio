@@ -106,6 +106,10 @@ int main() {
     std::cerr << "sync response should publish monitored source selection\n";
     return 1;
   }
+  if (selection.sources.size() != 1 || selection.sources[0].inputUid != "mic") {
+    std::cerr << "sync response should publish monitor source list\n";
+    return 1;
+  }
   if (!selection.processors.eqEnabled || !selection.processors.compressorEnabled || !selection.processors.noiseEnabled ||
       !selection.processors.deEsserEnabled) {
     std::cerr << "monitor selection should keep processor enable flags\n";
@@ -237,9 +241,10 @@ int main() {
     "\"channel1Pan\":0}";
   const auto multiMonitorResponse = localmixer::engine::protocol::syncMixerGraphResultJson(
     multiMonitorPayload, controller, selection);
-  if (!contains(multiMonitorResponse, "\"synced\":false") || selection.activeMonitorCount != 0 ||
-      !selection.inputUid.empty()) {
-    std::cerr << "rejected monitor sync should clear stale monitor selection\n";
+  if (!contains(multiMonitorResponse, "\"synced\":true") || selection.activeMonitorCount != 2 ||
+      selection.sources.size() != 2 || selection.sources[0].inputUid != "mic-a" ||
+      selection.sources[1].inputUid != "mic-b") {
+    std::cerr << "multi monitor sync should publish all live source selections\n";
     return 1;
   }
 
