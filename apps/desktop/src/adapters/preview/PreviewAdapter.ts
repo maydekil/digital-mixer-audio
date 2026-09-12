@@ -506,7 +506,7 @@ function updateSlotLevelParameter(parameters: VocalFxParameter[], mix: number) {
 
 function harmonyMixFromLevelDb(levelDb: number) {
   const normalized = clamp((levelDb + 30) / 36, 0, 1);
-  return roundTo(0.04 + normalized * 0.26, 2);
+  return roundTo(0.12 + normalized * 0.64, 2);
 }
 
 function selectedSlotForPreset(presetId: string, fallback: string) {

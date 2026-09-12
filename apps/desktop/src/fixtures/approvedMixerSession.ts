@@ -56,7 +56,7 @@ export const approvedMixerSession: MixerSnapshot = {
       slot("doubler", "doubler", "Vocal Doubler", "Modulation", false, 1, 0, [["Voice 1", "-6 cent"], ["Voice 2", "+6 cent"], ["Level", "-9 dB"]]),
       slot("plate", "reverb", "Plate Reverb", "Space", false, 0.15, 0, [["Decay", "1.4 s"], ["Pre-delay", "20 ms"], ["Mix", "15%"]]),
       slot("stereo-delay", "delay", "Stereo Delay", "Space", false, 0.12, 0, [["Time", "250 ms"], ["Feedback", "20%"], ["Mix", "12%"]]),
-      slot("harmony", "harmony", "Harmony Duo", "Pitch", false, 0.18, 92, [["Voice 1", "+3rd"], ["Voice 2", "+5th"], ["Level", "-18 dB"]]),
+      slot("harmony", "harmony", "Harmony Duo", "Pitch", false, 0.65, 92, [["Voice 1", "+3rd"], ["Voice 2", "+5th"], ["Level", "65%"]]),
       slot("robot", "vocoder", "Robot Voice", "Synth", false, 1, 0, [["Carrier", "C2"], ["Bands", "16"], ["Wet", "100%"]]),
       slot("saturation", "saturation", "Saturation", "Character", false, 1, 0, [["Drive", "3 dB"], ["Output", "-3 dB"]])
     ]

@@ -4528,3 +4528,28 @@ Validation:
 Known limitations:
 - This is a safe live fallback, not true pitch-generated harmony.
 - Manual hardware confirmation that the fallback removes the crackling/kresek artifact is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Raise Audible Harmony Fallback Level
+
+Changed files:
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: raises the Harmony Level to vocal FX rack mix mapping so the safe live fallback is audible at the default 0 dB Harmony Level.
+- `apps/desktop/src/fixtures/approvedMixerSession.ts`: aligns the default Harmony slot display/mix with the stronger fallback blend.
+- `tests/ui/preview-adapter.test.ts`: updates regression coverage for the new default and minimum Harmony blend values.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- HARMONY ON now sends a stronger blend to the safe live doubler fallback, so the user should hear an obvious thickened second voice instead of only dry voice.
+- Lowering Harmony Level still reduces the fallback blend, with the minimum kept low but not completely silent.
+- The unverified native pitch Harmony processor remains bypassed in the live monitor path.
+
+Validation:
+- command: `npm run test:ui -- preview-adapter`
+- exit/result: `0`; PreviewAdapter suite 21/21 passed.
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation that the stronger fallback is now clearly audible is `NOT_RUN`.
+- This checkpoint still provides a safe doubler-style Harmony fallback, not true interval-generated pitch harmony.
