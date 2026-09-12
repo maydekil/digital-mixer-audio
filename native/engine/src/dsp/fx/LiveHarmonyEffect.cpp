@@ -10,6 +10,9 @@ namespace localmixer::dsp::fx {
 namespace {
 
 constexpr auto kVoiceCount = std::size_t{2};
+constexpr auto kVoicedOpenRms = 0.012f;
+constexpr auto kVoicedCloseRms = 0.006f;
+constexpr auto kMaxVoicedZeroCrossRate = 0.18f;
 
 float voiceLevel(float levelDb, float voiceDb) noexcept {
   return decibelsToLinear(std::clamp(levelDb + voiceDb, -60.0f, 6.0f));
@@ -55,6 +58,7 @@ void LiveHarmonyEffect::reset() noexcept {
     voice.fill = 0;
   }
   inputFill_ = 0;
+  voiceGate_ = 0.0f;
 }
 
 void LiveHarmonyEffect::process(AudioBlockView& block, const ProcessContext&) noexcept {
@@ -99,11 +103,31 @@ void LiveHarmonyEffect::configureVoices() noexcept {
   if (voices_[1].backend) voices_[1].backend->setPitchSemitones(config_.voice2.semitones);
 }
 
+float LiveHarmonyEffect::analyzeVoicedGate() const noexcept {
+  if (inputBlock_.empty()) return 0.0f;
+  auto crossings = std::uint32_t{0};
+  auto previous = inputBlock_.front();
+  double energy = 0.0;
+  for (const auto sample : inputBlock_) {
+    energy += static_cast<double>(sample) * static_cast<double>(sample);
+    if ((sample >= 0.0f && previous < 0.0f) || (sample < 0.0f && previous >= 0.0f)) crossings += 1;
+    previous = sample;
+  }
+  const auto rms = static_cast<float>(std::sqrt(energy / static_cast<double>(inputBlock_.size())));
+  const auto zeroCrossRate = static_cast<float>(crossings) / static_cast<float>(inputBlock_.size());
+  if (rms < kVoicedCloseRms) return 0.0f;
+  if (rms < kVoicedOpenRms && voiceGate_ <= 0.0f) return 0.0f;
+  return zeroCrossRate <= kMaxVoicedZeroCrossRate ? 1.0f : 0.0f;
+}
+
 void LiveHarmonyEffect::processReadyBlock() noexcept {
+  const auto targetGate = analyzeVoicedGate();
+  voiceGate_ += std::clamp(targetGate - voiceGate_, -0.35f, 0.18f);
   for (auto voiceIndex = std::size_t{0}; voiceIndex < kVoiceCount; voiceIndex += 1) {
     auto& voice = voices_[voiceIndex];
     if (!voice.backend) continue;
     if (!voice.backend->processBlock(inputBlock_, shiftedBlocks_[voiceIndex])) continue;
+    for (auto& sample : shiftedBlocks_[voiceIndex]) sample *= voiceGate_;
     pushVoiceOutput(voice, shiftedBlocks_[voiceIndex]);
   }
   std::fill(inputBlock_.begin(), inputBlock_.end(), 0.0f);

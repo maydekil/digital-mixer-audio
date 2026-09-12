@@ -11,8 +11,8 @@ namespace localmixer::dsp::fx {
 
 struct LiveHarmonyVoiceConfig {
   bool enabled = true;
-  float semitones = 4.0f;
-  float levelDb = -6.0f;
+  float semitones = 3.0f;
+  float levelDb = -9.0f;
   float pan = -0.35f;
 };
 
@@ -20,7 +20,7 @@ struct LiveHarmonyConfig {
   float levelDb = 0.0f;
   bool preserveFormants = true;
   LiveHarmonyVoiceConfig voice1{};
-  LiveHarmonyVoiceConfig voice2{.enabled = true, .semitones = 7.0f, .levelDb = -8.0f, .pan = 0.35f};
+  LiveHarmonyVoiceConfig voice2{.enabled = true, .semitones = 7.0f, .levelDb = -12.0f, .pan = 0.35f};
 };
 
 class LiveHarmonyEffect final : public EffectProcessor {
@@ -44,6 +44,7 @@ class LiveHarmonyEffect final : public EffectProcessor {
   };
 
   void configureVoices() noexcept;
+  float analyzeVoicedGate() const noexcept;
   void processReadyBlock() noexcept;
   void pushVoiceOutput(VoiceState& voice, std::span<const float> samples) noexcept;
   float popVoiceOutput(VoiceState& voice) noexcept;
@@ -55,6 +56,7 @@ class LiveHarmonyEffect final : public EffectProcessor {
   std::array<std::vector<float>, 2> shiftedBlocks_;
   std::size_t blockSize_ = 0;
   std::size_t inputFill_ = 0;
+  float voiceGate_ = 0.0f;
 };
 
 }  // namespace localmixer::dsp::fx

@@ -4586,3 +4586,25 @@ Validation:
 Known limitations:
 - Manual hardware confirmation that the user hears backing vocal-style Harmony ON is `NOT_RUN`.
 - This live mode is fixed-interval backing harmony; key/scale-aware interval tuning is still reserved for the deeper harmony DSP path.
+
+### Phase19 UX Checkpoint — Soften Live Harmony Character
+
+Changed files:
+- `native/engine/src/dsp/fx/LiveHarmonyEffect.hpp`: lowers default backing voice levels and changes the first harmony voice to a closer interval for a less synthetic blend.
+- `native/engine/src/dsp/fx/LiveHarmonyEffect.cpp`: adds RMS and zero-crossing based voiced gating with smoothing, so unvoiced consonants/noise are not pitch-shifted as strongly into the backing voices.
+- `native/engine/tests/fx/HarmonyEffectTest.cpp`: adds regression coverage that live harmony suppresses high zero-crossing unvoiced material while still producing backing voices for voiced material.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Live Harmony should sound less robotic because high-frequency/noisy parts of the microphone signal are gated out of the pitch-shifted backing voices.
+- Default backing voices are quieter and less aggressive while still audible.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation that Harmony now sounds less robotic is `NOT_RUN`.
+- The live harmony still uses fixed pitch shifting; fully natural key/scale backing vocals require deeper pitch/formant tuning.

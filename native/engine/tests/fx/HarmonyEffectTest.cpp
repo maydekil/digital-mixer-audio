@@ -170,6 +170,26 @@ bool testLiveHarmonyProducesBackingVoicesForSmallCallbacks() {
     rmsDelta(left, right, start) > 0.0005f;
 }
 
+bool testLiveHarmonySuppressesUnvoicedNoise() {
+  LiveHarmonyEffect effect;
+  constexpr auto callbackFrames = std::size_t{128};
+  effect.prepare(ProcessSpec{.sampleRate = 48000.0, .maximumBlockFrames = callbackFrames, .channels = 2});
+  const auto totalFrames = callbackFrames * 160;
+  auto left = sine(9000.0, 48000.0, totalFrames);
+  auto right = left;
+  const auto original = left;
+  for (std::size_t offset = 0; offset < totalFrames; offset += callbackFrames) {
+    AudioBlockView block{
+      std::span<float>(left.data() + offset, callbackFrames),
+      std::span<float>(right.data() + offset, callbackFrames),
+    };
+    effect.process(block, ProcessContext{.sampleRate = 48000.0, .absoluteFrame = static_cast<std::uint64_t>(offset)});
+  }
+
+  const auto start = static_cast<std::size_t>(effect.latencySamples()) + callbackFrames * 8;
+  return rmsDelta(left, original, start) < 0.001f && rmsDelta(right, original, start) < 0.001f;
+}
+
 }  // namespace
 
 int main() {
@@ -195,6 +215,10 @@ int main() {
   }
   if (!testLiveHarmonyProducesBackingVoicesForSmallCallbacks()) {
     std::cerr << "live harmony should produce panned backing voices for small callbacks\n";
+    return 1;
+  }
+  if (!testLiveHarmonySuppressesUnvoicedNoise()) {
+    std::cerr << "live harmony should suppress unvoiced noise from backing voices\n";
     return 1;
   }
   std::cout << "local-mixer-harmony-effect-tests ok\n";
