@@ -5044,3 +5044,27 @@ Validation:
 
 Known limitations:
 - Manual confirmation of the MASTER divider alignment in the live desktop app is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Bottom Align Master Divider
+
+Changed files:
+- `apps/desktop/src/styles/app.css`: lowers the MASTER divider by expanding the master upper spacer so it aligns with GROUP and other channel dividers.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- MASTER divider is no longer raised near the limiter control; it is bottom-aligned with the channel divider level before the fader section.
+- Compact layout receives a proportional spacer adjustment.
+- Master audio path and limiter behavior are unchanged.
+
+Validation:
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed, and the desktop screenshot evidence shows MASTER divider aligned with GROUP.
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 837` warning.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual confirmation of the corrected MASTER divider alignment in the live desktop app is `NOT_RUN`.
