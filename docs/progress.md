@@ -4973,3 +4973,27 @@ Validation:
 
 Known limitations:
 - Manual confirmation of the reduced fader-to-button gap in the live desktop app is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Rebalance Fader Spacing
+
+Changed files:
+- `apps/desktop/src/styles/app.css`: moves the fader/meter group lower within each channel strip and adds top spacing from PAN.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- Fader/meter no longer sits too close to PAN.
+- The fader/meter group aligns lower, reducing the remaining gap to the M/REC button row.
+- Master strip keeps its existing dedicated fader layout override.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 837` warning.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual confirmation of the fader spacing balance in the live desktop app is `NOT_RUN`.
