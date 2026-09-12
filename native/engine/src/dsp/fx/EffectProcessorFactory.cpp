@@ -3,6 +3,7 @@
 #include "dsp/fx/CharacterEffects.hpp"
 #include "dsp/fx/DelayEffect.hpp"
 #include "dsp/fx/HarmonyEffect.hpp"
+#include "dsp/fx/LiveHarmonyEffect.hpp"
 #include "dsp/fx/ModulationEffects.hpp"
 #include "dsp/fx/PitchCorrectionEffect.hpp"
 #include "dsp/fx/PitchShiftEffects.hpp"
@@ -20,6 +21,7 @@ std::unique_ptr<EffectProcessor> createNativeEffectProcessor(std::string_view ef
   if (effectType == "formant_shift") return std::make_unique<FormantShiftEffect>();
   if (effectType == "pitch_correct") return std::make_unique<PitchCorrectionEffect>();
   if (effectType == "harmony") return std::make_unique<HarmonyEffect>();
+  if (effectType == "live_harmony") return std::make_unique<LiveHarmonyEffect>();
   if (effectType == "saturation") return std::make_unique<SaturationEffect>();
   if (effectType == "flanger") return std::make_unique<FlangerEffect>();
   if (effectType == "phaser") return std::make_unique<PhaserEffect>();

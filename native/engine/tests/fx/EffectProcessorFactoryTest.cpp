@@ -20,7 +20,7 @@ bool near(float actual, float expected) {
 }  // namespace
 
 int main() {
-  constexpr std::array<std::string_view, 12> constructible{
+  constexpr std::array<std::string_view, 13> constructible{
     "reverb",
     "delay",
     "chorus",
@@ -29,6 +29,7 @@ int main() {
     "formant_shift",
     "pitch_correct",
     "harmony",
+    "live_harmony",
     "saturation",
     "flanger",
     "phaser",

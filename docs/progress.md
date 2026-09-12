@@ -4553,3 +4553,36 @@ Validation:
 Known limitations:
 - Manual hardware confirmation that the stronger fallback is now clearly audible is `NOT_RUN`.
 - This checkpoint still provides a safe doubler-style Harmony fallback, not true interval-generated pitch harmony.
+
+### Phase19 UX Checkpoint — Route Harmony To Live Backing Voices
+
+Changed files:
+- `native/engine/src/dsp/fx/LiveHarmonyEffect.hpp`: adds a native live harmony processor contract for fixed backing voices.
+- `native/engine/src/dsp/fx/LiveHarmonyEffect.cpp`: implements buffered small-callback handling and two panned pitch-shifted backing voices.
+- `native/engine/src/dsp/fx/EffectProcessorFactory.cpp`: registers `live_harmony` as a constructible native effect.
+- `native/engine/CMakeLists.txt`: includes the live harmony processor in the native DSP library.
+- `native/engine/tests/fx/EffectProcessorFactoryTest.cpp`: verifies the factory constructs `live_harmony`.
+- `native/engine/tests/fx/HarmonyEffectTest.cpp`: adds regression coverage that live harmony produces panned backing voice output even when processing 128-frame callback blocks.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: maps the UI Harmony shortcut to `live_harmony` instead of the doubler fallback for the live monitor graph.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- HARMONY ON now routes to a native two-voice backing vocal processor rather than a vocal doubler.
+- The live processor uses fixed pitch-shifted voices around major third and fifth, panned left/right, mixed over the dry voice.
+- The processor buffers small audio callbacks before calling the pitch backend, so backing voices are not silently skipped when the live callback is smaller than the pitch backend block size.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43 passed, including live harmony small-callback regression inside `local-mixer-harmony-effect-tests`.
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- preview-adapter`
+- exit/result: `0`; PreviewAdapter suite 21/21 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 814` warning.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation that the user hears backing vocal-style Harmony ON is `NOT_RUN`.
+- This live mode is fixed-interval backing harmony; key/scale-aware interval tuning is still reserved for the deeper harmony DSP path.

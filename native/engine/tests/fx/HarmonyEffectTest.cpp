@@ -1,4 +1,5 @@
 #include "dsp/fx/HarmonyEffect.hpp"
+#include "dsp/fx/LiveHarmonyEffect.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -12,6 +13,7 @@ using localmixer::dsp::fx::HarmonyConfig;
 using localmixer::dsp::fx::HarmonyEffect;
 using localmixer::dsp::fx::HarmonyMode;
 using localmixer::dsp::fx::HarmonyVoiceConfig;
+using localmixer::dsp::fx::LiveHarmonyEffect;
 using localmixer::dsp::fx::ProcessContext;
 using localmixer::dsp::fx::ProcessSpec;
 using localmixer::dsp::fx::ScaleType;
@@ -145,6 +147,29 @@ bool testHarmonyLevelDoesNotTrimLead() {
   return rmsDelta(left, original, 0) < 0.0001f && rmsDelta(right, original, 0) < 0.0001f;
 }
 
+bool testLiveHarmonyProducesBackingVoicesForSmallCallbacks() {
+  LiveHarmonyEffect effect;
+  constexpr auto callbackFrames = std::size_t{128};
+  effect.prepare(ProcessSpec{.sampleRate = 48000.0, .maximumBlockFrames = callbackFrames, .channels = 2});
+  const auto totalFrames = callbackFrames * 160;
+  const auto input = sine(261.625565, 48000.0, totalFrames);
+  auto left = input;
+  auto right = input;
+  const auto original = input;
+  for (std::size_t offset = 0; offset < totalFrames; offset += callbackFrames) {
+    AudioBlockView block{
+      std::span<float>(left.data() + offset, callbackFrames),
+      std::span<float>(right.data() + offset, callbackFrames),
+    };
+    effect.process(block, ProcessContext{.sampleRate = 48000.0, .absoluteFrame = static_cast<std::uint64_t>(offset)});
+  }
+
+  const auto start = static_cast<std::size_t>(effect.latencySamples()) + callbackFrames * 8;
+  return rmsDelta(left, original, start) > 0.001f &&
+    rmsDelta(right, original, start) > 0.001f &&
+    rmsDelta(left, right, start) > 0.0005f;
+}
+
 }  // namespace
 
 int main() {
@@ -166,6 +191,10 @@ int main() {
   }
   if (!testHarmonyLevelDoesNotTrimLead()) {
     std::cerr << "harmony level should not trim lead signal\n";
+    return 1;
+  }
+  if (!testLiveHarmonyProducesBackingVoicesForSmallCallbacks()) {
+    std::cerr << "live harmony should produce panned backing voices for small callbacks\n";
     return 1;
   }
   std::cout << "local-mixer-harmony-effect-tests ok\n";

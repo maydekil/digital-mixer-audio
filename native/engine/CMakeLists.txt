@@ -15,6 +15,7 @@ add_library(local_mixer_dsp STATIC
   src/dsp/fx/CharacterEffects.cpp
   src/dsp/fx/DelayEffect.cpp
   src/dsp/fx/HarmonyEffect.cpp
+  src/dsp/fx/LiveHarmonyEffect.cpp
   src/dsp/fx/ModulationEffects.cpp
   src/dsp/fx/PitchBackend.cpp
   src/dsp/fx/PitchCorrectionEffect.cpp

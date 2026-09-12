@@ -643,7 +643,7 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
 }
 
 function liveVocalFxType(slotId: string, effectType: string, enabled: boolean) {
-  if (slotId === "harmony" && enabled) return "doubler";
+  if (slotId === "harmony" && enabled) return "live_harmony";
   return effectType;
 }
 
