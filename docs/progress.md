@@ -4997,3 +4997,26 @@ Validation:
 
 Known limitations:
 - Manual confirmation of the fader spacing balance in the live desktop app is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Lengthen Fader Meters Toward Pan
+
+Changed files:
+- `apps/desktop/src/styles/app.css`: increases channel fader and vertical meter height again so the top of the controls reaches closer to PAN while preserving the lower button row.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- Channel fader tracks and vertical meter bars are longer, reducing the visible gap between PAN and the fader/meter controls.
+- The compact 1280px layout receives a proportional height increase and still passes visual layout checks.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 837` warning.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual confirmation of the final fader/meter height in the live desktop app is `NOT_RUN`.
