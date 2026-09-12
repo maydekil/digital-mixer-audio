@@ -121,8 +121,8 @@
 .channel-compressor-controls .rotary-tick { height: 9px; transform-origin: 50% 9px; }
 .channel-compressor-controls .rotary-value { font-size: 8.5px; margin-top: 1px; }
 .processor-slot-placeholder { min-height: 24px; visibility: hidden; }
-.master-upper { display: grid; grid-template-rows: 24px 1fr; gap: 4px; min-height: 140px; }
-.master-upper-spacer { min-height: 101px; }
+.master-upper { display: grid; grid-template-rows: 24px 1fr; gap: 4px; min-height: 86px; }
+.master-upper-spacer { min-height: 47px; }
 .harmony-shortcut { display: grid; grid-template-columns: 1fr 28px; gap: 4px; min-height: 27px; }
 .harmony-shortcut.is-placeholder { visibility: hidden; }
 .strip-divider { height: 1px; background: #24414a; margin: 7px 2px 6px; flex: 0 0 auto; }
@@ -382,8 +382,8 @@
   .channel-strip header { min-height: 40px; padding-bottom: 3px; }
   .processing-buttons { gap: 4px; }
   .processing-buttons .ui-button { min-height: 22px; padding: 1px 8px; }
-  .master-upper { min-height: 132px; grid-template-rows: 22px 1fr; }
-  .master-upper-spacer { min-height: 94px; }
+  .master-upper { min-height: 80px; grid-template-rows: 22px 1fr; }
+  .master-upper-spacer { min-height: 42px; }
   .harmony-shortcut .ui-button { min-height: 22px; padding: 1px 6px; }
   .rotary-label { font-size: 11px; margin-bottom: 0; }
   .rotary-face { width: 30px; height: 30px; }

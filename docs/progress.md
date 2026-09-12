@@ -5020,3 +5020,27 @@ Validation:
 
 Known limitations:
 - Manual confirmation of the final fader/meter height in the live desktop app is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Align Master Divider
+
+Changed files:
+- `apps/desktop/src/styles/app.css`: reduces the MASTER upper spacer so the divider above the master fader aligns more closely with other mixer strips.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- MASTER output divider is raised to visually align with neighboring channel divider placement.
+- The compact layout receives the same adjustment so MASTER does not drop back down at smaller widths.
+- Audio behavior and master limiter state are unchanged.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 837` warning.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual confirmation of the MASTER divider alignment in the live desktop app is `NOT_RUN`.
