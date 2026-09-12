@@ -233,7 +233,7 @@ function applyChannelSession(channel: ChannelState, saved: ProjectSessionChannel
     processing: {
       ...channel.processing,
       eq: Boolean(saved.eqEnabled),
-      noise: Boolean(saved.noiseEnabled),
+      noise: channel.role === "vocal" ? true : Boolean(saved.noiseEnabled),
       comp: Boolean(saved.compEnabled),
       deEsser: Boolean(saved.deEsserEnabled),
       insertFx: Boolean(saved.insertFxEnabled)

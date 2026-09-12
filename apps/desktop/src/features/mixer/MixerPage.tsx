@@ -588,7 +588,7 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}Monitor`] = channel.id === autoMonitorId;
     payload[`${prefix}ProcessorEq`] = channel.processing.eq;
     payload[`${prefix}ProcessorComp`] = channel.processing.comp;
-    payload[`${prefix}ProcessorNoise`] = channel.role === "system" ? false : channel.processing.noise;
+    payload[`${prefix}ProcessorNoise`] = channel.role === "vocal" ? true : channel.role === "system" ? false : channel.processing.noise;
     payload[`${prefix}ProcessorInsertFx`] = channel.role === "system" ? false : channel.processing.insertFx;
     payload[`${prefix}ProcessorDeEsser`] = channel.role === "vocal" && channel.processing.deEsser;
     payload[`${prefix}NoiseThresholdDb`] = channel.dynamics.noise.thresholdDb;

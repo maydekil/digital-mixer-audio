@@ -66,7 +66,7 @@ describe("project session serialization", () => {
     expect(loaded.projectName).toBe("local-audio-mixer");
     expect(voice?.source).toBe("Headset Mic");
     expect(voice?.faderDb).toBe(-10);
-    expect(voice?.processing.noise).toBe(false);
+    expect(voice?.processing.noise).toBe(true);
     expect(voice?.processing.deEsser).toBe(true);
     expect(voice?.dynamics.noise.holdMs).toBe(55);
     expect(voice?.dynamics.noise.releaseMs).toBe(220);

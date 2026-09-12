@@ -132,20 +132,20 @@ describe("PreviewAdapter", () => {
 
     expect(voice?.processing.noise).toBe(true);
     expect(voice?.dynamics.noise).toEqual({
-      thresholdDb: -19.2,
-      rangeDb: -82.1,
-      holdMs: 37,
-      releaseMs: 78
+      thresholdDb: -14.7,
+      rangeDb: -84.6,
+      holdMs: 24,
+      releaseMs: 53
     });
 
     adapter.setChannelNoiseAmount("voice", 0);
     voice = adapter.getSnapshot().channels.find((channel) => channel.id === "voice");
-    expect(voice?.processing.noise).toBe(false);
+    expect(voice?.processing.noise).toBe(true);
     expect(voice?.dynamics.noise).toEqual({
-      thresholdDb: -80,
-      rangeDb: -18,
-      holdMs: 160,
-      releaseMs: 320
+      thresholdDb: -55,
+      rangeDb: -32,
+      holdMs: 90,
+      releaseMs: 180
     });
   });
 
@@ -176,7 +176,7 @@ describe("PreviewAdapter", () => {
     const snapshot = adapter.getSnapshot();
     const voice = snapshot.channels.find((channel) => channel.id === "voice");
     const guitar = snapshot.channels.find((channel) => channel.id === "guitar");
-    expect(voice?.processing.noise).toBe(false);
+    expect(voice?.processing.noise).toBe(true);
     expect(voice?.processing.deEsser).toBe(true);
     expect(voice?.eqBands.find((band) => band.id === "low")?.gain).toBe("+8.0 dB");
     expect(guitar?.processing.eq).toBe(true);

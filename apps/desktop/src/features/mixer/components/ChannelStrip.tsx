@@ -76,12 +76,13 @@ function ChannelNoiseControl({ channel, onAmount }: {
   channel: ChannelState;
   onAmount(amount: number): void;
 }) {
-  const amount = channel.processing.noise ? noiseAmountFromThreshold(channel.dynamics.noise.thresholdDb) : 0;
+  const noiseActive = channel.role === "vocal" || channel.processing.noise;
+  const amount = noiseActive ? noiseAmountFromThreshold(channel.dynamics.noise.thresholdDb) : 0;
   return (
-    <div className={`channel-noise-section ${channel.processing.noise ? "is-active" : "is-bypassed"}`}>
+    <div className={`channel-noise-section ${noiseActive ? "is-active" : "is-bypassed"}`}>
       <RotaryKnob
         label="NOISE"
-        value={amount > 0 ? `${amount}` : "OFF"}
+        value={amount > 0 ? `${amount}` : "AUTO"}
         numericValue={amount}
         min={0}
         max={100}
@@ -94,7 +95,7 @@ function ChannelNoiseControl({ channel, onAmount }: {
 }
 
 function noiseAmountFromThreshold(thresholdDb: number) {
-  const normalized = Math.max(0, Math.min(1, (thresholdDb + 80) / 74));
+  const normalized = Math.max(0, Math.min(1, (thresholdDb + 55) / 49));
   return Math.round((normalized ** (1 / 0.55)) * 100 / 5) * 5;
 }
 

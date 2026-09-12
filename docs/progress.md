@@ -4183,3 +4183,37 @@ Validation:
 Known limitations:
 - Manual hardware confirmation that VOICE `NOISE=100` audibly differs from `OFF` after auto-monitor sync is `NOT_RUN`.
 - Native persistent monitor still accepts one live source at a time; true aggregate live monitoring for multiple simultaneously ON source channels remains a separate checkpoint.
+
+### Phase19 UX Checkpoint — Make Vocal Noise Minimum Always Active
+
+Changed files:
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: VOICE noise can no longer be disabled by setting the knob to zero or by processor-toggle state; the minimum value now maps to a gentle reducer instead of bypass.
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: the minimum VOICE noise knob display now reads `AUTO` instead of `OFF`.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: native `sync-mixer-graph` now always enables `ProcessorNoise` for VOICE while keeping SYSTEM noise disabled.
+- `apps/desktop/src/features/project/sessionDocument.ts`: loading old project sessions forces VOICE noise active even if saved state had `noiseEnabled=false`.
+- `tests/ui/preview-adapter.test.ts`: verifies knob value `0` keeps VOICE noise active with gentle threshold/range/hold/release values.
+- `tests/ui/project-session.test.ts`: updates project-load expectation for forced VOICE noise.
+- `docs/reports/ui/*.png`: refreshed visual evidence after the NOISE minimum label changed.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- VOICE `NOISE` minimum is now `AUTO`: threshold `-55 dB`, range `-32 dB`, hold `90 ms`, release `180 ms`.
+- VOICE `NOISE=100` remains an aggressive hard-gate ceiling.
+- SYSTEM still cannot enter noise/gate.
+- Old projects and stale UI state cannot accidentally bypass VOICE noise reduction.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; first-party file-size limits passed.
+- command: `npm run test:ui -- --run tests/ui/preview-adapter.test.ts tests/ui/project-session.test.ts`
+- exit/result: `0`; targeted Vitest suites 25/25 passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 54/54, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation that `AUTO` and `100` reduce the user's fan noise is `NOT_RUN`.
+- If fan noise remains unchanged at `NOISE=100`, remaining suspects are direct hardware monitoring, OS/interface monitoring, or a physical route bypassing the app.

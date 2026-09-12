@@ -145,7 +145,9 @@ export class PreviewAdapter implements MixerControlPort {
       ...channel,
       processing: {
         ...channel.processing,
-        [processorId]: isProcessorAvailable(channel, processorId) ? enabled : false
+        [processorId]: processorId === "noise" && channel.role === "vocal"
+          ? true
+          : isProcessorAvailable(channel, processorId) ? enabled : false
       }
     } : channel);
   }
@@ -157,7 +159,7 @@ export class PreviewAdapter implements MixerControlPort {
       ...channel,
       processing: {
         ...channel.processing,
-        noise: isProcessorAvailable(channel, "noise") && nextAmount > 0
+        noise: isProcessorAvailable(channel, "noise")
       },
       dynamics: { ...channel.dynamics, noise }
     } : channel);
@@ -394,7 +396,7 @@ function newSourceChannel(id: string, name: string, role: Exclude<ChannelRole, "
     recordArm: false,
     harmonyVisible: role === "vocal",
     harmonyEnabled: false,
-    processing: { eq: true, comp: role === "vocal", noise: false, deEsser: false, insertFx: false },
+    processing: { eq: true, comp: role === "vocal", noise: role === "vocal", deEsser: false, insertFx: false },
     dynamics: defaultDynamics(),
     sends: { "fx-a": { enabled: false, gainDb: -60 }, "fx-b": { enabled: false, gainDb: -60 } },
     eqBands: defaultEqBands(),
@@ -486,10 +488,10 @@ function noiseSettingsFromAmount(amount: number): ChannelDynamicsState["noise"] 
   const normalized = clamp(amount, 0, 100) / 100;
   const curve = normalized ** 0.55;
   return {
-    thresholdDb: roundTo(-80 + curve * 74, 1),
-    rangeDb: roundTo(-18 - curve * 78, 1),
-    holdMs: Math.round(160 - curve * 150),
-    releaseMs: Math.round(320 - curve * 295)
+    thresholdDb: roundTo(-55 + curve * 49, 1),
+    rangeDb: roundTo(-32 - curve * 64, 1),
+    holdMs: Math.round(90 - curve * 80),
+    releaseMs: Math.round(180 - curve * 155)
   };
 }
 
