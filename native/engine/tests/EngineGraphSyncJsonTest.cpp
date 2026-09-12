@@ -1,4 +1,5 @@
 #include "engine/EngineGraphSyncJson.hpp"
+#include "dsp/Dynamics.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -54,6 +55,8 @@ int main() {
     "\"channel0NoiseRangeDb\":-72,"
     "\"channel0NoiseHoldMs\":40,"
     "\"channel0NoiseReleaseMs\":120,"
+    "\"channel0NoiseMode\":\"expander\","
+    "\"channel0NoiseRatio\":7.5,"
     "\"channel0CompThresholdDb\":-22,"
     "\"channel0CompRatio\":4,"
     "\"channel0CompAttackMs\":12,"
@@ -107,7 +110,9 @@ int main() {
   if (!near(selection.processors.noise.thresholdDb, -48.0) ||
       !near(selection.processors.noise.rangeDb, -72.0) ||
       !near(selection.processors.noise.holdMs, 40.0) ||
-      !near(selection.processors.noise.releaseMs, 120.0)) {
+      !near(selection.processors.noise.releaseMs, 120.0) ||
+      selection.processors.noise.mode != localmixer::dsp::NoiseMode::expander ||
+      !near(selection.processors.noise.ratio, 7.5)) {
     std::cerr << "monitor selection should keep noise parameters\n";
     return 1;
   }

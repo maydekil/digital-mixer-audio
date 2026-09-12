@@ -4245,3 +4245,34 @@ Validation:
 Known limitations:
 - Manual hardware confirmation that `NOISE=100` sufficiently suppresses the user's fan at 2 meters is `NOT_RUN`.
 - This remains a gate/expansion style reducer, not spectral AI denoise; fan noise can still leak when it rides under opened speech.
+
+### Phase19 UX Checkpoint — Switch Vocal Noise To Smart Expander
+
+Changed files:
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: retuned VOICE noise amount so the top end reaches about `-18 dB` threshold, `-96 dB` range, `20 ms` hold, and `80 ms` release instead of the previous near-0 dB hard gate.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: sends hidden native `NoiseMode=expander` and a one-knob-derived `NoiseRatio` for VOICE while leaving non-vocal noise as gate mode.
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: updated inverse display mapping for the smart expander curve.
+- `native/engine/src/engine/EngineGraphSyncJson.cpp`: parses `NoiseMode` and `NoiseRatio` from the sync payload.
+- `native/engine/tests/EngineGraphSyncJsonTest.cpp`: verifies monitor selection preserves expander mode and ratio.
+- `native/engine/tests/DynamicsTest.cpp`: adds smart vocal expander coverage that suppresses fan-like ambience below threshold while opening for normal voice.
+- `tests/ui/preview-adapter.test.ts`: updates one-knob mapping expectations.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- VOICE `NOISE=100` is no longer a near-mute hard gate that requires extremely hot speech to open.
+- The native path now uses expander behavior for VOICE: ambience below threshold is reduced strongly, while speech above threshold opens more naturally.
+- The user still has one knob; ratio/mode remain hidden and automatically tuned.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- --run tests/ui/preview-adapter.test.ts`
+- exit/result: `0`; PreviewAdapter suite 20/20 passed.
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43 passed, including sync parser and smart expander DSP coverage.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 54/54, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation that smart expander reduces fan noise without cutting the user's voice is `NOT_RUN`.
+- This is still dynamics-based noise reduction, not spectral denoise; constant fan under active speech may remain partially audible.

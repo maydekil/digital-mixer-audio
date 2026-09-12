@@ -95,7 +95,7 @@ function ChannelNoiseControl({ channel, onAmount }: {
 }
 
 function noiseAmountFromThreshold(thresholdDb: number) {
-  const normalized = Math.max(0, Math.min(1, (thresholdDb + 55) / 54));
+  const normalized = Math.max(0, Math.min(1, (thresholdDb + 55) / 37));
   return Math.round((normalized ** (1 / 0.55)) * 100 / 5) * 5;
 }
 

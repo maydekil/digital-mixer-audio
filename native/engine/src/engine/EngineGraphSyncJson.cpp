@@ -59,6 +59,11 @@ void readEqBandFields(const std::string& line, std::uint32_t channelIndex, Chann
   }
 }
 
+dsp::NoiseMode noiseModeFromUiName(const std::string& name) {
+  if (name == "expander") return dsp::NoiseMode::expander;
+  return dsp::NoiseMode::gate;
+}
+
 std::string syncGraphError(MixerError error, std::uint32_t stripCount, std::uint32_t monitorCount, std::size_t retiredCount) {
   return "\"synced\":false,\"error\":\"" + std::string(mixerErrorName(error)) +
     "\",\"stripCount\":" + std::to_string(stripCount) +
@@ -149,6 +154,9 @@ std::string syncMixerGraphResultJson(
       readJsonNumberField(line, indexedField(index, "NoiseHoldMs")).value_or(processors.noise.holdMs));
     processors.noise.releaseMs = static_cast<float>(
       readJsonNumberField(line, indexedField(index, "NoiseReleaseMs")).value_or(processors.noise.releaseMs));
+    processors.noise.mode = noiseModeFromUiName(readJsonStringField(line, indexedField(index, "NoiseMode")));
+    processors.noise.ratio = static_cast<float>(
+      readJsonNumberField(line, indexedField(index, "NoiseRatio")).value_or(processors.noise.ratio));
     processors.compressor.thresholdDb = static_cast<float>(
       readJsonNumberField(line, indexedField(index, "CompThresholdDb")).value_or(processors.compressor.thresholdDb));
     processors.compressor.ratio = static_cast<float>(

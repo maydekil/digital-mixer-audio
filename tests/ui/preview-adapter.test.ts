@@ -132,10 +132,10 @@ describe("PreviewAdapter", () => {
 
     expect(voice?.processing.noise).toBe(true);
     expect(voice?.dynamics.noise).toEqual({
-      thresholdDb: -10.6,
-      rangeDb: -104.3,
-      holdMs: 16,
-      releaseMs: 40
+      thresholdDb: -24.6,
+      rangeDb: -84.6,
+      holdMs: 32,
+      releaseMs: 98
     });
 
     adapter.setChannelNoiseAmount("voice", 0);

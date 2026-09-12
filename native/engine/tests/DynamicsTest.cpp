@@ -142,6 +142,31 @@ int main() {
     return 1;
   }
 
+  NoiseGate smartVoiceReducer;
+  smartVoiceReducer.configure(NoiseGateConfig{
+    .mode = NoiseMode::expander,
+    .thresholdDb = -18.0f,
+    .hysteresisDb = 1.0f,
+    .rangeDb = -96.0f,
+    .ratio = 10.0f,
+    .attackMs = 0.0f,
+    .releaseMs = 0.0f,
+  });
+  std::vector<float> roomFan(1, decibelsToLinear(-30.0f));
+  smartVoiceReducer.processMono(roomFan);
+  if (linearToDecibels(roomFan[0]) > -90.0f) {
+    std::cerr << "smart vocal expander should strongly attenuate room fan below threshold\n";
+    return 1;
+  }
+
+  smartVoiceReducer.reset();
+  std::vector<float> normalVoice(8, decibelsToLinear(-12.0f));
+  smartVoiceReducer.processMono(normalVoice);
+  if (linearToDecibels(normalVoice.back()) < -13.0f || !smartVoiceReducer.isOpen()) {
+    std::cerr << "smart vocal expander should open for normal voice level\n";
+    return 1;
+  }
+
   NoiseGate expander;
   expander.configure(NoiseGateConfig{
     .mode = NoiseMode::expander,
