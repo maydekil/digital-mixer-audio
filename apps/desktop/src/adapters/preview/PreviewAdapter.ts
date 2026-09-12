@@ -331,6 +331,7 @@ export class PreviewAdapter implements MixerControlPort {
 
   updateHarmony(field: keyof HarmonyState, value: string | number | boolean): void {
     this.snapshot.harmony = { ...this.snapshot.harmony, [field]: value, revision: this.snapshot.harmony.revision + 1, error: "" };
+    if (field === "levelDb" && this.snapshot.harmony.enabled) this.syncHarmonyVocalFx(true);
   }
 
   selectVocalFxSlot(slotId: string): void {
@@ -401,10 +402,16 @@ export class PreviewAdapter implements MixerControlPort {
   }
 
   private syncHarmonyVocalFx(enabled: boolean): void {
+    const harmonyMix = harmonyMixFromLevelDb(this.snapshot.harmony.levelDb);
     this.snapshot.vocalFx = {
       ...this.snapshot.vocalFx,
       selectedSlotId: enabled ? "harmony" : this.snapshot.vocalFx.selectedSlotId,
-      slots: this.snapshot.vocalFx.slots.map((slot) => slot.id === "harmony" ? { ...slot, enabled } : slot)
+      slots: this.snapshot.vocalFx.slots.map((slot) => slot.id === "harmony" ? {
+        ...slot,
+        enabled,
+        mix: harmonyMix,
+        parameters: updateSlotLevelParameter(slot.parameters, harmonyMix)
+      } : slot)
     };
     const hasActiveSlot = this.snapshot.vocalFx.slots.some((slot) => slot.enabled);
     this.snapshot.channels = this.snapshot.channels.map((channel) => channel.role === "vocal" ? {
@@ -489,6 +496,17 @@ function updateSlotMixParameter(parameters: VocalFxParameter[], mix: number) {
       ? { ...parameter, value: `${Math.round(mix * 100)}%` }
       : parameter
   ));
+}
+
+function updateSlotLevelParameter(parameters: VocalFxParameter[], mix: number) {
+  return parameters.map((parameter) => (
+    parameter.label === "Level" ? { ...parameter, value: `${Math.round(mix * 100)}%` } : parameter
+  ));
+}
+
+function harmonyMixFromLevelDb(levelDb: number) {
+  const normalized = clamp((levelDb + 30) / 36, 0, 1);
+  return roundTo(0.04 + normalized * 0.26, 2);
 }
 
 function selectedSlotForPreset(presetId: string, fallback: string) {

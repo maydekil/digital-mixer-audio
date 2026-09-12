@@ -4478,3 +4478,28 @@ Validation:
 
 Known limitations:
 - Manual hardware A/B confirmation of Echo/Reverb audibility while toggling Harmony is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Reduce Live Harmony Artifacts
+
+Changed files:
+- `apps/desktop/src/fixtures/approvedMixerSession.ts`: lowers the default Harmony rack slot mix from full wet to a conservative vocal blend and labels the visible Harmony level lower.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: maps Harmony Level to the native vocal FX rack slot mix and updates the Harmony slot level parameter display.
+- `tests/ui/preview-adapter.test.ts`: verifies Harmony starts as a partial blend and can be reduced to a very low blend from the Harmony Level control.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Harmony is no longer sent as a 100% rack blend by default; the dry voice stays dominant and generated voices are additive.
+- The Harmony Level slider now affects the rack slot blend used by the live native monitor path.
+- This reduces the chance that unverified realtime pitch-shift artifacts dominate the user's voice.
+
+Validation:
+- command: `npm run test:ui -- preview-adapter`
+- exit/result: `0`; PreviewAdapter suite 21/21 passed.
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation that Harmony now sounds human enough is `NOT_RUN`.
+- The native Harmony pitch-shifter is still marked `implemented_unverified`; if artifacts remain, the next step is to temporarily expose a safer doubler-style Harmony mode or keep Harmony disabled until deeper DSP tuning is complete.

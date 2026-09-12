@@ -56,6 +56,11 @@ describe("PreviewAdapter", () => {
     expect(snapshot.channels.find((channel) => channel.id === "voice")?.harmonyEnabled).toBe(true);
     expect(snapshot.channels.find((channel) => channel.id === "voice")?.processing.insertFx).toBe(true);
     expect(snapshot.vocalFx.slots.find((slot) => slot.id === "harmony")?.enabled).toBe(true);
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "harmony")?.mix).toBe(0.26);
+
+    adapter.updateHarmony("levelDb", -30);
+    snapshot = adapter.getSnapshot();
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "harmony")?.mix).toBe(0.04);
 
     adapter.applyVocalFxPreset("default");
     snapshot = adapter.getSnapshot();
