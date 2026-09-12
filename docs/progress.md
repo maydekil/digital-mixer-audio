@@ -4276,3 +4276,31 @@ Validation:
 Known limitations:
 - Manual hardware confirmation that smart expander reduces fan noise without cutting the user's voice is `NOT_RUN`.
 - This is still dynamics-based noise reduction, not spectral denoise; constant fan under active speech may remain partially audible.
+
+### Phase19 UX Checkpoint — Hybrid Vocal Noise Top End
+
+Changed files:
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: retuned the one-knob VOICE noise curve so `100` reaches about `-10 dB` threshold, `-100 dB` range, `10 ms` hold, and `60 ms` release.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: switches VOICE noise mode automatically from expander to gate when the hidden normalized amount reaches the top range.
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: updated inverse display mapping for the hybrid curve.
+- `tests/ui/preview-adapter.test.ts`: updates one-knob mapping expectations.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- `AUTO` through the upper-middle range remains expander-like and more natural.
+- The top end (`90-100`) returns to gate behavior so knob `100` is audibly different and can suppress loud fan bleed again.
+- This keeps one user-facing knob while making the upper range a deliberate rescue zone.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- --run tests/ui/preview-adapter.test.ts`
+- exit/result: `0`; PreviewAdapter suite 20/20 passed.
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 54/54, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation of the hybrid `90-100` range is `NOT_RUN`.
+- The top gate range can still cut quiet speech; users should back down toward `70-85` when voice continuity matters more than maximum fan suppression.

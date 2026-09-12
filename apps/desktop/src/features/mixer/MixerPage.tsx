@@ -595,7 +595,7 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}NoiseRangeDb`] = channel.dynamics.noise.rangeDb;
     payload[`${prefix}NoiseHoldMs`] = channel.dynamics.noise.holdMs;
     payload[`${prefix}NoiseReleaseMs`] = channel.dynamics.noise.releaseMs;
-    payload[`${prefix}NoiseMode`] = channel.role === "vocal" ? "expander" : "gate";
+    payload[`${prefix}NoiseMode`] = channel.role === "vocal" ? vocalNoiseMode(channel.dynamics.noise.thresholdDb) : "gate";
     payload[`${prefix}NoiseRatio`] = channel.role === "vocal" ? vocalNoiseRatio(channel.dynamics.noise.thresholdDb) : 2;
     payload[`${prefix}CompThresholdDb`] = channel.dynamics.compressor.thresholdDb;
     payload[`${prefix}CompRatio`] = channel.dynamics.compressor.ratio;
@@ -629,8 +629,16 @@ function autoMonitorChannel(snapshot: MixerSnapshot) {
 }
 
 function vocalNoiseRatio(thresholdDb: number) {
-  const normalized = Math.max(0, Math.min(1, (thresholdDb + 55) / 37));
+  const normalized = vocalNoiseNormalized(thresholdDb);
   return Math.round((1.6 + normalized * 8.4) * 10) / 10;
+}
+
+function vocalNoiseMode(thresholdDb: number) {
+  return vocalNoiseNormalized(thresholdDb) >= 0.9 ? "gate" : "expander";
+}
+
+function vocalNoiseNormalized(thresholdDb: number) {
+  return Math.max(0, Math.min(1, (thresholdDb + 55) / 45));
 }
 
 function channelColor(channel: ChannelState) {
