@@ -135,9 +135,9 @@
 .channel-strip.is-master .fader-meter-row {
   flex: 1 1 auto;
   min-height: 0;
-  margin-top: 0;
-  align-items: stretch;
-  max-height: 252px;
+  margin-top: 18px;
+  align-items: end;
+  max-height: none;
 }
 .channel-strip.is-master .vertical-fader {
   grid-template-rows: minmax(0, 1fr) auto;
@@ -147,7 +147,7 @@
 .channel-strip.is-master .fader-scale,
 .channel-strip.is-master .fader-track,
 .channel-strip.is-master .level-meter.vertical span { height: clamp(176px, 24vh, 220px); min-height: 0; }
-.channel-strip.is-master .strip-meter-stack { height: 100%; min-height: 0; }
+.channel-strip.is-master .strip-meter-stack { height: auto; min-height: 0; justify-content: flex-end; }
 .channel-strip.is-master .level-meter.vertical { flex: 1 1 auto; min-height: 0; }
 
 .ui-button { min-height: 24px; color: var(--text); border: 1px solid #2d6674; border-radius: 5px; background: #0c2530; padding: 2px 7px; font-weight: 430; line-height: 1.05; overflow: hidden; text-overflow: ellipsis; }
@@ -400,8 +400,7 @@
   .strip-actions .ui-button { min-height: 22px; padding: 1px 6px; }
   .master-spacer { min-height: 46px; }
   .channel-strip.is-master .master-spacer { display: none; }
-  .channel-strip.is-master .fader-meter-row { min-height: 0; }
-  .channel-strip.is-master .fader-meter-row { max-height: 214px; }
+  .channel-strip.is-master .fader-meter-row { min-height: 0; margin-top: 14px; max-height: none; }
   .channel-strip.is-master .fader-scale,
   .channel-strip.is-master .fader-track,
   .channel-strip.is-master .level-meter.vertical span { height: clamp(150px, 22vh, 188px); min-height: 0; }

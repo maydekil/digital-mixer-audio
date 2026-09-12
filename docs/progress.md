@@ -5068,3 +5068,27 @@ Validation:
 
 Known limitations:
 - Manual confirmation of the corrected MASTER divider alignment in the live desktop app is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Align Master M Button
+
+Changed files:
+- `apps/desktop/src/styles/app.css`: lets the MASTER fader row fill the lower strip so the M button aligns with other channel buttons, while adding a gap below the divider.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- MASTER M button is aligned with the M buttons on the other mixer lines.
+- MASTER fader/meter has breathing room below the divider instead of starting too close to it.
+- Master audio path and limiter behavior are unchanged.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed, and screenshot evidence shows MASTER M aligned with channel buttons.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 837` warning.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual confirmation of MASTER M alignment in the live desktop app is `NOT_RUN`.
