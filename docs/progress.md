@@ -4217,3 +4217,31 @@ Validation:
 Known limitations:
 - Manual hardware confirmation that `AUTO` and `100` reduce the user's fan noise is `NOT_RUN`.
 - If fan noise remains unchanged at `NOISE=100`, remaining suspects are direct hardware monitoring, OS/interface monitoring, or a physical route bypassing the app.
+
+### Phase19 UX Checkpoint — Push Vocal Noise 100 To Near-Mute
+
+Changed files:
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: retuned the one-knob VOICE noise curve so `100` reaches a near-mute gate around `-1 dB` threshold, `-120 dB` range, `0 ms` hold, and `10 ms` release.
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: updated inverse knob display mapping for the stronger upper-end threshold curve.
+- `tests/ui/preview-adapter.test.ts`: updated the one-knob mapping expectation for `70`.
+- `native/engine/tests/DynamicsTest.cpp`: strengthened native hard-gate coverage to prove a louder fan-like signal below the near-mute threshold is attenuated.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- VOICE `NOISE=AUTO` remains the gentle always-on reduction floor.
+- VOICE `NOISE=100` is now intentionally very strict and should reject far more mic ambience/fan noise while idle.
+- The high end may cut normal or softer speech unless the mic is close and input level is healthy; this is an aggressive rescue setting.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- --run tests/ui/preview-adapter.test.ts`
+- exit/result: `0`; PreviewAdapter suite 20/20 passed.
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43 passed, including the stronger hard-gate assertion.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 54/54, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation that `NOISE=100` sufficiently suppresses the user's fan at 2 meters is `NOT_RUN`.
+- This remains a gate/expansion style reducer, not spectral AI denoise; fan noise can still leak when it rides under opened speech.

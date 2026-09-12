@@ -126,18 +126,18 @@ int main() {
   }
 
   NoiseGate hardGate;
-  hardGate.configure(NoiseGateConfig{.thresholdDb = -6.0f, .hysteresisDb = 1.0f, .holdMs = 0.0f, .rangeDb = -96.0f, .attackMs = 0.0f, .releaseMs = 0.0f});
-  std::vector<float> fanLike(16, decibelsToLinear(-12.0f));
+  hardGate.configure(NoiseGateConfig{.thresholdDb = -1.0f, .hysteresisDb = 0.5f, .holdMs = 0.0f, .rangeDb = -120.0f, .attackMs = 0.0f, .releaseMs = 0.0f});
+  std::vector<float> fanLike(16, decibelsToLinear(-6.0f));
   hardGate.processMono(fanLike);
-  if (linearToDecibels(fanLike.back()) > -90.0f || hardGate.isOpen()) {
+  if (linearToDecibels(fanLike.back()) > -110.0f || hardGate.isOpen()) {
     std::cerr << "hard vocal noise gate should close on loud ambience below voice threshold\n";
     return 1;
   }
 
   hardGate.reset();
-  std::vector<float> closeVoice(16, decibelsToLinear(-3.0f));
+  std::vector<float> closeVoice(16, decibelsToLinear(-0.25f));
   hardGate.processMono(closeVoice);
-  if (linearToDecibels(closeVoice.back()) < -4.0f || !hardGate.isOpen()) {
+  if (linearToDecibels(closeVoice.back()) < -1.0f || !hardGate.isOpen()) {
     std::cerr << "hard vocal noise gate should open for close voice level\n";
     return 1;
   }
