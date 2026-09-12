@@ -4756,3 +4756,30 @@ Validation:
 
 Known limitations:
 - Manual hardware confirmation of the new mixer strip layout on the live desktop app is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Compact Voice Tone Frames
+
+Changed files:
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: wraps VOICE tone controls into two side-by-side frames: EQ on the left and space effects on the right.
+- `apps/desktop/src/styles/app.css`: reduces VOICE strip width from 280px to 210px and lays out LOW/MID 1 over MID 2/HIGH plus vertical REVERB/ECHO.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- VOICE now uses a narrower 3/4-width strip compared with the previous widened layout.
+- The left VOICE frame contains LOW and MID 1 on the first row, MID 2 and HIGH on the second row.
+- The right VOICE frame contains REVERB above ECHO, so the controls stay readable without keeping the full 2x strip width.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 837` warning.
+- command: `npm run check:architecture`
+- exit/result: `0`; architecture check passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation of the compact VOICE strip in the live desktop app is `NOT_RUN`.

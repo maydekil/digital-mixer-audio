@@ -158,30 +158,42 @@ function ChannelToneControls({ channel, vocalFxSlots, onEqBand, onVocalFxMix }: 
     { id: "high", label: "HIGH" }
   ];
 
+  const toneControls = (
+    <div className="channel-tone-controls">
+      {toneBands.map((tone) => {
+        const band = channel.eqBands.find((item) => item.id === tone.id);
+        const gainDb = band?.gainDb ?? 0;
+        return (
+          <RotaryKnob
+            key={tone.id}
+            label={tone.label}
+            value={`${gainDb >= 0 ? "+" : ""}${gainDb.toFixed(1)}`}
+            numericValue={gainDb}
+            min={-12}
+            max={12}
+            step={0.5}
+            size="sm"
+            onChange={(value) => onEqBand(tone.id, value)}
+          />
+        );
+      })}
+    </div>
+  );
+
+  if (channel.role === "vocal") {
+    return (
+      <div className="channel-tone-section voice-tone-section">
+        <div className="voice-tone-frame">{toneControls}</div>
+        <div className="voice-space-frame">
+          <VoiceSpaceControls slots={vocalFxSlots} onMix={onVocalFxMix} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="channel-tone-section">
-      <div className="channel-tone-controls">
-        {toneBands.map((tone) => {
-          const band = channel.eqBands.find((item) => item.id === tone.id);
-          const gainDb = band?.gainDb ?? 0;
-          return (
-            <RotaryKnob
-              key={tone.id}
-              label={tone.label}
-              value={`${gainDb >= 0 ? "+" : ""}${gainDb.toFixed(1)}`}
-              numericValue={gainDb}
-              min={-12}
-              max={12}
-              step={0.5}
-              size="sm"
-              onChange={(value) => onEqBand(tone.id, value)}
-            />
-          );
-        })}
-      </div>
-      {channel.role === "vocal" ? (
-        <VoiceSpaceControls slots={vocalFxSlots} onMix={onVocalFxMix} />
-      ) : null}
+      {toneControls}
     </div>
   );
 }
