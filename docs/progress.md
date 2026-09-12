@@ -4641,3 +4641,26 @@ Validation:
 Known limitations:
 - Manual hardware confirmation that Voice 1/Voice 2 changes are musically obvious is `NOT_RUN`.
 - Key/Scale/Mode live behavior remains intentionally disabled until the key-aware harmony DSP path is made stable.
+
+### Phase19 UX Checkpoint — Preserve Live Harmony Defaults
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: stops sending Harmony parameter overrides when the modal is still at the default Voice 1, Voice 2, and Level values.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Default Harmony ON now falls back to the native `live_harmony` defaults that were previously tuned by hardware feedback.
+- Voice 1, Voice 2, and Harmony Level still send live parameters when the user changes them away from default.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- preview-adapter`
+- exit/result: `0`; PreviewAdapter suite 21/21 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 837` warning.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation that the default Harmony sound matches the prior preferred character is `NOT_RUN`.

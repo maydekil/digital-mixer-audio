@@ -594,9 +594,11 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}Enabled`] = slot.enabled;
     payload[`${prefix}Mix`] = slot.mix;
     if (slot.id === "harmony") {
-      payload[`${prefix}Param3`] = harmonyIntervalSemitones(snapshot.harmony.voice1);
-      payload[`${prefix}Param4`] = harmonyIntervalSemitones(snapshot.harmony.voice2);
-      payload[`${prefix}Param5`] = snapshot.harmony.levelDb;
+      const voice1 = harmonyVoice1Override(snapshot.harmony.voice1);
+      const voice2 = harmonyVoice2Override(snapshot.harmony.voice2);
+      if (voice1 !== undefined) payload[`${prefix}Param3`] = voice1;
+      if (voice2 !== undefined) payload[`${prefix}Param4`] = voice2;
+      if (snapshot.harmony.levelDb !== 0) payload[`${prefix}Param5`] = snapshot.harmony.levelDb;
     }
   });
   channels.forEach((channel, index) => {
@@ -658,6 +660,14 @@ function harmonyIntervalSemitones(interval: string) {
   if (interval === "-5th") return -7;
   if (interval === "+Oct") return 12;
   return 3;
+}
+
+function harmonyVoice1Override(interval: string) {
+  return interval === "+3rd" ? undefined : harmonyIntervalSemitones(interval);
+}
+
+function harmonyVoice2Override(interval: string) {
+  return interval === "+5th" ? undefined : harmonyIntervalSemitones(interval);
 }
 
 function autoMonitorChannel(snapshot: MixerSnapshot) {
