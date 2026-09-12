@@ -78,7 +78,8 @@
 .channel-header-controls.has-preset { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); }
 .channel-header-controls .channel-source-select,
 .channel-header-controls .channel-insert-preset { margin-top: 0; }
-.channel-source-select { width: 100%; min-height: 21px; margin-top: 4px; color: #dff4f8; background: #102b34; border: 1px solid #315966; border-radius: 4px; padding: 0 4px; font-size: 9px; font-weight: 380; }
+.channel-header-controls span { min-height: 25px; display: flex; align-items: center; justify-content: center; margin-top: 0; }
+.channel-source-select { width: 100%; min-height: 25px; margin-top: 4px; color: #dff4f8; background: #102b34; border: 1px solid #315966; border-radius: 4px; padding: 0 4px; font-size: 9px; font-weight: 380; }
 .processing-buttons { display: grid; gap: 5px; }
 .processing-buttons .ui-button:not(.is-active) { color: #8faeb7; border-color: #214957; background: #09222b; box-shadow: inset 3px 0 0 rgba(95, 126, 137, 0.28); }
 .processing-buttons .ui-button.is-active { text-shadow: 0 0 7px rgba(24, 214, 231, 0.36); }
