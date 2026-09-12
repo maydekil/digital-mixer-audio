@@ -4926,3 +4926,27 @@ Validation:
 
 Known limitations:
 - Manual confirmation that 1620px is the final preferred launch width is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Extend Channel Faders
+
+Changed files:
+- `apps/desktop/src/styles/app.css`: increases channel fader and vertical meter height, and removes the auto top spacing that pushed faders away from the PAN control.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- Fader and meter bars in each mixer line are taller.
+- The empty vertical gap between PAN and the fader area is reduced by letting the fader row fill available space.
+- The minimum-width layout keeps a smaller, but still taller, fader/meter height to avoid overlap.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 837` warning.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual confirmation of the taller fader spacing in the live desktop app is `NOT_RUN`.
