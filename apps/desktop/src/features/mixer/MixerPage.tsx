@@ -590,7 +590,7 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
   snapshot.vocalFx.slots.forEach((slot, index) => {
     const prefix = `vocalFxSlot${index}`;
     payload[`${prefix}Id`] = slot.id;
-    payload[`${prefix}Type`] = slot.effectType;
+    payload[`${prefix}Type`] = liveVocalFxType(slot.id, slot.effectType, slot.enabled);
     payload[`${prefix}Enabled`] = slot.enabled;
     payload[`${prefix}Mix`] = slot.mix;
   });
@@ -640,6 +640,11 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}Pan`] = channel.pan / 100;
   });
   await window.localMixer.engineCommand("sync-mixer-graph", payload);
+}
+
+function liveVocalFxType(slotId: string, effectType: string, enabled: boolean) {
+  if (slotId === "harmony" && enabled) return "doubler";
+  return effectType;
 }
 
 function autoMonitorChannel(snapshot: MixerSnapshot) {

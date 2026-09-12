@@ -4503,3 +4503,28 @@ Validation:
 Known limitations:
 - Manual hardware confirmation that Harmony now sounds human enough is `NOT_RUN`.
 - The native Harmony pitch-shifter is still marked `implemented_unverified`; if artifacts remain, the next step is to temporarily expose a safer doubler-style Harmony mode or keep Harmony disabled until deeper DSP tuning is complete.
+
+### Phase19 UX Checkpoint — Use Safe Live Harmony Fallback
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: maps the enabled `harmony` vocal FX slot to the native `doubler` processor in the live monitor sync payload.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- The HARMONY button no longer calls the unverified realtime `HarmonyEffect` pitch-shifter in the live monitor path.
+- The UI can still treat the shortcut as Harmony, but native live audio uses the safer doubler-style voice thickening processor until true pitch Harmony is tuned.
+- Echo/Reverb remain separate slots in the same rack and are not replaced.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run test:ui -- preview-adapter`
+- exit/result: `0`; PreviewAdapter suite 21/21 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- This is a safe live fallback, not true pitch-generated harmony.
+- Manual hardware confirmation that the fallback removes the crackling/kresek artifact is `NOT_RUN`.
