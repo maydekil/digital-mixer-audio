@@ -32,7 +32,7 @@ export function MixerPage() {
   const [hardwareOpen, setHardwareOpen] = useState(false);
   const [mediaImportOpen, setMediaImportOpen] = useState(false);
   const [vocalFxOpen, setVocalFxOpen] = useState(false);
-  const [harmonyOpen, setHarmonyOpen] = useState(true);
+  const [harmonyOpen, setHarmonyOpen] = useState(false);
   const [devices, setDevices] = useState<HardwareDevice[]>([]);
   const [outputUid, setOutputUid] = useState("");
   const [transportState, setTransportState] = useState("stopped");
@@ -521,14 +521,6 @@ export function MixerPage() {
               setHarmonyOpen(true);
             }}
           />
-          {harmonyOpen ? (
-            <HarmonyQuickPanel
-              harmony={snapshot.harmony}
-              onToggle={(enabled) => void setHarmonyEnabled(enabled)}
-              onChange={(field, value) => void configureHarmony(field, value)}
-              onClose={() => setHarmonyOpen(false)}
-            />
-          ) : null}
         </div>
         <div className="right-zone">
           <ChannelProcessingPanel
@@ -545,6 +537,16 @@ export function MixerPage() {
         </div>
       </section>
       <Footer outputUid={outputUid} outputOptions={outputOptions} onOutput={changeOutput} onHardware={() => setHardwareOpen(true)} />
+      {harmonyOpen ? (
+        <div className="modal-backdrop">
+          <HarmonyQuickPanel
+            harmony={snapshot.harmony}
+            onToggle={(enabled) => void setHarmonyEnabled(enabled)}
+            onChange={(field, value) => void configureHarmony(field, value)}
+            onClose={() => setHarmonyOpen(false)}
+          />
+        </div>
+      ) : null}
       <HardwareMonitorPanel open={hardwareOpen} onClose={() => setHardwareOpen(false)} />
       <MediaImportPanel open={mediaImportOpen} onClose={() => setMediaImportOpen(false)} />
       <VocalFxPanel

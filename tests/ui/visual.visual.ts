@@ -16,7 +16,7 @@ for (const viewport of viewports) {
     await expect(page.locator(".channel-strip").filter({ hasText: "MASTER" }).getByRole("button", { name: "ON", exact: true })).toBeVisible();
     await expect(page.getByText("FX A")).toHaveCount(0);
     await expect(page.getByText("FX B")).toHaveCount(0);
-    await expect(page.getByText("VOICE · HARMONY")).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Harmony settings" })).toHaveCount(0);
     await expect(page.locator(".processing-panel").getByRole("heading", { name: "MASTER" })).toBeVisible();
     await expect(page.locator(".processing-panel").getByText("Master output processing")).toBeVisible();
     await expect(page.getByText("PARAMETRIC EQ")).toBeVisible();
@@ -65,6 +65,11 @@ test("preview controls mutate visible mixer state", async ({ page }) => {
   await expect(voiceStrip.getByLabel("Voice preset")).toHaveValue("default");
   await voiceStrip.getByLabel("Voice preset").selectOption("voice-12-robot");
   await expect(voiceStrip.getByLabel("Voice preset")).toHaveValue("voice-12-robot");
+  await voiceStrip.getByLabel("Harmony settings").click();
+  await expect(page.getByRole("dialog", { name: "Harmony settings" })).toBeVisible();
+  await expect(page.getByText("VOICE · HARMONY")).toBeVisible();
+  await page.getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("dialog", { name: "Harmony settings" })).toHaveCount(0);
 
   await expect(page.getByLabel("FX program")).toHaveCount(0);
   await expect(page.locator(".compact-fx-row")).toHaveCount(0);

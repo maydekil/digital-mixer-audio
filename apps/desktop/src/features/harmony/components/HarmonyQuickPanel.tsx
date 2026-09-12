@@ -17,7 +17,7 @@ export function HarmonyQuickPanel({ harmony, onToggle, onChange, onClose }: Harm
   const status = harmony.pending ? "Pending" : harmony.error || (harmony.effectiveEnabled ? "Active" : "Bypassed");
 
   return (
-    <section className="harmony-panel">
+    <section className="harmony-panel" role="dialog" aria-label="Harmony settings">
       <div className="harmony-row harmony-main-row">
         <div className="harmony-title"><span>⏻</span><strong>VOICE · HARMONY</strong></div>
         <Button tone="violet" active={harmony.enabled} disabled={harmony.pending} onClick={() => onToggle(!harmony.enabled)}>{harmony.enabled ? "ON" : "OFF"}</Button>

@@ -4402,3 +4402,31 @@ Validation:
 
 Known limitations:
 - Manual hardware confirmation that toggling Default during live mic monitoring stays audibly dry is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Move Harmony Controls To Modal
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: starts Harmony settings closed and renders `HarmonyQuickPanel` inside a modal backdrop when the VOICE gear/settings button is clicked.
+- `apps/desktop/src/features/harmony/components/HarmonyQuickPanel.tsx`: marks the harmony surface as a dialog named `Harmony settings`.
+- `apps/desktop/src/styles/app.css`: removes the reserved bottom tray row from the left mixer area and sizes the harmony surface as a centered modal.
+- `tests/ui/visual.visual.ts`: updates layout expectations so the harmony panel is absent on startup and verifies opening/closing the modal from the VOICE settings icon.
+- `docs/reports/ui/desktop-1680x945.png`, `docs/reports/ui/minimum-1280x800.png`: refreshed visual baselines without the inline harmony tray.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- The bottom harmony panel no longer occupies space under the mixer.
+- Clicking the icon beside `HARMONY ON/OFF` opens Harmony as a centered modal.
+- Closing the modal returns to the full mixer view while preserving the existing Harmony ON/OFF and parameter wiring.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed and updated screenshots.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size guard passed with warning `MixerPage.tsx 804`, still under the 1,000-line limit.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 54/54, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation of Harmony parameter changes while live monitoring is `NOT_RUN`; this change only relocates the UI surface.
