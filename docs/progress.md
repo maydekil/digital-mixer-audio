@@ -4304,3 +4304,29 @@ Validation:
 Known limitations:
 - Manual hardware confirmation of the hybrid `90-100` range is `NOT_RUN`.
 - The top gate range can still cut quiet speech; users should back down toward `70-85` when voice continuity matters more than maximum fan suppression.
+
+### Phase19 UX Checkpoint — Add Hard Silence Zone At Noise 100
+
+Changed files:
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: adds a hard-zone boost only above the last 15% of the VOICE noise knob, pushing `100` to about `-2 dB` threshold, `-120 dB` range, `0 ms` hold, and `25 ms` release.
+- `tests/ui/preview-adapter.test.ts`: adds explicit coverage for the `NOISE=100` hard-silence settings while preserving the `70` and `AUTO` mappings.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- `70` remains in the less destructive range from the hybrid curve.
+- `100` is now a dedicated silence/rescue endpoint for cases where fan noise is still audible while the user is not speaking.
+- This endpoint is intentionally aggressive and can cut voice unless speech is very close/hot.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- --run tests/ui/preview-adapter.test.ts`
+- exit/result: `0`; PreviewAdapter suite 20/20 passed.
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 54/54, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation that `NOISE=100` fully closes the user's 2-meter fan while idle is `NOT_RUN`.
+- If fan remains audible at this endpoint, it likely means the fan level is entering the mic at near-voice level or an additional direct monitoring path is still audible.

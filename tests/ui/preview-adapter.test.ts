@@ -138,6 +138,16 @@ describe("PreviewAdapter", () => {
       releaseMs: 81
     });
 
+    adapter.setChannelNoiseAmount("voice", 100);
+    voice = adapter.getSnapshot().channels.find((channel) => channel.id === "voice");
+    expect(voice?.processing.noise).toBe(true);
+    expect(voice?.dynamics.noise).toEqual({
+      thresholdDb: -2,
+      rangeDb: -120,
+      holdMs: 0,
+      releaseMs: 25
+    });
+
     adapter.setChannelNoiseAmount("voice", 0);
     voice = adapter.getSnapshot().channels.find((channel) => channel.id === "voice");
     expect(voice?.processing.noise).toBe(true);
