@@ -301,7 +301,7 @@ function registerEngineIpc() {
 
 async function createWindow() {
   const window = new BrowserWindow({
-    width: 1500,
+    width: 1680,
     height: 930,
     minWidth: 1280,
     minHeight: 800,

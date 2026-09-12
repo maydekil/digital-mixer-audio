@@ -4857,3 +4857,26 @@ Validation:
 
 Known limitations:
 - Manual hardware confirmation of the strip alignment in the live desktop app is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Increase Desktop Default Width
+
+Changed files:
+- `apps/desktop/electron/main.ts`: increases the default Electron window width from 1500px to 1680px while keeping the existing minimum window size.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- The desktop app now opens wider by default so the widened VOICE strip and adjacent mixer channels have more room on first launch.
+- Minimum window sizing remains unchanged for smaller displays.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run build:desktop:main`
+- exit/result: `0`; Electron main/preload build passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 837` warning.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual confirmation of the new default app window size on live launch is `NOT_RUN`.
