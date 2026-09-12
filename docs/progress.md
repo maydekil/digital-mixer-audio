@@ -5162,3 +5162,28 @@ Validation:
 Known limitations:
 - Manual hardware confirmation of GUITAR live input plus MUSIC WAV playback in the desktop app is `NOT_RUN`.
 - MUSIC file playback currently supports native WAV sources in the live monitor path; non-WAV user media still goes through inspect/import/export support but is not claimed as live playback verified.
+
+### Phase19 UX Checkpoint — Bind Music WAV To Transport Controls
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: top transport state now controls whether MUSIC file sources are included in the live native monitor graph.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- MUSIC WAV playback is controlled from the top header transport.
+- Clicking Play includes enabled MUSIC file sources in the native monitor graph.
+- Clicking Pause or Stop removes MUSIC file sources from the monitor graph while leaving other enabled live channels eligible to keep monitoring.
+- MUSIC channel can remain ON as a mixer line without automatically starting file playback until transport is `playing`.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- --run tests/ui/preview-adapter.test.ts`
+- exit/result: `0`; PreviewAdapter suite 21/21 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with `MixerPage.tsx` at 853 lines.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual desktop confirmation that top header Play/Pause/Stop audibly controls a MUSIC WAV source is `NOT_RUN`.

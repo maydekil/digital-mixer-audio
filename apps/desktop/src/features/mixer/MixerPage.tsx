@@ -74,14 +74,15 @@ export function MixerPage() {
     await window.localMixer.clearProjectAutosave?.();
   }
 
-  async function refreshActiveMonitor(nextSnapshot: MixerSnapshot, nextOutputUid = outputUid) {
+  async function refreshActiveMonitor(nextSnapshot: MixerSnapshot, nextOutputUid = outputUid, musicPlayingOverride = transportState === "playing") {
     if (liveMonitorRefreshTimer.current !== undefined) {
       window.clearTimeout(liveMonitorRefreshTimer.current);
       liveMonitorRefreshTimer.current = undefined;
     }
     if (!window.localMixer?.engineCommand) return;
-    const activeSources = autoMonitorChannels(nextSnapshot);
-    await syncMixerGraph(nextSnapshot, nextOutputUid);
+    const musicPlaying = musicPlayingOverride;
+    const activeSources = autoMonitorChannels(nextSnapshot, musicPlaying);
+    await syncMixerGraph(nextSnapshot, nextOutputUid, musicPlaying);
     if (activeSources.length === 0 || !isMasterAudible(nextSnapshot)) {
       await window.localMixer.engineCommand("stop-mixer-monitor");
       return;
@@ -174,7 +175,7 @@ export function MixerPage() {
       adapter.setChannelSend("system", "fx-b", -60);
       adapter.selectChannel("system");
     });
-    await syncMixerGraph(adapter.getSnapshot(), physicalOutput.uid);
+    await syncMixerGraph(adapter.getSnapshot(), physicalOutput.uid, transportState === "playing");
     await engineCommand("start-mixer-monitor", { sampleRate: 48000, monitorGainDb: monitorSafetyGainDb });
     setSystemAudioEnabled(true);
   }
@@ -182,7 +183,10 @@ export function MixerPage() {
   async function sendTransport(type: "transport-play" | "transport-pause" | "transport-stop") {
     if (!window.localMixer?.engineCommand) return;
     const result = await window.localMixer.engineCommand(type);
-    if (typeof result?.state === "string") setTransportState(result.state);
+    if (typeof result?.state === "string") {
+      setTransportState(result.state);
+      await refreshActiveMonitor(adapter.getSnapshot(), outputUid, result.state === "playing");
+    }
   }
 
   async function saveProject() {
@@ -381,7 +385,7 @@ export function MixerPage() {
   }, [snapshot]);
 
   useEffect(() => {
-    void syncMixerGraph(snapshot, outputUid);
+    void syncMixerGraph(snapshot, outputUid, transportState === "playing");
   }, [snapshot, outputUid]);
 
   const systemMonitorActive = systemAudioEnabled || snapshot.channels.some((channel) => (
@@ -580,10 +584,10 @@ export function MixerPage() {
   );
 }
 
-async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
+async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string, musicPlaying = false) {
   if (!window.localMixer?.engineCommand) return;
   const channels = snapshot.channels.slice(0, 32);
-  const autoMonitorIds = new Set(autoMonitorChannels(snapshot).map((channel) => channel.id));
+  const autoMonitorIds = new Set(autoMonitorChannels(snapshot, musicPlaying).map((channel) => channel.id));
   const fxA = snapshot.fxUnits.find((unit) => unit.id === "fx-a");
   const fxB = snapshot.fxUnits.find((unit) => unit.id === "fx-b");
   const payload: Record<string, string | number | boolean> = {
@@ -682,9 +686,10 @@ function harmonyVoice2Override(interval: string) {
   return interval === "+5th" ? undefined : harmonyIntervalSemitones(interval);
 }
 
-function autoMonitorChannels(snapshot: MixerSnapshot) {
+function autoMonitorChannels(snapshot: MixerSnapshot, musicPlaying = false) {
   return snapshot.channels.filter((channel) => (
-    channel.kind === "source" && channel.enabled && !channel.mute && Boolean(channel.source)
+    channel.kind === "source" && channel.enabled && !channel.mute && Boolean(channel.source) &&
+      (channel.role !== "music" || musicPlaying)
   ));
 }
 
