@@ -4457,3 +4457,24 @@ Validation:
 Known limitations:
 - Manual real-microphone confirmation that the user hears generated harmony voices is `NOT_RUN`.
 - Harmony parameter changes still rely on the existing native Harmony defaults/rack implementation; deeper live parameter mapping for key/scale/interval audition may need additional manual tuning evidence.
+
+### Phase19 UX Checkpoint — Preserve Space FX Around Harmony Toggle
+
+Changed files:
+- `tests/ui/preview-adapter.test.ts`: adds regression coverage that Echo/Delay and Reverb slots remain enabled when Harmony is toggled on and off.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Harmony toggle is treated as an additive vocal rack slot, not a replacement for existing Echo/Reverb slots.
+- Turning Harmony OFF keeps VOICE insert FX active when Echo/Reverb are still active.
+
+Validation:
+- command: `npm run test:ui -- preview-adapter`
+- exit/result: `0`; PreviewAdapter suite 21/21 passed.
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware A/B confirmation of Echo/Reverb audibility while toggling Harmony is `NOT_RUN`.

@@ -70,6 +70,24 @@ describe("PreviewAdapter", () => {
     expect(snapshot.channels.find((channel) => channel.id === "music")?.harmonyEnabled).toBe(false);
   });
 
+  it("keeps echo and reverb active when toggling harmony", () => {
+    const adapter = new PreviewAdapter();
+    adapter.setVocalFxSlotEnabled("plate", true);
+    adapter.setVocalFxSlotEnabled("stereo-delay", true);
+    adapter.setHarmonyEnabled(true);
+    let snapshot = adapter.getSnapshot();
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "plate")?.enabled).toBe(true);
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "stereo-delay")?.enabled).toBe(true);
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "harmony")?.enabled).toBe(true);
+
+    adapter.setHarmonyEnabled(false);
+    snapshot = adapter.getSnapshot();
+    expect(snapshot.channels.find((channel) => channel.id === "voice")?.processing.insertFx).toBe(true);
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "plate")?.enabled).toBe(true);
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "stereo-delay")?.enabled).toBe(true);
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "harmony")?.enabled).toBe(false);
+  });
+
   it("updates channel knobs, faders, and toggle buttons", () => {
     const adapter = new PreviewAdapter();
     adapter.setChannelTrim("voice", 4.5);
