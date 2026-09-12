@@ -4664,3 +4664,22 @@ Validation:
 
 Known limitations:
 - Manual hardware confirmation that the default Harmony sound matches the prior preferred character is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Raise Default Live Harmony Voice Gain
+
+Changed files:
+- `native/engine/src/dsp/fx/LiveHarmonyEffect.hpp`: raises the default live backing voice gains so Harmony ON is clearly audible without requiring modal overrides.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Default Harmony ON now produces stronger voice 2/3 layers while keeping the softened voiced-gate behavior from the previous tuning checkpoint.
+- Modal overrides still work for non-default Voice 1, Voice 2, and Harmony Level selections.
+
+Validation:
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation that the stronger default is now obvious enough is `NOT_RUN`.

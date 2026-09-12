@@ -12,7 +12,7 @@ namespace localmixer::dsp::fx {
 struct LiveHarmonyVoiceConfig {
   bool enabled = true;
   float semitones = 3.0f;
-  float levelDb = -9.0f;
+  float levelDb = -5.0f;
   float pan = -0.35f;
 };
 
@@ -20,7 +20,7 @@ struct LiveHarmonyConfig {
   float levelDb = 0.0f;
   bool preserveFormants = true;
   LiveHarmonyVoiceConfig voice1{};
-  LiveHarmonyVoiceConfig voice2{.enabled = true, .semitones = 7.0f, .levelDb = -12.0f, .pan = 0.35f};
+  LiveHarmonyVoiceConfig voice2{.enabled = true, .semitones = 7.0f, .levelDb = -7.0f, .pan = 0.35f};
 };
 
 class LiveHarmonyEffect final : public EffectProcessor {
