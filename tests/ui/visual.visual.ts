@@ -98,9 +98,12 @@ test("vocal fx tab opens rack editor surface", async ({ page }) => {
 
   await page.getByRole("button", { name: "Vocal FX" }).click();
   await expect(page.getByRole("dialog", { name: "Vocal FX rack" })).toBeVisible();
-  await expect(page.getByLabel("Voice preset selector")).toContainText("03 · Studio Pop");
+  await expect(page.getByLabel("Vocal FX preset")).toHaveValue("default");
+  await expect(page.getByLabel("Voice preset selector")).toContainText("Default");
   await page.getByLabel("Vocal FX preset").selectOption("voice-80-robot-modern");
   await expect(page.getByLabel("Voice preset selector")).toContainText("80 · Robot Modern");
+  await page.getByLabel("Vocal FX preset").selectOption("default");
+  await expect(page.getByLabel("Vocal FX preset")).toHaveValue("default");
   await page.getByRole("button", { name: "Advanced", exact: true }).click();
   await expect(page.getByLabel("Effect Library")).toContainText("Pitch Correction");
   await expect(page.getByLabel("Rack slots")).toContainText("Robot Voice");

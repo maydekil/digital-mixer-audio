@@ -319,6 +319,7 @@ describe("PreviewAdapter", () => {
 
   it("updates vocal FX rack selection, bypass, and preset state", () => {
     const adapter = new PreviewAdapter();
+    expect(adapter.getSnapshot().vocalFx.activePresetId).toBe("default");
     adapter.selectVocalFxSlot("robot");
     adapter.setVocalFxSlotEnabled("robot", true);
     adapter.setVocalFxSlotMix("stereo-delay", 0.35);
@@ -332,5 +333,10 @@ describe("PreviewAdapter", () => {
     expect(snapshot.vocalFx.slots.find((slot) => slot.id === "robot")?.enabled).toBe(false);
     expect(snapshot.vocalFx.slots.find((slot) => slot.id === "stereo-delay")?.mix).toBe(0.35);
     expect(snapshot.vocalFx.slots.find((slot) => slot.id === "stereo-delay")?.parameters.find((parameter) => parameter.label === "Mix")?.value).toBe("35%");
+
+    adapter.applyVocalFxPreset("default");
+    const reset = adapter.getSnapshot();
+    expect(reset.vocalFx.activePresetId).toBe("default");
+    expect(reset.vocalFx.slots.every((slot) => !slot.enabled)).toBe(true);
   });
 });

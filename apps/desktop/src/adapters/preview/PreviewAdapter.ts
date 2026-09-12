@@ -356,6 +356,14 @@ export class PreviewAdapter implements MixerControlPort {
   }
 
   applyVocalFxPreset(presetId: string): void {
+    if (presetId === "default") {
+      this.snapshot.vocalFx = {
+        ...this.snapshot.vocalFx,
+        activePresetId: "default",
+        slots: this.snapshot.vocalFx.slots.map((slot) => ({ ...slot, enabled: false }))
+      };
+      return;
+    }
     if (!this.snapshot.vocalFx.presets.some((preset) => preset.id === presetId)) return;
     this.snapshot.vocalFx = {
       ...this.snapshot.vocalFx,

@@ -501,8 +501,8 @@ export function MixerPage() {
               const enabled = presetId !== "default";
               refreshLiveProcessing(() => {
                 adapter.selectChannel(id);
+                adapter.applyVocalFxPreset(presetId);
                 adapter.setChannelProcessor(id, "insertFx", enabled);
-                if (enabled) adapter.applyVocalFxPreset(presetId);
               });
             }}
             onVocalFxMix={(id, slotId, amount) => {
@@ -553,7 +553,10 @@ export function MixerPage() {
         onClose={() => setVocalFxOpen(false)}
         onSelect={(slotId) => refresh(() => adapter.selectVocalFxSlot(slotId))}
         onToggle={(slotId, enabled) => refresh(() => adapter.setVocalFxSlotEnabled(slotId, enabled))}
-        onPreset={(presetId) => refresh(() => adapter.applyVocalFxPreset(presetId))}
+        onPreset={(presetId) => refreshLiveProcessing(() => {
+          adapter.applyVocalFxPreset(presetId);
+          if (selected.role === "vocal") adapter.setChannelProcessor(selected.id, "insertFx", presetId !== "default");
+        })}
       />
     </main>
   );

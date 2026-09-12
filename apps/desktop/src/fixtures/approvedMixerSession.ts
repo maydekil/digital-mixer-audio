@@ -48,7 +48,7 @@ export const approvedMixerSession: MixerSnapshot = {
   recording: { status: "idle", activeTap: "master", takeDirectory: "", error: "", armedChannelIds: ["voice"], takes: [] },
   vocalFx: {
     selectedSlotId: "pitch-correct",
-    activePresetId: "voice-03-studio-pop",
+    activePresetId: "default",
     presets: vocalFxPresets,
     slots: [
       slot("pitch-correct", "pitch_correct", "Pitch Correction", "Pitch", false, 1, 92, [["Key", "C"], ["Scale", "Major"], ["Retune", "80 ms"], ["Amount", "70%"]]),

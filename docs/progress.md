@@ -4373,3 +4373,32 @@ Validation:
 Known limitations:
 - Manual hardware confirmation of the perceived echo/reverb quality on a real microphone is `NOT_RUN`.
 - Reverb and echo are direct mix controls over the existing native slot processors; deeper time/decay/feedback editing remains in the broader vocal FX/preset surface.
+
+### Phase19 UX Checkpoint — Persist Vocal Default Preset State
+
+Changed files:
+- `apps/desktop/src/fixtures/approvedMixerSession.ts`: starts the vocal preset state at `default` instead of a hidden Studio Pop preset.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: treats `applyVocalFxPreset("default")` as a real preset reset that disables every vocal FX rack slot.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: always applies the selected vocal preset, including `default`, and disables the selected vocal channel insert processor when default is selected from either the strip or modal.
+- `apps/desktop/src/features/vocal-fx/components/VocalFxPanel.tsx`: exposes `Default` as a valid preset option in the Vocal FX modal.
+- `tests/ui/preview-adapter.test.ts`: verifies default starts as default and remains default after resetting from a real preset.
+- `tests/ui/visual.visual.ts`: verifies the Vocal FX modal starts on Default and can return to Default after another preset selection.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Selecting `Default` no longer only hides the last preset in the strip; it now updates the actual vocal FX active preset state.
+- Re-opening the Vocal FX modal or re-enabling insert FX will not silently jump back to Studio Pop.
+- Default disables vocal FX rack slots, keeping the voice dry unless the user selects a preset or turns Echo/Reverb back up.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- preview-adapter`
+- exit/result: `0`; PreviewAdapter suite 20/20 passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 54/54, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation that toggling Default during live mic monitoring stays audibly dry is `NOT_RUN`.

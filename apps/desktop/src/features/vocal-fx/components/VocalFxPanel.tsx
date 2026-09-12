@@ -24,7 +24,8 @@ export function VocalFxPanel({ open, vocalFx, onClose, onSelect, onToggle, onPre
   if (!open) return null;
   const selected = vocalFx.slots.find((slot) => slot.id === vocalFx.selectedSlotId) ?? vocalFx.slots[0];
   const latencyMs = vocalFx.slots.filter((slot) => slot.enabled).reduce((sum, slot) => sum + slot.latencyMs, 0);
-  const activePreset = vocalFx.presets.find((preset) => preset.id === vocalFx.activePresetId) ?? vocalFx.presets[0];
+  const presetOptions = [{ id: "default", name: "Default" }, ...vocalFx.presets];
+  const activePreset = presetOptions.find((preset) => preset.id === vocalFx.activePresetId) ?? presetOptions[0];
   const enabledSlots = vocalFx.slots.filter((slot) => slot.enabled);
 
   return (
@@ -33,7 +34,7 @@ export function VocalFxPanel({ open, vocalFx, onClose, onSelect, onToggle, onPre
         <header>
           <div><strong>Voice Preset</strong><span>{advancedOpen ? "Advanced native insert chain" : "One preset controls the voice character"}</span></div>
           <select value={vocalFx.activePresetId} onChange={(event) => onPreset(event.target.value)} aria-label="Vocal FX preset">
-            {vocalFx.presets.map((preset) => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
+            {presetOptions.map((preset) => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
           </select>
           <Button onClick={() => setAdvancedOpen(!advancedOpen)}>{advancedOpen ? "Simple" : "Advanced"}</Button>
           <Button onClick={onClose}>Close</Button>
@@ -92,7 +93,7 @@ export function VocalFxPanel({ open, vocalFx, onClose, onSelect, onToggle, onPre
               <span>{enabledSlots.length > 0 ? enabledSlots.map((slot) => slot.label).join(" · ") : "Clean dry voice"}</span>
             </div>
             <div className="voice-preset-grid" aria-label="Voice preset list">
-              {vocalFx.presets.map((preset) => (
+              {presetOptions.map((preset) => (
                 <button
                   key={preset.id}
                   className={preset.id === vocalFx.activePresetId ? "is-selected" : ""}
