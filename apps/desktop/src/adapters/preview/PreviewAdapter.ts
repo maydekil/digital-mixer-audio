@@ -308,6 +308,7 @@ export class PreviewAdapter implements MixerControlPort {
       primaryInstanceId: enabled && !this.snapshot.harmony.primaryInstanceId ? "harmony:voice:primary" : this.snapshot.harmony.primaryInstanceId
     };
     this.snapshot.channels = this.snapshot.channels.map((channel) => channel.role === "vocal" ? { ...channel, harmonyEnabled: enabled } : channel);
+    this.syncHarmonyVocalFx(enabled);
   }
 
   setHarmonyPending(pending: boolean): void {
@@ -316,10 +317,12 @@ export class PreviewAdapter implements MixerControlPort {
 
   ackHarmony(state: Partial<HarmonyState>): void {
     this.snapshot.harmony = { ...this.snapshot.harmony, ...state, pending: false, error: "" };
+    const enabled = Boolean(state.enabled ?? this.snapshot.harmony.enabled);
     this.snapshot.channels = this.snapshot.channels.map((channel) => channel.role === "vocal" ? {
       ...channel,
-      harmonyEnabled: Boolean(state.enabled ?? this.snapshot.harmony.enabled)
+      harmonyEnabled: enabled
     } : channel);
+    this.syncHarmonyVocalFx(enabled);
   }
 
   setHarmonyError(error: string): void {
@@ -360,7 +363,7 @@ export class PreviewAdapter implements MixerControlPort {
       this.snapshot.vocalFx = {
         ...this.snapshot.vocalFx,
         activePresetId: "default",
-        slots: this.snapshot.vocalFx.slots.map((slot) => ({ ...slot, enabled: false }))
+        slots: this.snapshot.vocalFx.slots.map((slot) => ({ ...slot, enabled: slot.id === "harmony" && this.snapshot.harmony.enabled }))
       };
       return;
     }
@@ -371,7 +374,7 @@ export class PreviewAdapter implements MixerControlPort {
       selectedSlotId: selectedSlotForPreset(presetId, this.snapshot.vocalFx.selectedSlotId),
       slots: this.snapshot.vocalFx.slots.map((slot) => ({
         ...slot,
-        enabled: presetEnabled(presetId, slot.effectType)
+        enabled: presetEnabled(presetId, slot.effectType) || (slot.id === "harmony" && this.snapshot.harmony.enabled)
       }))
     };
   }
@@ -395,6 +398,19 @@ export class PreviewAdapter implements MixerControlPort {
         .filter((channel) => channel.kind === "source" && channel.recordArm)
         .map((channel) => channel.id)
     };
+  }
+
+  private syncHarmonyVocalFx(enabled: boolean): void {
+    this.snapshot.vocalFx = {
+      ...this.snapshot.vocalFx,
+      selectedSlotId: enabled ? "harmony" : this.snapshot.vocalFx.selectedSlotId,
+      slots: this.snapshot.vocalFx.slots.map((slot) => slot.id === "harmony" ? { ...slot, enabled } : slot)
+    };
+    const hasActiveSlot = this.snapshot.vocalFx.slots.some((slot) => slot.enabled);
+    this.snapshot.channels = this.snapshot.channels.map((channel) => channel.role === "vocal" ? {
+      ...channel,
+      processing: { ...channel.processing, insertFx: hasActiveSlot }
+    } : channel);
   }
 }
 

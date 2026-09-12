@@ -4430,3 +4430,30 @@ Validation:
 
 Known limitations:
 - Manual hardware confirmation of Harmony parameter changes while live monitoring is `NOT_RUN`; this change only relocates the UI surface.
+
+### Phase19 UX Checkpoint — Route Harmony Toggle Into Vocal FX Rack
+
+Changed files:
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: synchronizes Harmony ON/OFF with the native vocal FX `harmony` rack slot and VOICE `insertFx` processor state.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: resyncs live monitor processing after Harmony ACKs and computes VOICE insert FX state from active rack slots instead of only preset selection.
+- `tests/ui/preview-adapter.test.ts`: verifies Harmony ON enables the vocal FX harmony slot and VOICE insert path, and Harmony OFF disables them when no other slot remains active.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- The HARMONY ON/OFF button no longer updates only controller/UI state; it now enables/disables the `harmony` slot sent to the native live monitor rack.
+- Selecting `Default` while Harmony is ON keeps the Harmony shortcut active instead of silently bypassing the harmony slot.
+- Turning Harmony OFF disables the harmony slot and returns VOICE insert FX to bypass when no other vocal FX slot is active.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- preview-adapter`
+- exit/result: `0`; PreviewAdapter suite 20/20 passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 54/54, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual real-microphone confirmation that the user hears generated harmony voices is `NOT_RUN`.
+- Harmony parameter changes still rely on the existing native Harmony defaults/rack implementation; deeper live parameter mapping for key/scale/interval audition may need additional manual tuning evidence.

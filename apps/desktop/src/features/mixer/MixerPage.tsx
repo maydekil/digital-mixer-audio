@@ -309,7 +309,7 @@ export function MixerPage() {
     const current = adapter.getSnapshot().harmony;
     const channel = adapter.getSnapshot().channels.find((item) => item.role === "vocal");
     if (!window.localMixer?.engineCommand || !channel) {
-      refresh(() => adapter.setHarmonyEnabled(enabled));
+      refreshLiveProcessing(() => adapter.setHarmonyEnabled(enabled));
       return;
     }
     refresh(() => adapter.setHarmonyPending(true));
@@ -345,7 +345,7 @@ export function MixerPage() {
       refresh(() => adapter.setHarmonyError(String(result?.error ?? "HARMONY_REJECTED")));
       return;
     }
-    refresh(() => adapter.ackHarmony({
+    refreshLiveProcessing(() => adapter.ackHarmony({
       enabled: Boolean(result.desiredEnabled),
       effectiveEnabled: Boolean(result.effectiveEnabled),
       revision: Number(result.revision ?? 0),
@@ -498,11 +498,11 @@ export function MixerPage() {
             }}
             onRecordArm={(id, armed) => refresh(() => adapter.setChannelRecordArm(id, armed))}
             onVocalFxPreset={(id, presetId) => {
-              const enabled = presetId !== "default";
               refreshLiveProcessing(() => {
                 adapter.selectChannel(id);
                 adapter.applyVocalFxPreset(presetId);
-                adapter.setChannelProcessor(id, "insertFx", enabled);
+                const active = adapter.getSnapshot().vocalFx.slots.some((slot) => slot.enabled);
+                adapter.setChannelProcessor(id, "insertFx", active);
               });
             }}
             onVocalFxMix={(id, slotId, amount) => {
@@ -554,10 +554,15 @@ export function MixerPage() {
         vocalFx={snapshot.vocalFx}
         onClose={() => setVocalFxOpen(false)}
         onSelect={(slotId) => refresh(() => adapter.selectVocalFxSlot(slotId))}
-        onToggle={(slotId, enabled) => refresh(() => adapter.setVocalFxSlotEnabled(slotId, enabled))}
+        onToggle={(slotId, enabled) => refreshLiveProcessing(() => {
+          adapter.setVocalFxSlotEnabled(slotId, enabled);
+          const active = adapter.getSnapshot().vocalFx.slots.some((slot) => slot.enabled);
+          if (selected.role === "vocal") adapter.setChannelProcessor(selected.id, "insertFx", active);
+        })}
         onPreset={(presetId) => refreshLiveProcessing(() => {
           adapter.applyVocalFxPreset(presetId);
-          if (selected.role === "vocal") adapter.setChannelProcessor(selected.id, "insertFx", presetId !== "default");
+          const active = adapter.getSnapshot().vocalFx.slots.some((slot) => slot.enabled);
+          if (selected.role === "vocal") adapter.setChannelProcessor(selected.id, "insertFx", active);
         })}
       />
     </main>

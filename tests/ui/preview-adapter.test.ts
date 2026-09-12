@@ -50,10 +50,23 @@ describe("PreviewAdapter", () => {
 
   it("toggles only the vocal harmony shortcut state", () => {
     const adapter = new PreviewAdapter();
+    adapter.setHarmonyEnabled(true);
+    let snapshot = adapter.getSnapshot();
+    expect(snapshot.harmony.enabled).toBe(true);
+    expect(snapshot.channels.find((channel) => channel.id === "voice")?.harmonyEnabled).toBe(true);
+    expect(snapshot.channels.find((channel) => channel.id === "voice")?.processing.insertFx).toBe(true);
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "harmony")?.enabled).toBe(true);
+
+    adapter.applyVocalFxPreset("default");
+    snapshot = adapter.getSnapshot();
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "harmony")?.enabled).toBe(true);
+
     adapter.setHarmonyEnabled(false);
-    const snapshot = adapter.getSnapshot();
+    snapshot = adapter.getSnapshot();
     expect(snapshot.harmony.enabled).toBe(false);
     expect(snapshot.channels.find((channel) => channel.id === "voice")?.harmonyEnabled).toBe(false);
+    expect(snapshot.channels.find((channel) => channel.id === "voice")?.processing.insertFx).toBe(false);
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "harmony")?.enabled).toBe(false);
     expect(snapshot.channels.find((channel) => channel.id === "music")?.harmonyEnabled).toBe(false);
   });
 
