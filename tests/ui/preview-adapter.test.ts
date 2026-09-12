@@ -30,6 +30,7 @@ describe("PreviewAdapter", () => {
 
   it("keeps selected channel send A linked to the same state", () => {
     const adapter = new PreviewAdapter();
+    adapter.setChannelProcessor("voice", "insertFx", true);
     adapter.setChannelSend("voice", "fx-a", -12);
     const voice = adapter.getSnapshot().channels.find((channel) => channel.id === "voice");
     expect(voice?.sends["fx-a"].gainDb).toBe(-12);
@@ -320,6 +321,7 @@ describe("PreviewAdapter", () => {
     const adapter = new PreviewAdapter();
     adapter.selectVocalFxSlot("robot");
     adapter.setVocalFxSlotEnabled("robot", true);
+    adapter.setVocalFxSlotMix("stereo-delay", 0.35);
     adapter.applyVocalFxPreset("voice-10-harmony-duo");
 
     const snapshot = adapter.getSnapshot();
@@ -328,5 +330,7 @@ describe("PreviewAdapter", () => {
     expect(snapshot.vocalFx.activePresetId).toBe("voice-10-harmony-duo");
     expect(snapshot.vocalFx.slots.find((slot) => slot.id === "harmony")?.enabled).toBe(true);
     expect(snapshot.vocalFx.slots.find((slot) => slot.id === "robot")?.enabled).toBe(false);
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "stereo-delay")?.mix).toBe(0.35);
+    expect(snapshot.vocalFx.slots.find((slot) => slot.id === "stereo-delay")?.parameters.find((parameter) => parameter.label === "Mix")?.value).toBe("35%");
   });
 });

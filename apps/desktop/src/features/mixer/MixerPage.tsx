@@ -471,6 +471,7 @@ export function MixerPage() {
             sourceOptions={sourceOptions}
             vocalFxPresetId={snapshot.vocalFx.activePresetId}
             vocalFxPresets={snapshot.vocalFx.presets}
+            vocalFxSlots={snapshot.vocalFx.slots}
             onSelect={(id) => refresh(() => adapter.selectChannel(id))}
             onEnabled={(id, enabled) => {
               if (id === "system") {
@@ -502,6 +503,15 @@ export function MixerPage() {
                 adapter.selectChannel(id);
                 adapter.setChannelProcessor(id, "insertFx", enabled);
                 if (enabled) adapter.applyVocalFxPreset(presetId);
+              });
+            }}
+            onVocalFxMix={(id, slotId, amount) => {
+              refreshLiveProcessing(() => {
+                adapter.selectChannel(id);
+                adapter.setVocalFxSlotMix(slotId, amount / 100);
+                adapter.setVocalFxSlotEnabled(slotId, amount > 0);
+                const active = adapter.getSnapshot().vocalFx.slots.some((slot) => slot.enabled);
+                adapter.setChannelProcessor(id, "insertFx", active);
               });
             }}
             onClipReset={(id) => refresh(() => adapter.resetClip(id))}
@@ -572,6 +582,7 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}Id`] = slot.id;
     payload[`${prefix}Type`] = slot.effectType;
     payload[`${prefix}Enabled`] = slot.enabled;
+    payload[`${prefix}Mix`] = slot.mix;
   });
   channels.forEach((channel, index) => {
     const prefix = `channel${index}`;

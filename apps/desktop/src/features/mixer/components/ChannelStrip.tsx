@@ -1,4 +1,4 @@
-import type { ChannelState, EqBandState, VocalFxPreset } from "../../../adapters/MixerControlPort";
+import type { ChannelState, EqBandState, VocalFxPreset, VocalFxSlot } from "../../../adapters/MixerControlPort";
 import { ClipIndicator } from "../../../components/audio/ClipIndicator";
 import { LevelMeter } from "../../../components/audio/LevelMeter";
 import { RotaryKnob } from "../../../components/audio/RotaryKnob";
@@ -10,6 +10,7 @@ interface ChannelStripProps {
   sourceOptions: Array<{ value: string; label: string }>;
   vocalFxPresetId: string;
   vocalFxPresets: VocalFxPreset[];
+  vocalFxSlots: VocalFxSlot[];
   onSelect(): void;
   onEnabled(enabled: boolean): void;
   onSource(source: string): void;
@@ -23,12 +24,13 @@ interface ChannelStripProps {
   onMute(muted: boolean): void;
   onRecordArm(armed: boolean): void;
   onVocalFxPreset(presetId: string): void;
+  onVocalFxMix(slotId: string, amount: number): void;
   onClipReset(): void;
   onHarmonyToggle?(): void;
   onHarmonySettings?(): void;
 }
 
-export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onNoiseAmount, onCompressorParam, onCompressorEnabled, onMute, onRecordArm, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
+export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxPresets, vocalFxSlots, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onNoiseAmount, onCompressorParam, onCompressorEnabled, onMute, onRecordArm, onVocalFxPreset, onVocalFxMix, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelStripProps) {
   const isMaster = channel.kind === "master";
   const meter = channel.enabled ? channel.meter : { left: -60, right: -60, clip: false };
 
@@ -46,7 +48,7 @@ export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxP
         ) : <span>{channel.source}</span>}
       </header>
       <RotaryKnob label="Gain" value={`${channel.trimDb.toFixed(1)} dB`} numericValue={channel.trimDb} min={-24} max={24} step={0.5} onChange={onTrim} />
-      {isMaster ? <MasterUpperControls /> : <ChannelToneControls channel={channel} vocalFxPresetId={vocalFxPresetId} vocalFxPresets={vocalFxPresets} onEqBand={onEqBand} onVocalFxPreset={onVocalFxPreset} />}
+      {isMaster ? <MasterUpperControls /> : <ChannelToneControls channel={channel} vocalFxPresetId={vocalFxPresetId} vocalFxPresets={vocalFxPresets} vocalFxSlots={vocalFxSlots} onEqBand={onEqBand} onVocalFxPreset={onVocalFxPreset} onVocalFxMix={onVocalFxMix} />}
       {channel.role === "vocal" ? <ChannelNoiseControl channel={channel} onAmount={onNoiseAmount} /> : null}
       {!isMaster ? <ChannelCompressorControls channel={channel} onParam={onCompressorParam} onEnabled={onCompressorEnabled} /> : null}
       {channel.harmonyVisible ? (
@@ -118,12 +120,14 @@ function ChannelCompressorControls({ channel, onParam, onEnabled }: {
   );
 }
 
-function ChannelToneControls({ channel, vocalFxPresetId, vocalFxPresets, onEqBand, onVocalFxPreset }: {
+function ChannelToneControls({ channel, vocalFxPresetId, vocalFxPresets, vocalFxSlots, onEqBand, onVocalFxPreset, onVocalFxMix }: {
   channel: ChannelState;
   vocalFxPresetId: string;
   vocalFxPresets: VocalFxPreset[];
+  vocalFxSlots: VocalFxSlot[];
   onEqBand(bandId: EqBandState["id"], gainDb: number): void;
   onVocalFxPreset(presetId: string): void;
+  onVocalFxMix(slotId: string, amount: number): void;
 }) {
   const toneBands: Array<{ id: EqBandState["id"]; label: string }> = [
     { id: "low", label: "LOW" },
@@ -154,18 +158,55 @@ function ChannelToneControls({ channel, vocalFxPresetId, vocalFxPresets, onEqBan
         })}
       </div>
       {channel.role === "vocal" ? (
-        <select
-          className="channel-insert-preset"
-          value={channel.processing.insertFx ? vocalFxPresetId : "default"}
-          onChange={(event) => onVocalFxPreset(event.target.value)}
-          onClick={(event) => event.stopPropagation()}
-          aria-label="Voice preset"
-        >
-          <option value="default">Default</option>
-          {vocalFxPresets.map((preset) => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
-        </select>
+        <>
+          <VoiceSpaceControls slots={vocalFxSlots} onMix={onVocalFxMix} />
+          <select
+            className="channel-insert-preset"
+            value={channel.processing.insertFx ? vocalFxPresetId : "default"}
+            onChange={(event) => onVocalFxPreset(event.target.value)}
+            onClick={(event) => event.stopPropagation()}
+            aria-label="Voice preset"
+          >
+            <option value="default">Default</option>
+            {vocalFxPresets.map((preset) => <option key={preset.id} value={preset.id}>{preset.name}</option>)}
+          </select>
+        </>
       ) : null}
     </div>
+  );
+}
+
+function VoiceSpaceControls({ slots, onMix }: {
+  slots: VocalFxSlot[];
+  onMix(slotId: string, amount: number): void;
+}) {
+  const reverb = slots.find((slot) => slot.id === "plate");
+  const echo = slots.find((slot) => slot.id === "stereo-delay");
+  return (
+    <div className="channel-space-controls">
+      {reverb ? <SpaceKnob label="REVERB" slot={reverb} onMix={onMix} /> : null}
+      {echo ? <SpaceKnob label="ECHO" slot={echo} onMix={onMix} /> : null}
+    </div>
+  );
+}
+
+function SpaceKnob({ label, slot, onMix }: {
+  label: string;
+  slot: VocalFxSlot;
+  onMix(slotId: string, amount: number): void;
+}) {
+  const amount = slot.enabled ? Math.round(slot.mix * 100) : 0;
+  return (
+    <RotaryKnob
+      label={label}
+      value={amount > 0 ? `${amount}` : "OFF"}
+      numericValue={amount}
+      min={0}
+      max={100}
+      step={5}
+      size="sm"
+      onChange={(value) => onMix(slot.id, value)}
+    />
   );
 }
 

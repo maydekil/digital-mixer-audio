@@ -105,6 +105,7 @@ export interface VocalFxSlot {
   label: string;
   category: "Pitch" | "Space" | "Modulation" | "Character" | "Synth";
   enabled: boolean;
+  mix: number;
   availability: "implemented_unverified" | "verified";
   latencyMs: number;
   parameters: VocalFxParameter[];
@@ -205,6 +206,7 @@ export interface MixerControlPort {
   updateHarmony(field: keyof HarmonyState, value: string | number | boolean): void;
   selectVocalFxSlot(slotId: string): void;
   setVocalFxSlotEnabled(slotId: string, enabled: boolean): void;
+  setVocalFxSlotMix(slotId: string, mix: number): void;
   applyVocalFxPreset(presetId: string): void;
   resetClip(channelId: string): void;
 }

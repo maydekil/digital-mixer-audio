@@ -1,4 +1,4 @@
-import type { ChannelDynamicsState, ChannelRole, ChannelState, EqBandState, FxProgram, FxUnitId, HarmonyState, MixerControlPort, MixerSnapshot, ProcessorId, RecordedTakeState, RecordingWorkflowStatus } from "../MixerControlPort";
+import type { ChannelDynamicsState, ChannelRole, ChannelState, EqBandState, FxProgram, FxUnitId, HarmonyState, MixerControlPort, MixerSnapshot, ProcessorId, RecordedTakeState, RecordingWorkflowStatus, VocalFxParameter } from "../MixerControlPort";
 import { approvedMixerSession } from "../../fixtures/approvedMixerSession";
 import { vocalFxPresetEffectTypes } from "../../fixtures/vocalFxPresets";
 
@@ -343,6 +343,18 @@ export class PreviewAdapter implements MixerControlPort {
     };
   }
 
+  setVocalFxSlotMix(slotId: string, mix: number): void {
+    const bounded = clamp(mix, 0, 1);
+    this.snapshot.vocalFx = {
+      ...this.snapshot.vocalFx,
+      slots: this.snapshot.vocalFx.slots.map((slot) => slot.id === slotId ? {
+        ...slot,
+        mix: bounded,
+        parameters: updateSlotMixParameter(slot.parameters, bounded)
+      } : slot)
+    };
+  }
+
   applyVocalFxPreset(presetId: string): void {
     if (!this.snapshot.vocalFx.presets.some((preset) => preset.id === presetId)) return;
     this.snapshot.vocalFx = {
@@ -445,6 +457,14 @@ function defaultDynamics(): ChannelDynamicsState {
 
 function presetEnabled(presetId: string, effectType: string) {
   return vocalFxPresetEffectTypes(presetId)?.includes(effectType) ?? false;
+}
+
+function updateSlotMixParameter(parameters: VocalFxParameter[], mix: number) {
+  return parameters.map((parameter) => (
+    parameter.label === "Mix" || parameter.label === "Wet"
+      ? { ...parameter, value: `${Math.round(mix * 100)}%` }
+      : parameter
+  ));
 }
 
 function selectedSlotForPreset(presetId: string, fallback: string) {

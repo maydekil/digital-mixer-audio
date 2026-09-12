@@ -4330,3 +4330,46 @@ Validation:
 Known limitations:
 - Manual hardware confirmation that `NOISE=100` fully closes the user's 2-meter fan while idle is `NOT_RUN`.
 - If fan remains audible at this endpoint, it likely means the fan level is entering the mic at near-voice level or an additional direct monitoring path is still audible.
+
+### Phase19 UX Checkpoint — Add Voice Echo And Reverb Mix Controls
+
+Changed files:
+- `apps/desktop/src/adapters/MixerControlPort.ts`: adds explicit `VocalFxSlot.mix` state and a `setVocalFxSlotMix` control port method.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: clamps vocal FX slot mix, keeps visible `Mix`/`Wet` parameters synchronized, and preserves preset slot behavior.
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: adds compact VOICE `REVERB` and `ECHO` knobs beside the existing voice preset control.
+- `apps/desktop/src/features/mixer/components/ChannelBank.tsx`: passes vocal FX slot state and mix changes down to the VOICE strip.
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: syncs voice echo/reverb mix changes through live processing and sends `vocalFxSlot*Mix` to the native graph payload.
+- `apps/desktop/src/fixtures/approvedMixerSession.ts`: seeds slot mix defaults for existing vocal FX slots.
+- `apps/desktop/src/styles/app.css`: styles the compact voice space controls.
+- `native/engine/src/engine/EngineGraphSyncJson.cpp`: reads bounded vocal FX slot mix values for native rack slots instead of forcing `1.0`.
+- `native/engine/tests/EngineGraphSyncJsonTest.cpp`: verifies native graph sync preserves vocal FX rack mix.
+- `tests/ui/preview-adapter.test.ts`: verifies preview adapter updates slot mix and visible mix parameter text.
+- `tests/ui/project-session.test.ts`: updates session serialization expectation for VOICE insert FX defaulting to bypassed.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- VOICE now has direct `REVERB` and `ECHO` knobs in the mixer strip.
+- Knob `0` bypasses the corresponding native vocal FX slot; values above `0` enable the slot and set its native rack wet/dry mix.
+- Default VOICE starts dry: insert FX, pitch correction, doubler, reverb, and echo slots are bypassed until the user selects a preset or turns a space knob.
+- The existing voice preset combo remains available for broader ready-made vocal character presets.
+- Audio remains in the native vocal FX rack path; no Web Audio, browser media capture, renderer PCM, or IPC PCM path was added.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- preview-adapter`
+- exit/result: `0`; PreviewAdapter suite 20/20 passed.
+- command: `npm run test:native -- EngineGraphSyncJsonTest`
+- exit/result: `0`; native CTest 43/43 passed, including graph sync mix preservation.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; all first-party code files remain under the 1,000-line limit.
+- command: `npm run check:architecture`
+- exit/result: `0`; architecture guard passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 54/54, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation of the perceived echo/reverb quality on a real microphone is `NOT_RUN`.
+- Reverb and echo are direct mix controls over the existing native slot processors; deeper time/decay/feedback editing remains in the broader vocal FX/preset surface.

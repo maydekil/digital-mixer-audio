@@ -1,4 +1,4 @@
-import type { ChannelState, EqBandState, VocalFxPreset } from "../../../adapters/MixerControlPort";
+import type { ChannelState, EqBandState, VocalFxPreset, VocalFxSlot } from "../../../adapters/MixerControlPort";
 import { ChannelStrip } from "./ChannelStrip";
 
 interface ChannelBankProps {
@@ -6,6 +6,7 @@ interface ChannelBankProps {
   sourceOptions: Record<string, Array<{ value: string; label: string }>>;
   vocalFxPresetId: string;
   vocalFxPresets: VocalFxPreset[];
+  vocalFxSlots: VocalFxSlot[];
   onSelect(channelId: string): void;
   onEnabled(channelId: string, enabled: boolean): void;
   onSource(channelId: string, source: string): void;
@@ -19,12 +20,13 @@ interface ChannelBankProps {
   onMute(channelId: string, muted: boolean): void;
   onRecordArm(channelId: string, armed: boolean): void;
   onVocalFxPreset(channelId: string, presetId: string): void;
+  onVocalFxMix(channelId: string, slotId: string, amount: number): void;
   onClipReset(channelId: string): void;
   onHarmonyToggle(): void;
   onHarmonySettings(channelId: string): void;
 }
 
-export function ChannelBank({ channels, sourceOptions, vocalFxPresetId, vocalFxPresets, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onNoiseAmount, onCompressorParam, onCompressorEnabled, onMute, onRecordArm, onVocalFxPreset, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelBankProps) {
+export function ChannelBank({ channels, sourceOptions, vocalFxPresetId, vocalFxPresets, vocalFxSlots, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onNoiseAmount, onCompressorParam, onCompressorEnabled, onMute, onRecordArm, onVocalFxPreset, onVocalFxMix, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelBankProps) {
   return (
     <section className="channel-bank">
       {channels.map((channel) => (
@@ -34,6 +36,7 @@ export function ChannelBank({ channels, sourceOptions, vocalFxPresetId, vocalFxP
           sourceOptions={sourceOptions[channel.id] ?? []}
           vocalFxPresetId={vocalFxPresetId}
           vocalFxPresets={vocalFxPresets}
+          vocalFxSlots={vocalFxSlots}
           onSelect={() => onSelect(channel.id)}
           onEnabled={(enabled) => onEnabled(channel.id, enabled)}
           onSource={(source) => onSource(channel.id, source)}
@@ -47,6 +50,7 @@ export function ChannelBank({ channels, sourceOptions, vocalFxPresetId, vocalFxP
           onMute={(muted) => onMute(channel.id, muted)}
           onRecordArm={(armed) => onRecordArm(channel.id, armed)}
           onVocalFxPreset={(presetId) => onVocalFxPreset(channel.id, presetId)}
+          onVocalFxMix={(slotId, amount) => onVocalFxMix(channel.id, slotId, amount)}
           onClipReset={() => onClipReset(channel.id)}
           onHarmonyToggle={onHarmonyToggle}
           onHarmonySettings={() => onHarmonySettings(channel.id)}

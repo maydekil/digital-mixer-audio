@@ -23,7 +23,7 @@ describe("project session serialization", () => {
       recordArm: true,
       noiseEnabled: true,
       deEsserEnabled: false,
-      insertFxEnabled: true,
+      insertFxEnabled: false,
       noiseThresholdDb: -38,
       noiseRangeDb: -50,
       noiseHoldMs: 30,

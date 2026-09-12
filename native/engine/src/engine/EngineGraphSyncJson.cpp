@@ -4,6 +4,7 @@
 #include "engine/JsonProtocol.hpp"
 #include "engine/MixerGraph.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <utility>
 
@@ -33,7 +34,7 @@ std::vector<dsp::fx::RackSlotState> readVocalFxSlots(const std::string& line) {
     slots.push_back(dsp::fx::RackSlotState{
       .instanceId = id,
       .effectType = type,
-      .mix = 1.0f,
+      .mix = static_cast<float>(std::clamp(readJsonNumberField(line, indexedVocalFxField(index, "Mix")).value_or(1.0), 0.0, 1.0)),
       .bypassed = !readJsonBoolField(line, indexedVocalFxField(index, "Enabled")).value_or(false),
     });
   }

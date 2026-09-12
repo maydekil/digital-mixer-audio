@@ -34,9 +34,11 @@ int main() {
     "\"vocalFxSlot0Id\":\"drive\","
     "\"vocalFxSlot0Type\":\"saturation\","
     "\"vocalFxSlot0Enabled\":true,"
+    "\"vocalFxSlot0Mix\":0.45,"
     "\"vocalFxSlot1Id\":\"room\","
     "\"vocalFxSlot1Type\":\"reverb\","
     "\"vocalFxSlot1Enabled\":false,"
+    "\"vocalFxSlot1Mix\":0.2,"
     "\"channel0Kind\":\"source\","
     "\"channel0Name\":\"VOICE\","
     "\"channel0Color\":\"#18d6e7\","
@@ -144,7 +146,8 @@ int main() {
   }
   if (!selection.insertFxEnabled || selection.vocalFxSlots.size() != 2 || selection.vocalFxSlots[0].effectType != "saturation" ||
       selection.vocalFxSlots[0].bypassed || selection.vocalFxSlots[1].effectType != "reverb" ||
-      !selection.vocalFxSlots[1].bypassed) {
+      !selection.vocalFxSlots[1].bypassed || !near(selection.vocalFxSlots[0].mix, 0.45) ||
+      !near(selection.vocalFxSlots[1].mix, 0.2)) {
     std::cerr << "monitor selection should keep Vocal FX rack slot state\n";
     return 1;
   }
