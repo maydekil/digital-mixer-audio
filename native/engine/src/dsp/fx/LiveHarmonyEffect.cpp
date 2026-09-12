@@ -13,7 +13,7 @@ constexpr auto kVoiceCount = std::size_t{2};
 constexpr auto kVoicedOpenRms = 0.012f;
 constexpr auto kVoicedCloseRms = 0.006f;
 constexpr auto kMaxVoicedZeroCrossRate = 0.18f;
-constexpr auto kBackingVoiceToneHz = 4200.0f;
+constexpr auto kBackingVoiceToneHz = 3200.0f;
 constexpr auto kPi = 3.14159265358979323846f;
 
 float voiceLevel(float levelDb, float voiceDb) noexcept {

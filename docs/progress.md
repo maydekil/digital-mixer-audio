@@ -4703,3 +4703,26 @@ Validation:
 
 Known limitations:
 - Manual hardware confirmation that the robotic character is reduced enough is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Further Soften Live Harmony Edge
+
+Changed files:
+- `native/engine/src/dsp/fx/LiveHarmonyEffect.cpp`: lowers the backing voice tone cutoff to reduce remaining pitch-shift edge.
+- `native/engine/src/dsp/fx/LiveHarmonyEffect.hpp`: trims default backing voice levels slightly so artifacts sit further behind the dry voice.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Live Harmony keeps the audible voice 2/3 layers but moves the pitch-shifted backing sound slightly further behind the lead vocal.
+- The backing voice tone is darker than the previous checkpoint, aimed at reducing the remaining robotic character.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- preview-adapter`
+- exit/result: `0`; PreviewAdapter suite 21/21 passed.
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43 passed.
+
+Known limitations:
+- Full `npm run verify` was interrupted after the native suite had progressed with passing results; targeted typecheck, UI adapter, and native verification passed.
+- Manual hardware confirmation that the final edge reduction is enough is `NOT_RUN`.
