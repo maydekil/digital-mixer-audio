@@ -139,6 +139,7 @@ std::string syncMixerGraphResultJson(
     }
 
     const auto sourceUid = readJsonStringField(line, indexedField(index, "SourceUid"));
+    const auto sourceType = readJsonStringField(line, indexedField(index, "SourceType"));
     const auto assignment = readJsonStringField(line, indexedField(index, "Assignment")) == "stereo" ? SourceAssignment::stereo
                                                                                                       : SourceAssignment::mono;
     const auto trimDb = static_cast<float>(readJsonNumberField(line, indexedField(index, "TrimDb")).value_or(0.0));
@@ -211,6 +212,7 @@ std::string syncMixerGraphResultJson(
       if (monitorInputUid.empty()) monitorInputUid = sourceUid;
       monitorSources.push_back(SyncedMonitorSource{
         .inputUid = sourceUid,
+        .fileSource = sourceType == "file",
         .sendA = sendA,
         .sendB = sendB,
         .insertFxEnabled = insertFxEnabled,

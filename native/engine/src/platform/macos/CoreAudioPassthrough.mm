@@ -1,6 +1,7 @@
 #include "platform/macos/CoreAudioPassthrough.hpp"
 
 #include "dsp/Gain.hpp"
+#include "engine/MediaFile.hpp"
 #include "engine/MixerRenderRuntime.hpp"
 #include "engine/VocalFxRackRuntime.hpp"
 
@@ -12,6 +13,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
 #include <span>
 #include <thread>
 #include <utility>
@@ -62,12 +64,18 @@ struct MonitorSourceState {
   std::vector<float> graphStereoInput;
   std::vector<float> graphFxLeft;
   std::vector<float> graphFxRight;
+  std::vector<float> fileSamples;
+  std::uint64_t fileFrame = 0;
+  std::uint64_t fileFrameCount = 0;
+  std::uint32_t fileChannels = 0;
   std::uint32_t inputChannel = 0;
   std::uint32_t ringChannels = 1;
+  bool fileSource = false;
 };
 
 struct PassthroughState {
   std::vector<MonitorSourceState> sources;
+  std::vector<std::size_t> deviceSourceIndices;
   localmixer::engine::MixerRenderRuntime runtime;
   std::vector<localmixer::engine::SourceBuffer> renderSources;
   std::vector<float> graphLeft;
@@ -221,6 +229,7 @@ std::vector<PassthroughMonitorSource> monitorSources(const PassthroughMonitorReq
   return {PassthroughMonitorSource{
     .inputUid = request.inputUid,
     .label = "Monitor",
+    .fileSource = false,
     .inputChannel = request.inputChannel,
     .stereoInput = request.stereoInput,
     .monitorGainDb = request.monitorGainDb,
@@ -293,15 +302,29 @@ OSStatus outputCallback(
     auto& source = state->sources[sourceIndex];
     const auto ringChannels = std::max<std::uint32_t>(1, source.ringChannels);
     const auto capacity = source.ring.samples.size() / ringChannels;
-    if (capacity == 0 || frames > source.graphInput.size()) return noErr;
+    if ((!source.fileSource && capacity == 0) || frames > source.graphInput.size()) return noErr;
     if (ringChannels > 1 && frames * 2 > source.graphStereoInput.size()) return noErr;
 
     for (UInt32 frame = 0; frame < frames; frame += 1) {
-      const auto read = source.ring.readFrame.load(std::memory_order_relaxed);
-      const auto write = source.ring.writeFrame.load(std::memory_order_acquire);
       float left = 0.0f;
       float right = 0.0f;
-      if (read < write) {
+      if (source.fileSource && source.fileFrameCount > 0 && source.fileChannels > 0) {
+        const auto fileBase = (source.fileFrame % source.fileFrameCount) * source.fileChannels;
+        left = source.fileSamples[static_cast<std::size_t>(fileBase)];
+        right = source.fileChannels > 1 ? source.fileSamples[static_cast<std::size_t>(fileBase + 1)] : left;
+        source.fileFrame = (source.fileFrame + 1) % source.fileFrameCount;
+        updateStereoPeak(source.ring, left, right);
+      } else {
+        const auto read = source.ring.readFrame.load(std::memory_order_relaxed);
+        const auto write = source.ring.writeFrame.load(std::memory_order_acquire);
+        if (read >= write) {
+          source.graphInput[frame] = 0.0f;
+          if (ringChannels > 1) {
+            source.graphStereoInput[frame * 2] = 0.0f;
+            source.graphStereoInput[frame * 2 + 1] = 0.0f;
+          }
+          continue;
+        }
         const auto base = (read % capacity) * ringChannels;
         left = source.ring.samples[base];
         right = ringChannels > 1 ? source.ring.samples[base + 1] : left;
@@ -370,6 +393,7 @@ void prepareMonitorGraph(PassthroughState& state, const PassthroughMonitorReques
   const auto scratchFrames = static_cast<std::size_t>(std::max<double>(request.projectSampleRate, 512.0));
   state.sources.clear();
   state.sources.resize(requestSources.size());
+  state.deviceSourceIndices.clear();
   state.renderSources.resize(requestSources.size());
   state.runtime.prepare(static_cast<std::uint32_t>(scratchFrames));
   graph.setFxUnit(localmixer::engine::FxBusId::a, request.fxA);
@@ -382,6 +406,22 @@ void prepareMonitorGraph(PassthroughState& state, const PassthroughMonitorReques
     source.graphStrip = created.id;
     source.inputChannel = requestSource.inputChannel;
     source.ringChannels = requestSource.stereoInput ? 2 : 1;
+    source.fileSource = requestSource.fileSource;
+    if (source.fileSource) {
+      localmixer::engine::WavStreamReader reader;
+      if (reader.open(requestSource.inputUid) == localmixer::engine::MediaFileError::none) {
+        const auto read = reader.readFrames(0, static_cast<std::uint32_t>(
+          std::min<std::uint64_t>(reader.info().frameCount, std::numeric_limits<std::uint32_t>::max())));
+        if (read.error == localmixer::engine::MediaFileError::none && read.framesRead > 0) {
+          source.fileSamples = read.samples;
+          source.fileFrameCount = read.framesRead;
+          source.fileChannels = reader.info().channels;
+          source.ringChannels = source.fileChannels > 1 ? 2 : 1;
+        }
+      }
+    } else {
+      state.deviceSourceIndices.push_back(index);
+    }
     source.vocalFx.prepare(request.projectSampleRate, static_cast<std::uint32_t>(scratchFrames));
     source.vocalFx.configure(
       requestSource.insertFxEnabled ? requestSource.vocalFxSlots : std::vector<localmixer::dsp::fx::RackSlotState>{});
@@ -425,6 +465,19 @@ DeviceContext prepareDeviceContext(const PassthroughMonitorRequest& request) {
   }
 
   for (const auto& source : requestSources) {
+    if (source.fileSource) {
+      localmixer::engine::WavStreamReader reader;
+      const auto error = reader.open(source.inputUid);
+      if (error != localmixer::engine::MediaFileError::none) {
+        context.error = "MEDIA_FILE_OPEN_FAILED";
+        return context;
+      }
+      if (std::fabs(static_cast<double>(reader.info().sampleRate) - request.projectSampleRate) > kRateTolerance) {
+        context.error = "SAMPLE_RATE_MISMATCH";
+        return context;
+      }
+      continue;
+    }
     InputDeviceContext input;
     input.device = deviceByUid(source.inputUid, kAudioHardwarePropertyDefaultInputDevice);
     if (input.device == kAudioObjectUnknown) {
@@ -536,10 +589,10 @@ struct PersistentPassthroughMonitor::Impl {
       source.ring.peakScaledRight.store(0, std::memory_order_relaxed);
     }
 
-    inputProcs.assign(state.sources.size(), nullptr);
-    inputClients.assign(state.sources.size(), {});
-    for (std::size_t index = 0; index < state.sources.size(); index += 1) {
-      inputClients[index] = InputCallbackClient{.state = &state, .sourceIndex = index};
+    inputProcs.assign(state.deviceSourceIndices.size(), nullptr);
+    inputClients.assign(state.deviceSourceIndices.size(), {});
+    for (std::size_t index = 0; index < state.deviceSourceIndices.size(); index += 1) {
+      inputClients[index] = InputCallbackClient{.state = &state, .sourceIndex = state.deviceSourceIndices[index]};
       auto audioStatus = AudioDeviceCreateIOProcID(
         context.inputs[index].device, inputCallback, &inputClients[index], &inputProcs[index]);
       if (audioStatus != noErr || inputProcs[index] == nullptr) {
@@ -655,11 +708,11 @@ PassthroughMonitorResult monitorPassthrough(const PassthroughMonitorRequest& req
     source.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate) * source.ringChannels, 0.0f);
   }
 
-  std::vector<AudioDeviceIOProcID> inputProcs(state.sources.size(), nullptr);
-  std::vector<InputCallbackClient> inputClients(state.sources.size());
+  std::vector<AudioDeviceIOProcID> inputProcs(state.deviceSourceIndices.size(), nullptr);
+  std::vector<InputCallbackClient> inputClients(state.deviceSourceIndices.size());
   AudioDeviceIOProcID outputProc = nullptr;
-  for (std::size_t index = 0; index < state.sources.size(); index += 1) {
-    inputClients[index] = InputCallbackClient{.state = &state, .sourceIndex = index};
+  for (std::size_t index = 0; index < state.deviceSourceIndices.size(); index += 1) {
+    inputClients[index] = InputCallbackClient{.state = &state, .sourceIndex = state.deviceSourceIndices[index]};
     auto status = AudioDeviceCreateIOProcID(
       context.inputs[index].device, inputCallback, &inputClients[index], &inputProcs[index]);
     if (status != noErr || inputProcs[index] == nullptr) {

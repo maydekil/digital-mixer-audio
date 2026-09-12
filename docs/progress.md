@@ -5127,3 +5127,38 @@ Validation:
 Known limitations:
 - Manual hardware confirmation of simultaneous SYSTEM + VOICE monitoring in the desktop app is `NOT_RUN`.
 - Long-running drift behavior between separate Core Audio input devices is `NOT_RUN`; this checkpoint creates independent input callbacks and native summing, but does not yet add drift compensation/resampling between device clocks.
+
+### Phase19 Native Checkpoint — Enable Guitar Device And Music File Sources
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: sends each channel source type to native sync (`device` for live inputs, `file` for MUSIC) and lets the media modal assign the selected file to the MUSIC channel and enable it.
+- `apps/desktop/src/features/media/components/MediaImportPanel.tsx`: adds a `Use MUSIC` action for the selected local media path.
+- `native/engine/src/engine/EngineGraphSyncJson.hpp` and `native/engine/src/engine/EngineGraphSyncJson.cpp`: preserve whether a monitored source is file-backed or device-backed.
+- `native/engine/src/main.cpp`: forwards file-backed monitor sources to the Core Audio monitor request.
+- `native/engine/src/platform/macos/CoreAudioPassthrough.hpp` and `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: persistent monitor now supports native WAV file sources alongside Core Audio input-device sources, mixing them before master output.
+- `native/engine/tests/EngineGraphSyncJsonTest.cpp`: verifies MUSIC `SourceType=file` is preserved in monitor sync.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- GUITAR continues to function as a live Core Audio input source when assigned to an actual input device.
+- MUSIC can now be assigned a local WAV from the media modal and is treated as a native file playback source instead of being mistaken for an input device UID.
+- A MUSIC file source and live sources can be mixed together in the persistent native monitor path.
+- Invalid/missing MUSIC WAV paths fail clearly with native file errors rather than silently stealing the monitor path from other channels.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- --run tests/ui/preview-adapter.test.ts`
+- exit/result: `0`; PreviewAdapter suite 21/21 passed.
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43 passed, plus engine self-test, device enumeration smoke, and protocol smoke passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with `CoreAudioPassthrough.mm` at 792 lines and `MixerPage.tsx` at 848 lines.
+- command: `npm run check:architecture`
+- exit/result: `0`; architecture guard passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation of GUITAR live input plus MUSIC WAV playback in the desktop app is `NOT_RUN`.
+- MUSIC file playback currently supports native WAV sources in the live monitor path; non-WAV user media still goes through inspect/import/export support but is not claimed as live playback verified.

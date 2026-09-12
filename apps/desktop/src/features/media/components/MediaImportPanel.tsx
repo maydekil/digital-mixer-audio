@@ -20,9 +20,10 @@ interface MediaStatus {
 interface MediaImportPanelProps {
   open: boolean;
   onClose(): void;
+  onUseMusic?(path: string): void;
 }
 
-export function MediaImportPanel({ open, onClose }: MediaImportPanelProps) {
+export function MediaImportPanel({ open, onClose, onUseMusic }: MediaImportPanelProps) {
   const [path, setPath] = useState("");
   const [status, setStatus] = useState("No media selected");
   const [metadata, setMetadata] = useState<MediaStatus | null>(null);
@@ -113,6 +114,7 @@ export function MediaImportPanel({ open, onClose }: MediaImportPanelProps) {
         <div className="media-import-actions">
           <Button tone="cyan" onClick={() => void inspect()} disabled={busy || !path}>Inspect</Button>
           <Button tone="green" onClick={() => void startImport()} disabled={busy || !path}>Import</Button>
+          <Button onClick={() => path && onUseMusic?.(path)} disabled={!path}>Use MUSIC</Button>
           <Button onClick={() => void pollImport()} disabled={!jobId}>Poll</Button>
           <Button tone="danger" onClick={() => void cancelImport()} disabled={!jobId}>Cancel</Button>
         </div>

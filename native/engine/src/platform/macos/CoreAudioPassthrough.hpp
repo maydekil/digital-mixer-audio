@@ -15,6 +15,7 @@ namespace localmixer::platform::macos {
 struct PassthroughMonitorSource {
   std::string inputUid;
   std::string label = "Monitor";
+  bool fileSource = false;
   std::uint32_t inputChannel = 0;
   bool stereoInput = false;
   float monitorGainDb = -24.0f;

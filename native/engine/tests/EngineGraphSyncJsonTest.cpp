@@ -232,6 +232,7 @@ int main() {
     "\"channel1Kind\":\"source\","
     "\"channel1Name\":\"GUITAR\","
     "\"channel1SourceUid\":\"mic-b\","
+    "\"channel1SourceType\":\"device\","
     "\"channel1Assignment\":\"mono\","
     "\"channel1Enabled\":true,"
     "\"channel1Mute\":false,"
@@ -245,6 +246,27 @@ int main() {
       selection.sources.size() != 2 || selection.sources[0].inputUid != "mic-a" ||
       selection.sources[1].inputUid != "mic-b") {
     std::cerr << "multi monitor sync should publish all live source selections\n";
+    return 1;
+  }
+
+  const std::string musicFilePayload =
+    "{\"channelCount\":1,"
+    "\"channel0Kind\":\"source\","
+    "\"channel0Name\":\"MUSIC\","
+    "\"channel0SourceUid\":\"/tmp/backing.wav\","
+    "\"channel0SourceType\":\"file\","
+    "\"channel0Assignment\":\"stereo\","
+    "\"channel0Enabled\":true,"
+    "\"channel0Mute\":false,"
+    "\"channel0Monitor\":true,"
+    "\"channel0TrimDb\":0,"
+    "\"channel0FaderDb\":0,"
+    "\"channel0Pan\":0}";
+  const auto musicFileResponse = localmixer::engine::protocol::syncMixerGraphResultJson(
+    musicFilePayload, controller, selection);
+  if (!contains(musicFileResponse, "\"synced\":true") || selection.sources.size() != 1 ||
+      !selection.sources[0].fileSource || selection.sources[0].inputUid != "/tmp/backing.wav") {
+    std::cerr << "music file sync should publish a file-backed monitor source\n";
     return 1;
   }
 

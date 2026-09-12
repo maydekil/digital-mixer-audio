@@ -599,6 +599,7 @@ int runStdioProtocol() {
           monitorSources.push_back({
             .inputUid = source.inputUid,
             .label = "Monitor",
+            .fileSource = source.fileSource,
             .inputChannel = static_cast<std::uint32_t>(readJsonNumberField(line, "inputChannel").value_or(0.0)),
             .stereoInput = source.channelStereo,
             .monitorGainDb = source.channelTrimDb + source.channelFaderDb + masterGainDb,

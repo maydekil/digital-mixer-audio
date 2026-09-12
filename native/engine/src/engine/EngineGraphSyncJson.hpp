@@ -12,6 +12,7 @@ namespace localmixer::engine::protocol {
 
 struct SyncedMonitorSource {
   std::string inputUid;
+  bool fileSource = false;
   FxSendState sendA;
   FxSendState sendB;
   bool insertFxEnabled = false;

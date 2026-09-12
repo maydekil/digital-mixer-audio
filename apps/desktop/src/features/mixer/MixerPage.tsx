@@ -548,7 +548,18 @@ export function MixerPage() {
         </div>
       ) : null}
       <HardwareMonitorPanel open={hardwareOpen} onClose={() => setHardwareOpen(false)} />
-      <MediaImportPanel open={mediaImportOpen} onClose={() => setMediaImportOpen(false)} />
+      <MediaImportPanel
+        open={mediaImportOpen}
+        onClose={() => setMediaImportOpen(false)}
+        onUseMusic={(path) => {
+          const nextSnapshot = refresh(() => {
+            adapter.setChannelSource("music", path);
+            adapter.setChannelEnabled("music", true);
+          });
+          setMediaImportOpen(false);
+          void refreshActiveMonitor(nextSnapshot);
+        }}
+      />
       <VocalFxPanel
         open={vocalFxOpen}
         vocalFx={snapshot.vocalFx}
@@ -609,6 +620,7 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}Name`] = channel.name;
     payload[`${prefix}Color`] = channelColor(channel);
     payload[`${prefix}SourceUid`] = channel.kind === "source" ? channel.source : "";
+    payload[`${prefix}SourceType`] = channel.role === "music" ? "file" : "device";
     payload[`${prefix}Assignment`] = channel.role === "music" || channel.role === "system" || channel.kind !== "source" ? "stereo" : "mono";
     payload[`${prefix}Enabled`] = channel.enabled;
     payload[`${prefix}Mute`] = channel.mute;
