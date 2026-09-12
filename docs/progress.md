@@ -4783,3 +4783,28 @@ Validation:
 
 Known limitations:
 - Manual hardware confirmation of the compact VOICE strip in the live desktop app is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Compact Voice Dynamics Frames
+
+Changed files:
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: groups VOICE compressor and noise controls into one side-by-side dynamics row.
+- `apps/desktop/src/styles/app.css`: keeps VOICE compressor controls as a 2x2 frame and places the NOISE frame beside it.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- VOICE now mirrors the compact tone layout for dynamics: compressor on the left and noise on the right.
+- The compressor frame uses a 2x2 knob layout for Threshold, Ratio, Attack, and Release.
+- The NOISE control sits beside the compressor frame instead of occupying a separate full-width row.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 837` warning.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation of the compact VOICE dynamics row in the live desktop app is `NOT_RUN`.

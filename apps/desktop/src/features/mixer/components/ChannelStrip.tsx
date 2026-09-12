@@ -54,8 +54,14 @@ export function ChannelStrip({ channel, sourceOptions, vocalFxPresetId, vocalFxP
       </header>
       <RotaryKnob label="Gain" value={`${channel.trimDb.toFixed(1)} dB`} numericValue={channel.trimDb} min={-24} max={24} step={0.5} onChange={onTrim} />
       {isMaster ? <MasterUpperControls /> : <ChannelToneControls channel={channel} vocalFxSlots={vocalFxSlots} onEqBand={onEqBand} onVocalFxMix={onVocalFxMix} />}
-      {channel.role === "vocal" ? <ChannelNoiseControl channel={channel} onAmount={onNoiseAmount} /> : null}
-      {!isMaster ? <ChannelCompressorControls channel={channel} onParam={onCompressorParam} onEnabled={onCompressorEnabled} /> : null}
+      {isVocal ? (
+        <div className="voice-dynamics-section">
+          <ChannelCompressorControls channel={channel} onParam={onCompressorParam} onEnabled={onCompressorEnabled} />
+          <ChannelNoiseControl channel={channel} onAmount={onNoiseAmount} />
+        </div>
+      ) : !isMaster ? (
+        <ChannelCompressorControls channel={channel} onParam={onCompressorParam} onEnabled={onCompressorEnabled} />
+      ) : null}
       {channel.harmonyVisible ? (
         <div className="harmony-shortcut">
           <Button tone="violet" active={channel.harmonyEnabled} onClick={onHarmonyToggle}>HARMONY {channel.harmonyEnabled ? "ON" : "OFF"}</Button>
