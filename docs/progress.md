@@ -4726,3 +4726,33 @@ Validation:
 Known limitations:
 - Full `npm run verify` was interrupted after the native suite had progressed with passing results; targeted typecheck, UI adapter, and native verification passed.
 - Manual hardware confirmation that the final edge reduction is enough is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Widen Voice Strip And Move Preset Picker
+
+Changed files:
+- `apps/desktop/src/features/mixer/components/ChannelBank.tsx`: swaps the visible VOICE and SYSTEM strip order without changing channel IDs or native routing ownership.
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: moves the voice preset selector into the VOICE strip header next to the input selector and keeps the tone section focused on direct knobs.
+- `apps/desktop/src/styles/app.css`: makes the VOICE strip 2x the normal mixer strip width and lays out voice EQ/compressor controls across the wider frame.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- VOICE now appears before SYSTEM in the mixer bank.
+- VOICE is twice the width of the standard channel strip, with LOW/MID 1/MID 2/HIGH and compressor knobs spread across the wider strip.
+- The 99 voice preset combo now sits next to the VOICE input combo; the lower voice tone area no longer duplicates that preset selector.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 837` warning.
+- command: `npm run test:ui -- preview-adapter`
+- exit/result: `0`; PreviewAdapter suite 21/21 passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run check:architecture`
+- exit/result: `0`; architecture check passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation of the new mixer strip layout on the live desktop app is `NOT_RUN`.

@@ -67,12 +67,17 @@
 .right-zone { min-width: 0; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) 94px; gap: 8px; }
 .channel-bank { display: flex; gap: 8px; min-width: 0; min-height: 0; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; }
 .channel-strip { flex: 0 0 140px; height: 100%; min-height: 0; display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: linear-gradient(180deg, rgba(17, 45, 55, 0.96), rgba(8, 22, 28, 0.96)); box-shadow: var(--shadow); overflow: hidden; }
+.channel-strip.is-vocal { flex-basis: 280px; }
 .channel-strip.is-disabled { opacity: 0.58; background: linear-gradient(180deg, rgba(13, 31, 38, 0.96), rgba(7, 18, 23, 0.96)); }
 .channel-strip header { text-align: center; border-bottom: 1px solid #24414a; padding-bottom: 5px; min-height: 44px; overflow: hidden; }
 .channel-strip header strong { display: block; color: #f7f7f7; font-size: 12px; font-weight: 520; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .channel-strip header span { display: block; margin-top: 4px; color: #e2f2f6; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .channel-title-row { display: grid; grid-template-columns: minmax(0, 1fr) 36px; align-items: center; gap: 5px; }
 .channel-title-row .ui-button { min-height: 20px; padding: 1px 4px; font-size: 9px; }
+.channel-header-controls { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; margin-top: 4px; }
+.channel-header-controls.has-preset { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); }
+.channel-header-controls .channel-source-select,
+.channel-header-controls .channel-insert-preset { margin-top: 0; }
 .channel-source-select { width: 100%; min-height: 21px; margin-top: 4px; color: #dff4f8; background: #102b34; border: 1px solid #315966; border-radius: 4px; padding: 0 4px; font-size: 9px; font-weight: 380; }
 .processing-buttons { display: grid; gap: 5px; }
 .processing-buttons .ui-button:not(.is-active) { color: #8faeb7; border-color: #214957; background: #09222b; box-shadow: inset 3px 0 0 rgba(95, 126, 137, 0.28); }
@@ -81,12 +86,14 @@
 .channel-insert-preset:focus { outline: 1px solid var(--cyan); outline-offset: 1px; }
 .channel-tone-section { display: grid; gap: 5px; }
 .channel-tone-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 6px; }
+.channel-strip.is-vocal .channel-tone-controls { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .channel-tone-controls .rotary { min-width: 0; }
 .channel-tone-controls .rotary-label { font-size: 8.5px; margin-bottom: 2px; }
 .channel-tone-controls .rotary-face { width: 26px; height: 26px; }
 .channel-tone-controls .rotary-tick { height: 10px; transform-origin: 50% 10px; }
 .channel-tone-controls .rotary-value { font-size: 9px; margin-top: 2px; }
 .channel-space-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 6px; padding: 3px 4px; border: 1px solid #214957; border-radius: 5px; background: rgba(8, 30, 38, 0.72); }
+.channel-strip.is-vocal .channel-space-controls { max-width: 150px; justify-self: center; width: 100%; }
 .channel-space-controls .rotary { min-width: 0; }
 .channel-space-controls .rotary-label { font-size: 8px; margin-bottom: 1px; }
 .channel-space-controls .rotary-face { width: 24px; height: 24px; }
@@ -103,6 +110,7 @@
 .channel-compressor-section.is-bypassed { opacity: 0.58; }
 .channel-compressor-section > .ui-button { min-height: 20px; padding: 1px 5px; font-size: 9px; }
 .channel-compressor-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 5px; }
+.channel-strip.is-vocal .channel-compressor-controls { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .channel-compressor-controls .rotary { min-width: 0; }
 .channel-compressor-controls .rotary-label { font-size: 8px; margin-bottom: 1px; }
 .channel-compressor-controls .rotary-face { width: 24px; height: 24px; }
@@ -366,6 +374,7 @@
   .left-zone { grid-template-rows: minmax(0, 1fr); gap: 6px; }
   .right-zone { grid-template-rows: minmax(0, 1fr) 86px; gap: 6px; }
   .channel-strip { flex-basis: 140px; gap: 4px; padding: 7px; font-size: 10px; }
+  .channel-strip.is-vocal { flex-basis: 280px; }
   .channel-strip header { min-height: 40px; padding-bottom: 3px; }
   .processing-buttons { gap: 4px; }
   .processing-buttons .ui-button { min-height: 22px; padding: 1px 8px; }

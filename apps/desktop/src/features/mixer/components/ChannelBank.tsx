@@ -27,9 +27,11 @@ interface ChannelBankProps {
 }
 
 export function ChannelBank({ channels, sourceOptions, vocalFxPresetId, vocalFxPresets, vocalFxSlots, onSelect, onEnabled, onSource, onTrim, onPan, onFader, onEqBand, onNoiseAmount, onCompressorParam, onCompressorEnabled, onMute, onRecordArm, onVocalFxPreset, onVocalFxMix, onClipReset, onHarmonyToggle, onHarmonySettings }: ChannelBankProps) {
+  const orderedChannels = orderChannelsForMixer(channels);
+
   return (
     <section className="channel-bank">
-      {channels.map((channel) => (
+      {orderedChannels.map((channel) => (
         <ChannelStrip
           key={channel.id}
           channel={channel}
@@ -58,4 +60,14 @@ export function ChannelBank({ channels, sourceOptions, vocalFxPresetId, vocalFxP
       ))}
     </section>
   );
+}
+
+function orderChannelsForMixer(channels: ChannelState[]) {
+  const orderedChannels = [...channels];
+  const systemIndex = orderedChannels.findIndex((channel) => channel.role === "system");
+  const voiceIndex = orderedChannels.findIndex((channel) => channel.role === "vocal");
+  if (systemIndex >= 0 && voiceIndex >= 0) {
+    [orderedChannels[systemIndex], orderedChannels[voiceIndex]] = [orderedChannels[voiceIndex], orderedChannels[systemIndex]];
+  }
+  return orderedChannels;
 }
