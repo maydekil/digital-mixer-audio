@@ -4903,3 +4903,26 @@ Validation:
 
 Known limitations:
 - Manual confirmation that 1600px feels correct on live launch is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Fine Tune Desktop Default Width
+
+Changed files:
+- `apps/desktop/electron/main.ts`: increases the default Electron window width from 1600px to 1620px for a tighter fit after live feedback.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- The desktop app opens slightly wider than the 1600px tuning while remaining below the previously excessive 1680px default.
+- Minimum window sizing remains unchanged.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run build:desktop:main`
+- exit/result: `0`; Electron main/preload build passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 837` warning.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual confirmation that 1620px is the final preferred launch width is `NOT_RUN`.
