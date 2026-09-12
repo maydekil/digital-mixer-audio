@@ -189,7 +189,7 @@ function ChannelToneControls({ channel, vocalFxSlots, onEqBand, onVocalFxMix }: 
   if (channel.role === "vocal") {
     return (
       <div className="channel-tone-section voice-tone-section">
-        <div className="voice-tone-frame">{toneControls}</div>
+        <div className="channel-tone-frame">{toneControls}</div>
         <div className="voice-space-frame">
           <VoiceSpaceControls slots={vocalFxSlots} onMix={onVocalFxMix} />
         </div>
@@ -199,7 +199,7 @@ function ChannelToneControls({ channel, vocalFxSlots, onEqBand, onVocalFxMix }: 
 
   return (
     <div className="channel-tone-section">
-      {toneControls}
+      <div className="channel-tone-frame">{toneControls}</div>
     </div>
   );
 }

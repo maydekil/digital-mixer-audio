@@ -4808,3 +4808,28 @@ Validation:
 
 Known limitations:
 - Manual hardware confirmation of the compact VOICE dynamics row in the live desktop app is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Frame Channel EQ Controls
+
+Changed files:
+- `apps/desktop/src/features/mixer/components/ChannelStrip.tsx`: wraps non-master channel EQ controls in the same framed container style used by VOICE.
+- `apps/desktop/src/styles/app.css`: promotes the VOICE EQ frame styling to a shared channel tone frame.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- LOW, MID 1, MID 2, and HIGH now sit inside a framed 2x2 block on the other mixer channels too.
+- VOICE keeps its left EQ frame and right REVERB/ECHO frame unchanged.
+- The change is visual/layout only and does not alter native audio routing or DSP parameters.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 837` warning.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation of the framed EQ layout in the live desktop app is `NOT_RUN`.

@@ -86,7 +86,7 @@
 .channel-insert-preset:focus { outline: 1px solid var(--cyan); outline-offset: 1px; }
 .channel-tone-section { display: grid; gap: 5px; }
 .voice-tone-section { grid-template-columns: minmax(0, 1fr) minmax(0, 0.62fr); align-items: stretch; gap: 5px; }
-.voice-tone-frame,
+.channel-tone-frame,
 .voice-space-frame { min-width: 0; display: grid; align-items: center; padding: 3px 4px; border: 1px solid #214957; border-radius: 5px; background: rgba(8, 30, 38, 0.72); }
 .channel-tone-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 6px; }
 .channel-tone-controls .rotary { min-width: 0; }
