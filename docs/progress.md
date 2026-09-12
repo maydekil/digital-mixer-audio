@@ -4608,3 +4608,36 @@ Validation:
 Known limitations:
 - Manual hardware confirmation that Harmony now sounds less robotic is `NOT_RUN`.
 - The live harmony still uses fixed pitch shifting; fully natural key/scale backing vocals require deeper pitch/formant tuning.
+
+### Phase19 UX Checkpoint — Wire Harmony Modal Live Controls
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: sends Harmony Voice 1, Voice 2, and Harmony Level as native vocal FX slot parameters in the live graph sync payload.
+- `apps/desktop/src/adapters/preview/PreviewAdapter.ts`: keeps Harmony slot labels in sync when Voice 1 or Voice 2 changes.
+- `apps/desktop/src/components/ui/SelectField.tsx`: adds disabled select support.
+- `apps/desktop/src/features/harmony/components/HarmonyQuickPanel.tsx`: disables Key, Scale, and Mode while live Harmony remains fixed-interval; Voice 1, Voice 2, and Harmony Level remain active controls.
+- `native/engine/src/dsp/fx/EffectRack.hpp`: stores per-slot realtime parameter values.
+- `native/engine/src/dsp/fx/EffectRack.cpp`: applies per-slot parameter values after processor creation.
+- `native/engine/src/engine/EngineGraphSyncJson.cpp`: reads `vocalFxSlotNParam1..8` numeric fields into rack slot state.
+- `native/engine/tests/EngineGraphSyncJsonTest.cpp`: verifies graph sync preserves vocal FX slot parameter values.
+- `tests/ui/preview-adapter.test.ts`: verifies Harmony Voice 1/Voice 2 labels update when the modal state changes.
+- `docs/progress.md`: recorded verification evidence.
+
+Implemented behavior:
+- Harmony modal Voice 1 and Voice 2 now change the live native `live_harmony` pitch offsets on graph refresh.
+- Harmony Level is sent to the live native processor and still drives the rack blend.
+- Key, Scale, and Mode are intentionally disabled in the modal for now because the current safe live Harmony path is fixed-interval, not key/scale-aware.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:ui -- preview-adapter`
+- exit/result: `0`; PreviewAdapter suite 21/21 passed.
+- command: `npm run test:native`
+- exit/result: `0`; native CTest 43/43 passed.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual hardware confirmation that Voice 1/Voice 2 changes are musically obvious is `NOT_RUN`.
+- Key/Scale/Mode live behavior remains intentionally disabled until the key-aware harmony DSP path is made stable.

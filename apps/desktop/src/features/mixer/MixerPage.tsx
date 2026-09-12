@@ -593,6 +593,11 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
     payload[`${prefix}Type`] = liveVocalFxType(slot.id, slot.effectType, slot.enabled);
     payload[`${prefix}Enabled`] = slot.enabled;
     payload[`${prefix}Mix`] = slot.mix;
+    if (slot.id === "harmony") {
+      payload[`${prefix}Param3`] = harmonyIntervalSemitones(snapshot.harmony.voice1);
+      payload[`${prefix}Param4`] = harmonyIntervalSemitones(snapshot.harmony.voice2);
+      payload[`${prefix}Param5`] = snapshot.harmony.levelDb;
+    }
   });
   channels.forEach((channel, index) => {
     const prefix = `channel${index}`;
@@ -645,6 +650,14 @@ async function syncMixerGraph(snapshot: MixerSnapshot, outputUid: string) {
 function liveVocalFxType(slotId: string, effectType: string, enabled: boolean) {
   if (slotId === "harmony" && enabled) return "live_harmony";
   return effectType;
+}
+
+function harmonyIntervalSemitones(interval: string) {
+  if (interval === "+5th") return 7;
+  if (interval === "-3rd") return -3;
+  if (interval === "-5th") return -7;
+  if (interval === "+Oct") return 12;
+  return 3;
 }
 
 function autoMonitorChannel(snapshot: MixerSnapshot) {

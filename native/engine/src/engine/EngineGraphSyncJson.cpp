@@ -31,11 +31,17 @@ std::vector<dsp::fx::RackSlotState> readVocalFxSlots(const std::string& line) {
     const auto id = readJsonStringField(line, indexedVocalFxField(index, "Id"));
     const auto type = readJsonStringField(line, indexedVocalFxField(index, "Type"));
     if (id.empty() || type.empty()) continue;
+    std::vector<std::pair<dsp::fx::ParameterId, float>> parameters;
+    for (std::uint32_t parameter = 1; parameter <= 8; parameter += 1) {
+      const auto value = readJsonNumberField(line, indexedVocalFxField(index, "Param" + std::to_string(parameter)));
+      if (value.has_value()) parameters.push_back({parameter, static_cast<float>(*value)});
+    }
     slots.push_back(dsp::fx::RackSlotState{
       .instanceId = id,
       .effectType = type,
       .mix = static_cast<float>(std::clamp(readJsonNumberField(line, indexedVocalFxField(index, "Mix")).value_or(1.0), 0.0, 1.0)),
       .bypassed = !readJsonBoolField(line, indexedVocalFxField(index, "Enabled")).value_or(false),
+      .parameters = std::move(parameters),
     });
   }
   return slots;

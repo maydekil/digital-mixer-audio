@@ -62,6 +62,13 @@ describe("PreviewAdapter", () => {
     snapshot = adapter.getSnapshot();
     expect(snapshot.vocalFx.slots.find((slot) => slot.id === "harmony")?.mix).toBe(0.12);
 
+    adapter.updateHarmony("voice1", "-3rd");
+    adapter.updateHarmony("voice2", "+Oct");
+    snapshot = adapter.getSnapshot();
+    const harmonyParameters = snapshot.vocalFx.slots.find((slot) => slot.id === "harmony")?.parameters;
+    expect(harmonyParameters?.find((parameter) => parameter.label === "Voice 1")?.value).toBe("-3rd");
+    expect(harmonyParameters?.find((parameter) => parameter.label === "Voice 2")?.value).toBe("+Oct");
+
     adapter.applyVocalFxPreset("default");
     snapshot = adapter.getSnapshot();
     expect(snapshot.vocalFx.slots.find((slot) => slot.id === "harmony")?.enabled).toBe(true);

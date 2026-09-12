@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace localmixer::dsp::fx {
@@ -22,6 +23,7 @@ struct RackSlotState {
   ChannelFormat outputFormat = ChannelFormat::mono;
   float mix = 1.0f;
   bool bypassed = false;
+  std::vector<std::pair<ParameterId, float>> parameters;
 };
 
 struct RackActionResult {

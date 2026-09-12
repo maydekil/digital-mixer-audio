@@ -35,6 +35,8 @@ int main() {
     "\"vocalFxSlot0Type\":\"saturation\","
     "\"vocalFxSlot0Enabled\":true,"
     "\"vocalFxSlot0Mix\":0.45,"
+    "\"vocalFxSlot0Param3\":3,"
+    "\"vocalFxSlot0Param5\":-6,"
     "\"vocalFxSlot1Id\":\"room\","
     "\"vocalFxSlot1Type\":\"reverb\","
     "\"vocalFxSlot1Enabled\":false,"
@@ -149,6 +151,14 @@ int main() {
       !selection.vocalFxSlots[1].bypassed || !near(selection.vocalFxSlots[0].mix, 0.45) ||
       !near(selection.vocalFxSlots[1].mix, 0.2)) {
     std::cerr << "monitor selection should keep Vocal FX rack slot state\n";
+    return 1;
+  }
+  if (selection.vocalFxSlots[0].parameters.size() != 2 ||
+      selection.vocalFxSlots[0].parameters[0].first != 3 ||
+      !near(selection.vocalFxSlots[0].parameters[0].second, 3.0) ||
+      selection.vocalFxSlots[0].parameters[1].first != 5 ||
+      !near(selection.vocalFxSlots[0].parameters[1].second, -6.0)) {
+    std::cerr << "monitor selection should keep Vocal FX rack slot parameters\n";
     return 1;
   }
   if (!near(selection.channelTrimDb, 1.0) || !near(selection.channelFaderDb, -6.0) || !near(selection.channelPan, 0.25) ||

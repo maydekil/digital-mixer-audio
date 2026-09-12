@@ -140,6 +140,9 @@ bool EffectRack::rebuildSlots(
     auto processor = factory(state.effectType);
     if (!processor) return false;
     processor->prepare(spec_);
+    for (const auto& parameter : state.parameters) {
+      processor->applyRealtimeParameter(parameter.first, parameter.second);
+    }
     output.push_back(Slot{.state = std::move(state), .processor = std::move(processor)});
   }
   return true;

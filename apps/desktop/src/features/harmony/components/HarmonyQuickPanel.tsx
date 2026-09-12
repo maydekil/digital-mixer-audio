@@ -21,9 +21,9 @@ export function HarmonyQuickPanel({ harmony, onToggle, onChange, onClose }: Harm
       <div className="harmony-row harmony-main-row">
         <div className="harmony-title"><span>⏻</span><strong>VOICE · HARMONY</strong></div>
         <Button tone="violet" active={harmony.enabled} disabled={harmony.pending} onClick={() => onToggle(!harmony.enabled)}>{harmony.enabled ? "ON" : "OFF"}</Button>
-        <SelectField label="Key" value={harmony.key} options={keyOptions} onChange={(value) => onChange("key", value)} />
-        <SelectField label="Scale" value={harmony.scale} options={scaleOptions} onChange={(value) => onChange("scale", value)} />
-        <SelectField label="Mode" value={harmony.mode} options={modeOptions} onChange={(value) => onChange("mode", value)} />
+        <SelectField label="Key" value={harmony.key} options={keyOptions} disabled onChange={(value) => onChange("key", value)} />
+        <SelectField label="Scale" value={harmony.scale} options={scaleOptions} disabled onChange={(value) => onChange("scale", value)} />
+        <SelectField label="Mode" value={harmony.mode} options={modeOptions} disabled onChange={(value) => onChange("mode", value)} />
         <SelectField label="Voice 1" value={harmony.voice1} options={intervalOptions} onChange={(value) => onChange("voice1", value)} />
       </div>
       <div className="harmony-row harmony-secondary-row">
