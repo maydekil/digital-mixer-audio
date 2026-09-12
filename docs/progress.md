@@ -4950,3 +4950,26 @@ Validation:
 
 Known limitations:
 - Manual confirmation of the taller fader spacing in the live desktop app is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Further Extend Channel Faders
+
+Changed files:
+- `apps/desktop/src/styles/app.css`: further increases fader and vertical meter height to reduce the remaining empty space above M/REC.
+- `docs/progress.md`: records verification evidence.
+
+Implemented behavior:
+- Channel faders and vertical meters now extend further downward, closer to the M/REC button row.
+- The compact 1280px layout also gets a proportional height increase without failing the visual layout suite.
+
+Validation:
+- command: `npm run typecheck`
+- exit/result: `0`; TypeScript passed.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright visual suite 6/6 passed.
+- command: `npm run check:file-size`
+- exit/result: `0`; file-size check passed with the existing `MixerPage.tsx 837` warning.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, typecheck, Vitest 55/55, native CTest 43/43, engine self-test, device enumeration smoke, protocol smoke, UI build, and Electron main/preload build passed.
+
+Known limitations:
+- Manual confirmation of the reduced fader-to-button gap in the live desktop app is `NOT_RUN`.
