@@ -33,6 +33,7 @@ std::string systemRouteDiagnosticsJson(
   json += ",\"selectedOutputEnd\":" + std::to_string(diagnostics.selectedOutputEnd);
   json += ",\"blackHoleSampleRate\":" + std::to_string(diagnostics.blackHoleSampleRate);
   json += ",\"outputSampleRate\":" + std::to_string(diagnostics.outputSampleRate);
+  json += ",\"rateConversionRequired\":" + std::string(diagnostics.rateConversionRequired ? "true" : "false");
   return json;
 }
 

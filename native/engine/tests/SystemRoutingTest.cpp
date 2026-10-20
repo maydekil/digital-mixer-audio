@@ -70,9 +70,17 @@ int main() {
     return 1;
   }
 
-  const auto badRate = validateSystemRoute(devices(), ProjectAudioConfig{.sampleRate = 44100.0}, SystemRouteSelection{});
+  auto twsDevices = devices();
+  twsDevices[1].sampleRate = 44100.0;
+  const auto converted = validateSystemRoute(twsDevices, ProjectAudioConfig{}, SystemRouteSelection{});
+  if (!converted.routeValid || !converted.rateConversionRequired || converted.blackHoleSampleRate != 48000.0 ||
+      converted.outputSampleRate != 44100.0) {
+    std::cerr << "48 kHz BlackHole to 44.1 kHz TWS should validate with native rate conversion\n";
+    return 1;
+  }
+  const auto badRate = validateSystemRoute(devices(), ProjectAudioConfig{.sampleRate = 0.0}, SystemRouteSelection{});
   if (badRate.routeValid || badRate.error != SystemRouteError::sampleRateMismatch) {
-    std::cerr << "sample-rate mismatch should be rejected\n";
+    std::cerr << "invalid sample rate should be rejected\n";
     return 1;
   }
 

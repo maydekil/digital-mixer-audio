@@ -5187,3 +5187,126 @@ Validation:
 
 Known limitations:
 - Manual desktop confirmation that top header Play/Pause/Stop audibly controls a MUSIC WAV source is `NOT_RUN`.
+
+### Phase19 UX Checkpoint — Refresh Connected Output Devices
+
+Changed files:
+- `apps/desktop/src/features/mixer/MixerPage.tsx`: refreshes Core Audio device discovery every five seconds, on window focus, and when the footer output selector receives focus/pointer input; cleans up the polling timer and focus listener on unmount.
+- `docs/progress.md`: records diagnosis and validation evidence.
+
+Implemented behavior:
+- Previously the main mixer fetched devices only on mount; TWS devices connected afterward could remain absent from the footer output list.
+- Newly connected input/output devices can appear without restarting the mixer. Refresh preserves the user's selected output UID and does not start playback or change OS routing.
+
+Validation:
+- command: `native/engine/build/native/engine/local-mixer-engine --list-devices` (read-only host execution outside the sandbox)
+- exit/result: `0`; `Oteh Galaxy Buds Core` detected with two output channels at 44.1 kHz and marked as the Mac default output. Sandboxed enumeration returns zero devices, so that smoke result is not hardware evidence.
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, TypeScript, Vitest 55/55, native CTest 43/43, engine self-test/protocol smoke, UI bundle, and Electron main/preload build passed. Existing libsamplerate deployment-target linker warnings remain.
+- command: `npm run test:visual`
+- exit/result: `0`; Playwright 6/6 passed and refreshed screenshot artifacts.
+- Additional one-off browser hot-connect simulation: `BLOCKED_ENVIRONMENT`; direct Chromium launch was denied by sandbox Mach port restrictions before the scenario ran.
+
+Known limitations:
+- Manual desktop confirmation of TWS appearing after reconnect and audible playback to the TWS: `NOT_RUN`.
+- This change refreshes discovery only; it does not validate Bluetooth playback sample-rate negotiation or latency.
+
+### Phase19 Native Checkpoint — MUSIC WAV On TWS Sample Rates
+
+Diagnosis:
+- Mixer UI requests 48 kHz monitoring; connected `Oteh Galaxy Buds Core` output runs at 44.1 kHz.
+- Persistent monitoring rejected output/project rate differences before starting, and separately rejected WAV/project rate differences, returning `SAMPLE_RATE_MISMATCH`.
+
+Changed files:
+- `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: persistent monitoring follows the actual output device clock; graph/DSP/scratch buffers use that rate. File preparation errors propagate before callbacks are created, and stereo assignment follows the loaded file's channel count.
+- `native/engine/src/engine/MonitorFileSource.hpp`, `MonitorFileSource.cpp`: focused control-thread WAV loading and conversion through the existing native linear resampler. No file I/O, conversion allocation, or new locks are added to callbacks.
+- `native/engine/src/engine/MediaResampler.cpp`: clamps interpolation positions at the final source frame, including very short upsampled clips.
+- `native/engine/tests/MonitorFileSourceTest.cpp`, `native/engine/CMakeLists.txt`: register regression coverage for duration/pitch/stereo preservation, both 44.1/48 kHz directions, 96 kHz output, single-frame tails, empty/missing/truncated WAVs, and invalid output rate.
+- `docs/feature-traceability.md`, `docs/progress.md`: capability mapping and actual evidence.
+
+Validation:
+- command: `npm run verify`
+- exit/result: `0`; plan, file-size, architecture, TypeScript, Vitest 55/55, native CTest 44/44, engine self-test/protocol smoke, UI bundle, and Electron main/preload build passed. Existing libsamplerate deployment-target linker warnings remain.
+- command: `node /private/tmp/local-mixer-tws-rate-smoke.mjs` (temporary diagnostic script, host execution outside sandbox)
+- exit/result: `0` after correcting the diagnostic's response-field check from `running` to protocol field `monitoring`. Created temporary silent stereo WAV fixtures at 48 kHz and 44.1 kHz, synced each as the sole MUSIC file source, and requested 48 kHz persistent monitoring to the detected Galaxy Buds Core output.
+- hardware smoke: both fixtures returned `ok:true`, `monitoring:true`, empty error, zero input channels, two output channels, `outputSampleRate:44100`, and 30 output callbacks after 350 ms. Monitoring was stopped and fixtures removed. No microphone input or OS routing change was requested.
+
+Known limitations:
+- Audible MUSIC quality, desktop ON/Play interaction and packaged-app acceptance: `NOT_RUN`; the device test used silence and the native command path.
+- Mixed-rate live input devices are still rejected rather than played at an incorrect speed. This checkpoint adds file-source conversion; it does not implement live asynchronous resampling/drift compensation for mic/system inputs.
+- Conversion uses the existing linear interpolator; high-frequency alias rejection and long-file memory/performance acceptance are not established by these tests. WAVs are prepared in memory before callbacks, as in the prior file-monitor path.
+- A running Electron app must restart its native engine to use the rebuilt binary; existing packaged app copies are not rebuilt by `npm run verify`.
+
+### Phase19 Native Checkpoint — SYSTEM BlackHole To TWS At Different Rates
+
+Diagnosis and scope correction:
+- User confirmed the failing button is SYSTEM and launcher is `npm run dev:engine`.
+- Host read-only `routing-system-diagnostics` reproduced `routeValid:false`, `SAMPLE_RATE_MISMATCH` for BlackHole at 48000 Hz and Galaxy Buds Core at 44100 Hz. The earlier WAV conversion checkpoint did not address this live input route.
+
+Changed files:
+- `native/engine/src/engine/AudioFrameRing.hpp`: bounded preallocated single-producer/single-consumer audio frame queue with lock-free cursors; full queues reject new frames rather than overwriting unread samples.
+- `native/engine/src/engine/LiveInputBridge.hpp`, `LiveInputBridge.cpp`: native worker performs streaming libsamplerate sinc conversion; bounded queues isolate input/output callbacks, with 20 ms output priming and smoothed queue-depth clock correction limited to +/-2000 ppm. Worker preparation, thread join, allocation and SRC processing stay outside audio callbacks.
+- `native/engine/src/platform/macos/CoreAudioPassthrough.mm`: persistent monitor accepts supported live input rates and prepares one worker per input source against the actual output clock; callbacks only push/pop frames. Stops worker threads after callbacks stop, and reports converter failures through monitor status. Existing strict diagnostic one-shot rate validation remains.
+- `native/engine/src/engine/SystemRouting.hpp`, `SystemRouting.cpp`, `SystemRoutingJson.cpp`: route validation accepts supported differing device rates and reports `rateConversionRequired` while preserving loopback/channel checks and guarded OS route ownership.
+- `native/engine/tests/LiveInputBridgeTest.cpp`, `SystemRoutingTest.cpp`, `native/engine/CMakeLists.txt`: native regression coverage and exact pkg-config dependency pin for installed libsamplerate 0.2.2.
+- `docs/dependency-manifest.md`, `docs/setup/system-audio-routing.md`, `docs/feature-traceability.md`, `docs/progress.md`: dependencies, supported workflow, capability mapping and evidence.
+
+Validation:
+- command: `npm run build:native`
+- exit/result: `0`; existing host libsamplerate 0.2.2 discovered; no package installation. Existing macOS deployment-target dylib warnings remain.
+- commands: `local-mixer-live-input-bridge-tests`, `local-mixer-system-routing-tests` in `native/engine/build/native/engine/`
+- exit/result: `0`; bounded queue full/empty/wrap behavior, worker startup/delivery/shutdown, invalid input rate, and mixed-rate routing pass. Five deterministic 60-second clock simulations (not real-time hardware soaks) cover 48k->44.1k at +/-1000 ppm, 44.1k->48k, 16k->44.1k mono at +1000 ppm, and 48k->48k mono at -1000 ppm. All retain bounded queues, zero input drops/underruns after priming, separate channel data, approximately 1 kHz pitch, and ratios tracking the simulated drift.
+- command: `node /private/tmp/local-mixer-system-tws-smoke.mjs` (temporary host diagnostic script)
+- exit/result: `0`; actual BlackHole 48000 Hz -> Galaxy Buds Core 44100 Hz diagnostics report `routeValid:true`, `rateConversionRequired:true`. Native `start-mixer-monitor` returns `ok:true`, `monitoring:true`, empty error, two input and two output channels. After one second, status remains active with 86 callbacks, 0 deadline misses and maximum callback duration 645708 ns.
+- Hardware smoke output was attenuated to -120 dB. The test did not generate an audible test signal, use a mic, enable OS routing, or alter the default output; default output UID before/after matched. Input was silent (`inputPeak:0`), so this proves native mixed-rate startup/callback execution, not audible quality.
+- command: `npm run verify`
+- exit/result: `0`; plan/file-size/architecture, TypeScript, Vitest 55/55, native CTest 45/45, engine self-test/protocol smoke, UI bundle and Electron main/preload build passed. Largest changed Core Audio file is 833 lines; all first-party files remain under 1000 lines.
+
+Known limitations:
+- SYSTEM ON confirmation/OS routing restore through the actual desktop GUI, audible playback quality, latency measurement and long hardware drift/disconnect/sleep tests: `NOT_RUN`.
+- Worker buffering adds a 20 ms priming target before converter/device/Bluetooth latency; no low-latency headset claim is made.
+- Adaptive matching is bounded to +/-2000 ppm; larger discontinuities or worker starvation may underrun/re-prime or drop input, counted by the bridge status. Device sample-rate changes during an active stream still require restart/recovery acceptance.
+- The development engine is rebuilt; running apps must restart to load it, and existing packaged `.app` copies remain unchanged.
+
+### Phase19 Diagnostic Checkpoint — Quiet SYSTEM Audio On TWS
+
+User report:
+- Mixed-rate SYSTEM playback now works but is quiet. User clarified that 0 dB fader must mean the original source level, with negative values attenuating.
+
+Findings:
+- UI fader converts position to -10..+10 dB; the centered position is 0 dB. Native gain uses `pow(10, dB / 20)`, so 0 dB is multiplier 1. Native mixer applies that gain and does not interpret 0 dB as zero volume. Renderer SYSTEM monitor gain is 0 dB.
+- A read-only host Core Audio diagnostic read BlackHole output master scalar `0.478706`, volume dB `-33.3628`, mute `0`. This is upstream device attenuation, independent of mixer faders. Core Audio scalar volume is not the same quantity as sample gain.
+- Default OS output was BlackHole; read-only `get volume settings` reported output volume 48 and unmuted. TWS output was still present at 44100 Hz.
+- Official BlackHole troubleshooting recommends checking BlackHole input/output volume is all the way up in Audio MIDI Setup: https://github.com/ExistentialAudio/BlackHole/blob/master/README.md .
+
+Validation:
+- command: `native/engine/build/native/engine/local-mixer-dsp-tests`
+- exit/result: `0`; asserts 0 dB -> 1.0, -6 dB -> approximately 0.501187, and native sample gain application.
+- Read-only host device-volume diagnostic: `/private/tmp/local-mixer-device-volumes`, compiled from a temporary C++ Core Audio property reader; exit `0` with values above. No capture or playback was started for this diagnosis.
+- No source code, OS/device volume, or routing was changed. `docs/setup/system-audio-routing.md` now explains the unity-gain baseline and upstream BlackHole level check.
+
+Known limitations:
+- Listening comparison after the user sets BlackHole to 100% / 0 dB: `NOT_RUN`.
+- Hardware readings do not establish the current source application's own volume or exact end-to-end acoustic level.
+
+### Phase19 Hardware Fix — Restore BlackHole Unity Source Level
+
+User report:
+- SYSTEM remains very quiet after the prior explanation. Diagnose actual signal levels and correct the measured attenuation rather than relying on property values alone.
+
+Evidence before change:
+- Read-only Core Audio query again reported BlackHole output master `volumeScalar=0.478706`, `volumeDb=-33.3628`, unmuted. Physical TWS channel scalars were 0.36146 and 0.417323; the OS default output was TWS and no mixer engine was running.
+- Native protected test tone generated -30 dBFS at 440 Hz directly into virtual BlackHole while a separate native input meter measured that same virtual device. Capture peak was 0.000678, approximately -63.3754 dBFS: a measured attenuation of -33.3754 dB upstream of the mixer. No physical playback or routing change was involved.
+
+Action:
+- Announced the intended correction to the user, then used a temporary native Core Audio utility to set only BlackHole output master volume to 0 dB (unity). Guard checks required no running mixer engine and BlackHole not being the default OS output, avoiding an abrupt increase in an active listening session.
+- Previous BlackHole gain was -33.3628 dB; afterward its scalar was 1 and volume was 0 dB. Physical TWS channel volume scalars and mute remained unchanged. The OS default output UID remained unchanged.
+- No application source code or fader settings were changed. This is a host virtual-device volume correction, not an arbitrary boost in DSP.
+
+Validation:
+- Host native-only virtual loopback measurement after the change: -30 dBFS source -> capture peak 0.031622, approximately -30.0002 dBFS. Unity level difference: -0.0002133 dB, within the 0.1 dB diagnostic tolerance.
+- Before/after measurements and volume-setting utility exited 0. Temporary diagnostic used `--test-tone --output-uid BlackHole2ch_UID` and `--meter-input --input-uid BlackHole2ch_UID`; no microphone, OS routing switch or TWS test signal was used.
+
+Known limitations:
+- Audible comparison through the desktop SYSTEM mixer and TWS after this correction: `NOT_RUN`, pending user listening confirmation.
+- This host setting can be changed again by OS volume controls while BlackHole is selected. The app does not automatically normalize or override device volume.

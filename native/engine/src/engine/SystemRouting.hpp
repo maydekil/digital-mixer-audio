@@ -45,6 +45,7 @@ struct SystemRouteDiagnostics {
   std::uint32_t selectedOutputEnd = 0;
   double blackHoleSampleRate = 0.0;
   double outputSampleRate = 0.0;
+  bool rateConversionRequired = false;
 };
 
 struct SystemRouteTransaction {

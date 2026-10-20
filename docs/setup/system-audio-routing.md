@@ -1,6 +1,6 @@
 # System Audio Routing Setup
 
-Status: Phase04 foundation. These steps are manual and must be performed by the user on macOS.
+Status: native SYSTEM routing with input sample-rate conversion; full audible desktop acceptance remains pending.
 
 ## Goal
 
@@ -10,7 +10,26 @@ Route system audio into Local Audio Mixer as one stereo system source:
 
 Do not use a Multi-Output Device that sends the original app audio directly to speakers/headphones, because that creates a dry path alongside the processed mixer path.
 
-## Manual Setup
+## Desktop SYSTEM Route, Including TWS
+
+1. Install BlackHole 2ch and connect your desired physical output.
+2. Run `npm run dev:engine` and choose that output in the mixer footer.
+3. Turn SYSTEM ON. The app checks BlackHole/output channels and sample rates before asking whether to switch macOS output to BlackHole.
+4. Confirm the switch to hear system audio through the native mixer. SYSTEM OFF restores the previous output when the engine owns the route.
+
+BlackHole at 48 kHz and a TWS output at 44.1 kHz are supported by native streaming conversion. Persistent monitoring uses the physical output clock; a bounded native worker queue and smoothly adjusted sinc conversion ratio handle independent live input clocks. The worker targets 20 ms of buffered output, in addition to device/converter/Bluetooth latency. No sample-rate setting or aggregate device is created automatically.
+
+Hardware command smoke has confirmed mixed-rate monitor startup and callbacks on Galaxy Buds Core. Listening quality, GUI confirmation/restore, long Bluetooth sessions, and disconnect recovery still require manual acceptance.
+
+## SYSTEM Sounds Much Quieter Than Direct Playback
+
+Faders use dB gain: 0 dB is unity (sample multiplier 1), negative values attenuate, and positive values boost. SYSTEM and MASTER at 0 dB cannot restore level already attenuated before capture.
+
+Check BlackHole input/output volume in Audio MIDI Setup. For an unattenuated virtual source, set BlackHole to 100% / 0 dB, then use the mixer faders for mix level and physical headphones for listening volume. BlackHole percentage is a volume-control scale, not a direct linear sample multiplier. In a host diagnosis, about 48% reported -33.36 dB, explaining substantial upstream attenuation. The app does not automatically change these OS/device volume controls.
+
+The [BlackHole troubleshooting guide](https://github.com/ExistentialAudio/BlackHole/blob/master/README.md) also recommends checking that BlackHole input and output volume are all the way up in Audio MIDI Setup.
+
+## Manual Aggregate Device Setup
 
 1. Install BlackHole 2ch from the official BlackHole project.
 2. Open `Audio MIDI Setup`.
@@ -31,7 +50,7 @@ It reports:
 - BlackHole availability.
 - selected BlackHole input channel range.
 - selected physical output channel range.
-- sample-rate mismatch.
+- actual input/output sample rates and `rateConversionRequired` for mixed-rate routes; invalid/unsupported rates are rejected.
 - rejected loopback output routes.
 
 Current foundation does not install BlackHole or create aggregate devices. It can attempt a guarded macOS default-output switch only when the command explicitly sets `allowOsRouteChange: true`.

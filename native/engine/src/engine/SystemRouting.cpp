@@ -1,4 +1,5 @@
 #include "engine/SystemRouting.hpp"
+#include "engine/LiveInputBridge.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -78,6 +79,7 @@ SystemRouteDiagnostics validateSystemRoute(
   diagnostics.selection.physicalOutputUid = physicalOutput->uid;
   diagnostics.blackHoleSampleRate = detectedBlackHole->sampleRate;
   diagnostics.outputSampleRate = physicalOutput->sampleRate;
+  diagnostics.rateConversionRequired = std::fabs(detectedBlackHole->sampleRate - physicalOutput->sampleRate) > kSampleRateTolerance;
   diagnostics.selectedInputStart = requested.blackHoleInputStartChannel;
   diagnostics.selectedInputEnd = requested.blackHoleInputStartChannel + 1;
   diagnostics.selectedOutputStart = requested.physicalOutputStartChannel;
@@ -95,8 +97,8 @@ SystemRouteDiagnostics validateSystemRoute(
     diagnostics.error = SystemRouteError::outputHasNoStereoOutput;
     return diagnostics;
   }
-  if (std::fabs(detectedBlackHole->sampleRate - project.sampleRate) > kSampleRateTolerance ||
-      std::fabs(physicalOutput->sampleRate - project.sampleRate) > kSampleRateTolerance) {
+  if (!supportedLiveSampleRate(detectedBlackHole->sampleRate) ||
+      !supportedLiveSampleRate(physicalOutput->sampleRate) || !supportedLiveSampleRate(project.sampleRate)) {
     diagnostics.error = SystemRouteError::sampleRateMismatch;
     return diagnostics;
   }

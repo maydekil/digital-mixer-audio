@@ -36,6 +36,7 @@ Status: Phase00 native dependency audit.
 | C++ standard | C++20 | Apple Clang 21 | N/A | Required for native engine modules. |
 | macOS deployment target | `14.0` initial target | Apple SDK | N/A | Core Audio taps and newer APIs still need runtime availability guards. |
 | Core Audio | macOS SDK `26.5` | Apple SDK | Apple SDK terms | Used only from native macOS adapter layer. |
+| libsamplerate | `0.2.2` (exact pkg-config check) | https://github.com/libsndfile/libsamplerate | BSD-2-Clause | Existing host dependency; explicit native worker link for streaming sinc conversion and adaptive device clock matching. No renderer audio. |
 | FFmpeg | optional native executable, not yet pinned | https://ffmpeg.org/ | LGPL/GPL depending build | Not required for Phase01; pin before adding native decode/encode worker. |
 
 ## Doctor Evidence

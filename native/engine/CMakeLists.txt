@@ -1,5 +1,6 @@
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(RUBBERBAND REQUIRED rubberband)
+pkg_check_modules(SAMPLERATE REQUIRED IMPORTED_TARGET samplerate=0.2.2)
 
 add_library(local_mixer_dsp STATIC
   src/dsp/DeEsser.cpp
@@ -38,10 +39,12 @@ add_library(local_mixer_dsp STATIC
   src/engine/FxProgramWetProcessor.cpp
   src/engine/FxSendReturnBus.cpp
   src/engine/JsonProtocol.cpp
+  src/engine/LiveInputBridge.cpp
   src/engine/Metronome.cpp
   src/engine/MediaFile.cpp
   src/engine/MediaImportJob.cpp
   src/engine/MediaResampler.cpp
+  src/engine/MonitorFileSource.cpp
   src/engine/MixerControlQueue.cpp
   src/engine/MixerGraph.cpp
   src/engine/MixerGraphController.cpp
@@ -67,6 +70,7 @@ target_include_directories(local_mixer_dsp PUBLIC src)
 target_include_directories(local_mixer_dsp PRIVATE ${RUBBERBAND_INCLUDE_DIRS})
 target_link_directories(local_mixer_dsp PUBLIC ${RUBBERBAND_LIBRARY_DIRS})
 target_link_libraries(local_mixer_dsp PUBLIC ${RUBBERBAND_LIBRARIES} ${RUBBERBAND_LDFLAGS_OTHER})
+target_link_libraries(local_mixer_dsp PUBLIC PkgConfig::SAMPLERATE)
 target_compile_features(local_mixer_dsp PUBLIC cxx_std_20)
 
 add_executable(local-mixer-engine
@@ -304,6 +308,16 @@ target_link_libraries(local-mixer-media-transport-tests PRIVATE local_mixer_dsp)
 target_compile_features(local-mixer-media-transport-tests PRIVATE cxx_std_20)
 
 add_test(NAME local-mixer-media-transport-tests COMMAND local-mixer-media-transport-tests)
+
+add_executable(local-mixer-monitor-file-source-tests tests/MonitorFileSourceTest.cpp)
+target_link_libraries(local-mixer-monitor-file-source-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-monitor-file-source-tests PRIVATE cxx_std_20)
+add_test(NAME local-mixer-monitor-file-source-tests COMMAND local-mixer-monitor-file-source-tests)
+
+add_executable(local-mixer-live-input-bridge-tests tests/LiveInputBridgeTest.cpp)
+target_link_libraries(local-mixer-live-input-bridge-tests PRIVATE local_mixer_dsp)
+target_compile_features(local-mixer-live-input-bridge-tests PRIVATE cxx_std_20)
+add_test(NAME local-mixer-live-input-bridge-tests COMMAND local-mixer-live-input-bridge-tests)
 
 add_executable(local-mixer-timeline-tests
   tests/TimelineTest.cpp

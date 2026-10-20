@@ -22,7 +22,7 @@ std::vector<float> resampleLinear(const ResampleRequest& request) {
 
   const auto ratio = request.sourceSampleRate / request.targetSampleRate;
   for (std::uint64_t frame = 0; frame < targetFrames; frame += 1) {
-    const auto sourcePosition = static_cast<double>(frame) * ratio;
+    const auto sourcePosition = std::min(static_cast<double>(frame) * ratio, static_cast<double>(sourceFrames - 1));
     const auto sourceIndex = static_cast<std::uint64_t>(sourcePosition);
     const auto nextIndex = std::min<std::uint64_t>(sourceIndex + 1, sourceFrames - 1);
     const auto blend = static_cast<float>(sourcePosition - static_cast<double>(sourceIndex));

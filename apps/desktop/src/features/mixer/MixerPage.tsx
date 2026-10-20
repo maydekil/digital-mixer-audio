@@ -369,6 +369,16 @@ export function MixerPage() {
     void refreshFxProgramBank();
   }, []);
 
+  useEffect(() => {
+    const refresh = () => { void refreshDevices(); };
+    const timer = window.setInterval(refresh, 5000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+    };
+  }, []);
+
   useEffect(() => () => {
     if (liveMonitorRefreshTimer.current !== undefined) window.clearTimeout(liveMonitorRefreshTimer.current);
   }, []);
@@ -540,7 +550,7 @@ export function MixerPage() {
           <SoundPadPanel />
         </div>
       </section>
-      <Footer outputUid={outputUid} outputOptions={outputOptions} onOutput={changeOutput} onHardware={() => setHardwareOpen(true)} />
+      <Footer outputUid={outputUid} outputOptions={outputOptions} onOutput={changeOutput} onRefreshOutputs={() => void refreshDevices()} onHardware={() => setHardwareOpen(true)} />
       {harmonyOpen ? (
         <div className="modal-backdrop">
           <HarmonyQuickPanel
@@ -835,10 +845,10 @@ function physicalOutputDevice(devices: HardwareDevice[], selectedUid: string) {
     devices.find((device) => (device.outputChannels ?? 0) > 0 && !isBlackHoleDevice(device));
 }
 
-function Footer({ outputUid, outputOptions, onOutput, onHardware }: { outputUid: string; outputOptions: Array<{ value: string; label: string }>; onOutput(value: string): void; onHardware(): void }) {
+function Footer({ outputUid, outputOptions, onOutput, onRefreshOutputs, onHardware }: { outputUid: string; outputOptions: Array<{ value: string; label: string }>; onOutput(value: string): void; onRefreshOutputs(): void; onHardware(): void }) {
   return (
     <footer className="footer-bar">
-      <label>Output:<select value={outputUid} onChange={(event) => onOutput(event.target.value)}>
+      <label>Output:<select value={outputUid} onFocus={onRefreshOutputs} onPointerDown={onRefreshOutputs} onChange={(event) => onOutput(event.target.value)}>
         <option value="">Default Output</option>
         {outputOptions.length === 0 ? <option value="preview-output">Headphones</option> : null}
         {outputOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}

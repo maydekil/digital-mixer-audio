@@ -2,6 +2,8 @@
 
 #include "dsp/Gain.hpp"
 #include "engine/MediaFile.hpp"
+#include "engine/LiveInputBridge.hpp"
+#include "engine/MonitorFileSource.hpp"
 #include "engine/MixerRenderRuntime.hpp"
 #include "engine/VocalFxRackRuntime.hpp"
 
@@ -58,6 +60,7 @@ struct RingBuffer {
 
 struct MonitorSourceState {
   RingBuffer ring;
+  std::unique_ptr<localmixer::engine::LiveInputBridge> liveInput;
   localmixer::engine::VocalFxRackRuntime vocalFx;
   localmixer::engine::StripId graphStrip;
   std::vector<float> graphInput;
@@ -263,6 +266,11 @@ OSStatus inputCallback(
   for (UInt32 frame = 0; frame < frames; frame += 1) {
     const auto left = readChannel(inputData, source.inputChannel, frame);
     const auto right = ringChannels > 1 ? readChannel(inputData, source.inputChannel + 1, frame) : left;
+    if (source.liveInput) {
+      source.liveInput->push(left, right);
+      updateStereoPeak(source.ring, left, right);
+      continue;
+    }
     const auto write = source.ring.writeFrame.load(std::memory_order_relaxed);
     const auto base = (write % capacity) * ringChannels;
     source.ring.samples[base] = left;
@@ -314,6 +322,8 @@ OSStatus outputCallback(
         right = source.fileChannels > 1 ? source.fileSamples[static_cast<std::size_t>(fileBase + 1)] : left;
         source.fileFrame = (source.fileFrame + 1) % source.fileFrameCount;
         updateStereoPeak(source.ring, left, right);
+      } else if (source.liveInput) {
+        source.liveInput->pop(left, right);
       } else {
         const auto read = source.ring.readFrame.load(std::memory_order_relaxed);
         const auto write = source.ring.writeFrame.load(std::memory_order_acquire);
@@ -384,7 +394,7 @@ OSStatus outputCallback(
   return noErr;
 }
 
-void prepareMonitorGraph(PassthroughState& state, const PassthroughMonitorRequest& request) {
+std::string prepareMonitorGraph(PassthroughState& state, const PassthroughMonitorRequest& request) {
   const auto requestSources = monitorSources(request);
   state.runtime = localmixer::engine::MixerRenderRuntime{request.projectSampleRate};
   state.runtime.setFxProgram(localmixer::engine::FxBusId::a, request.fxAProgramId);
@@ -408,24 +418,19 @@ void prepareMonitorGraph(PassthroughState& state, const PassthroughMonitorReques
     source.ringChannels = requestSource.stereoInput ? 2 : 1;
     source.fileSource = requestSource.fileSource;
     if (source.fileSource) {
-      localmixer::engine::WavStreamReader reader;
-      if (reader.open(requestSource.inputUid) == localmixer::engine::MediaFileError::none) {
-        const auto read = reader.readFrames(0, static_cast<std::uint32_t>(
-          std::min<std::uint64_t>(reader.info().frameCount, std::numeric_limits<std::uint32_t>::max())));
-        if (read.error == localmixer::engine::MediaFileError::none && read.framesRead > 0) {
-          source.fileSamples = read.samples;
-          source.fileFrameCount = read.framesRead;
-          source.fileChannels = reader.info().channels;
-          source.ringChannels = source.fileChannels > 1 ? 2 : 1;
-        }
-      }
+      auto file = localmixer::engine::prepareMonitorFile(requestSource.inputUid, request.projectSampleRate);
+      if (!file.error.empty()) return file.error;
+      source.fileSamples = std::move(file.samples);
+      source.fileFrameCount = file.frameCount;
+      source.fileChannels = file.channels;
+      source.ringChannels = source.fileChannels > 1 ? 2 : 1;
     } else {
       state.deviceSourceIndices.push_back(index);
     }
     source.vocalFx.prepare(request.projectSampleRate, static_cast<std::uint32_t>(scratchFrames));
     source.vocalFx.configure(
       requestSource.insertFxEnabled ? requestSource.vocalFxSlots : std::vector<localmixer::dsp::fx::RackSlotState>{});
-    const auto graphStereo = requestSource.stereoInput || source.vocalFx.active();
+    const auto graphStereo = source.ringChannels > 1 || source.vocalFx.active();
     graph.setAssignment(
       created.id,
       graphStereo ? localmixer::engine::SourceAssignment::stereo : localmixer::engine::SourceAssignment::mono,
@@ -443,9 +448,10 @@ void prepareMonitorGraph(PassthroughState& state, const PassthroughMonitorReques
   }
   state.graphLeft.assign(scratchFrames, 0.0f);
   state.graphRight.assign(scratchFrames, 0.0f);
+  return "";
 }
 
-DeviceContext prepareDeviceContext(const PassthroughMonitorRequest& request) {
+DeviceContext prepareDeviceContext(const PassthroughMonitorRequest& request, bool followOutputRate = false) {
   DeviceContext context;
   const auto requestSources = monitorSources(request);
   context.inputs.reserve(requestSources.size());
@@ -459,7 +465,12 @@ DeviceContext prepareDeviceContext(const PassthroughMonitorRequest& request) {
     context.error = "OUTPUT_RATE_UNAVAILABLE";
     return context;
   }
-  if (std::fabs(context.outputRate - request.projectSampleRate) > kRateTolerance) {
+  if (!std::isfinite(context.outputRate) || context.outputRate < 8000.0 || context.outputRate > 192000.0) {
+    context.error = "OUTPUT_RATE_UNAVAILABLE";
+    return context;
+  }
+  const auto renderRate = followOutputRate ? context.outputRate : request.projectSampleRate;
+  if (std::fabs(context.outputRate - renderRate) > kRateTolerance) {
     context.error = "SAMPLE_RATE_MISMATCH";
     return context;
   }
@@ -470,10 +481,6 @@ DeviceContext prepareDeviceContext(const PassthroughMonitorRequest& request) {
       const auto error = reader.open(source.inputUid);
       if (error != localmixer::engine::MediaFileError::none) {
         context.error = "MEDIA_FILE_OPEN_FAILED";
-        return context;
-      }
-      if (std::fabs(static_cast<double>(reader.info().sampleRate) - request.projectSampleRate) > kRateTolerance) {
-        context.error = "SAMPLE_RATE_MISMATCH";
         return context;
       }
       continue;
@@ -488,7 +495,11 @@ DeviceContext prepareDeviceContext(const PassthroughMonitorRequest& request) {
       context.error = "INPUT_RATE_UNAVAILABLE";
       return context;
     }
-    if (std::fabs(input.rate - request.projectSampleRate) > kRateTolerance) {
+    if (!localmixer::engine::supportedLiveSampleRate(input.rate)) {
+      context.error = "INPUT_RATE_UNAVAILABLE";
+      return context;
+    }
+    if (!followOutputRate && std::fabs(input.rate - renderRate) > kRateTolerance) {
       context.error = "SAMPLE_RATE_MISMATCH";
       return context;
     }
@@ -518,6 +529,16 @@ DeviceContext prepareDeviceContext(const PassthroughMonitorRequest& request) {
     return context;
   }
   return context;
+}
+
+std::string prepareInputBridges(PassthroughState& state, const DeviceContext& context) {
+  for (std::size_t index = 0; index < state.deviceSourceIndices.size(); ++index) {
+    auto& source = state.sources[state.deviceSourceIndices[index]];
+    source.liveInput = std::make_unique<localmixer::engine::LiveInputBridge>(
+      context.inputs[index].rate, context.outputRate, source.ringChannels);
+    if (!source.liveInput->valid() || !source.liveInput->start()) return "INPUT_RESAMPLER_PREPARE_FAILED";
+  }
+  return "";
 }
 
 PersistentMonitorStatus statusFromContext(
@@ -572,16 +593,24 @@ struct PersistentPassthroughMonitor::Impl {
 
   PersistentMonitorStatus start(const PassthroughMonitorRequest& request) {
     stop();
-    context = prepareDeviceContext(request);
+    context = prepareDeviceContext(request, true);
     if (!context.error.empty()) return statusFromContext(context, false, context.error, state);
 
     state.outputChannel = request.outputChannel;
     state.outputSampleRate = context.outputRate;
     state.mirrorToAllOutputChannels = request.mirrorToAllOutputChannels;
     state.metrics.reset();
-    prepareMonitorGraph(state, request);
+    auto renderRequest = request;
+    renderRequest.projectSampleRate = context.outputRate;
+    const auto graphError = prepareMonitorGraph(state, renderRequest);
+    if (!graphError.empty()) return statusFromContext(context, false, graphError, state);
+    const auto bridgeError = prepareInputBridges(state, context);
+    if (!bridgeError.empty()) {
+      destroyCallbacks();
+      return statusFromContext(context, false, bridgeError, state);
+    }
     for (auto& source : state.sources) {
-      source.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate) * source.ringChannels, 0.0f);
+      source.ring.samples.assign(static_cast<std::size_t>(context.outputRate) * source.ringChannels, 0.0f);
       source.ring.writeFrame.store(0, std::memory_order_relaxed);
       source.ring.readFrame.store(0, std::memory_order_relaxed);
       source.ring.peakScaled.store(0, std::memory_order_relaxed);
@@ -642,6 +671,12 @@ struct PersistentPassthroughMonitor::Impl {
   }
 
   PersistentMonitorStatus currentStatus() {
+    for (const auto& source : state.sources) {
+      if (source.liveInput && source.liveInput->status().failed) {
+        stop();
+        return statusFromContext(context, false, "INPUT_RESAMPLER_FAILED", state, state.metrics);
+      }
+    }
     return statusFromContext(context, running, "", state, state.metrics);
   }
 
@@ -656,6 +691,7 @@ struct PersistentPassthroughMonitor::Impl {
         inputProcs[index] = nullptr;
       }
     }
+    for (auto& source : state.sources) if (source.liveInput) source.liveInput->stop();
   }
 
   DeviceContext context;
@@ -702,8 +738,12 @@ PassthroughMonitorResult monitorPassthrough(const PassthroughMonitorRequest& req
   }
 
   state.outputChannel = request.outputChannel;
+  state.outputSampleRate = context.outputRate;
   state.mirrorToAllOutputChannels = request.mirrorToAllOutputChannels;
-  prepareMonitorGraph(state, request);
+  const auto graphError = prepareMonitorGraph(state, request);
+  if (!graphError.empty()) return {.error = graphError};
+  const auto bridgeError = prepareInputBridges(state, context);
+  if (!bridgeError.empty()) return {.error = bridgeError};
   for (auto& source : state.sources) {
     source.ring.samples.assign(static_cast<std::size_t>(request.projectSampleRate) * source.ringChannels, 0.0f);
   }
